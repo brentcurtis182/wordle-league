@@ -185,6 +185,15 @@
             .player-cards {
                 display: block;
             }
+            
+            .container {
+                padding: 10px;
+            }
+            
+            .tab-button {
+                padding: 8px 16px;
+                font-size: 14px;
+            }
         }
         
         @media (max-width: 480px) {
@@ -195,6 +204,20 @@
             
             .player-score {
                 margin-top: 10px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+            
+            h2 {
+                font-size: 20px;
+            }
+            
+            .date-button {
+                padding: 6px 10px;
+                font-size: 12px;
+                margin: 0 2px 4px;
             }
         }
     </style>
@@ -213,11 +236,11 @@
             <p>Lower is better!</p>
             
             <div class="date-nav">
-                <button class="date-button active" onclick="updateDate('2025-07-22')">Jul 22</button>
-                <button class="date-button" onclick="updateDate('2025-07-21')">Jul 21</button>
-                <button class="date-button" onclick="updateDate('2025-07-20')">Jul 20</button>
-                <button class="date-button" onclick="updateDate('2025-07-19')">Jul 19</button>
-                <button class="date-button" onclick="updateDate('2025-07-18')">Jul 18</button>
+                <button class="date-button active" onclick="updateDate('2025-07-22', this)">Jul 22</button>
+                <button class="date-button" onclick="updateDate('2025-07-21', this)">Jul 21</button>
+                <button class="date-button" onclick="updateDate('2025-07-20', this)">Jul 20</button>
+                <button class="date-button" onclick="updateDate('2025-07-19', this)">Jul 19</button>
+                <button class="date-button" onclick="updateDate('2025-07-18', this)">Jul 18</button>
             </div>
             
             <div class="table-container">
@@ -231,76 +254,11 @@
                         </tr>
                     </thead>
                     <tbody id="latest-scores">
-                        <tr>
-                            <td>1</td>
-                            <td>Alice</td>
-                            <td>2</td>
-                            <td>🟩🟩🟩🟩🟩</td>
-                        </tr>
-                        <tr>
-                            <td>2</td>
-                            <td>Bob</td>
-                            <td>3</td>
-                            <td>⬛🟨🟩🟩🟩</td>
-                        </tr>
-                        <tr>
-                            <td>3</td>
-                            <td>Charlie</td>
-                            <td>4</td>
-                            <td>⬛⬛🟨🟩🟩</td>
-                        </tr>
-                        <tr>
-                            <td>4</td>
-                            <td>David</td>
-                            <td>4</td>
-                            <td>⬛🟨⬛🟩🟩</td>
-                        </tr>
-                        <tr>
-                            <td>5</td>
-                            <td>Eve</td>
-                            <td>5</td>
-                            <td>⬛⬛⬛🟨🟩</td>
-                        </tr>
                     </tbody>
                 </table>
             </div>
             
             <div class="player-cards">
-                <div class="player-card">
-                    <div class="player-info">
-                        <div class="player-name">1. Alice</div>
-                        <div class="player-pattern">🟩🟩🟩🟩🟩</div>
-                    </div>
-                    <div class="player-score">2</div>
-                </div>
-                <div class="player-card">
-                    <div class="player-info">
-                        <div class="player-name">2. Bob</div>
-                        <div class="player-pattern">⬛🟨🟩🟩🟩</div>
-                    </div>
-                    <div class="player-score">3</div>
-                </div>
-                <div class="player-card">
-                    <div class="player-info">
-                        <div class="player-name">3. Charlie</div>
-                        <div class="player-pattern">⬛⬛🟨🟩🟩</div>
-                    </div>
-                    <div class="player-score">4</div>
-                </div>
-                <div class="player-card">
-                    <div class="player-info">
-                        <div class="player-name">4. David</div>
-                        <div class="player-pattern">⬛🟨⬛🟩🟩</div>
-                    </div>
-                    <div class="player-score">4</div>
-                </div>
-                <div class="player-card">
-                    <div class="player-info">
-                        <div class="player-name">5. Eve</div>
-                        <div class="player-pattern">⬛⬛⬛🟨🟩</div>
-                    </div>
-                    <div class="player-score">5</div>
-                </div>
             </div>
         </div>
         
@@ -320,86 +278,30 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr>
-                            <td>1</td>
-                            <td>Alice</td>
-                            <td>15</td>
-                            <td>5</td>
-                            <td>3.0</td>
-                        </tr>
-                        <tr>
-                            <td>2</td>
-                            <td>Bob</td>
-                            <td>17</td>
-                            <td>5</td>
-                            <td>3.4</td>
-                        </tr>
-                        <tr>
-                            <td>3</td>
-                            <td>Charlie</td>
-                            <td>19</td>
-                            <td>5</td>
-                            <td>3.8</td>
-                        </tr>
-                        <tr>
-                            <td>4</td>
-                            <td>David</td>
-                            <td>20</td>
-                            <td>5</td>
-                            <td>4.0</td>
-                        </tr>
-                        <tr>
-                            <td>5</td>
-                            <td>Eve</td>
-                            <td>22</td>
-                            <td>5</td>
-                            <td>4.4</td>
-                        </tr>
                     </tbody>
                 </table>
             </div>
             
             <div class="player-cards">
-                <div class="player-card">
-                    <div class="player-info">
-                        <div class="player-name">1. Alice</div>
-                        <div class="player-details">Games: 5 | Avg: 3.0</div>
-                    </div>
-                    <div class="player-score">15</div>
-                </div>
-                <div class="player-card">
-                    <div class="player-info">
-                        <div class="player-name">2. Bob</div>
-                        <div class="player-details">Games: 5 | Avg: 3.4</div>
-                    </div>
-                    <div class="player-score">17</div>
-                </div>
-                <div class="player-card">
-                    <div class="player-info">
-                        <div class="player-name">3. Charlie</div>
-                        <div class="player-details">Games: 5 | Avg: 3.8</div>
-                    </div>
-                    <div class="player-score">19</div>
-                </div>
-                <div class="player-card">
-                    <div class="player-info">
-                        <div class="player-name">4. David</div>
-                        <div class="player-details">Games: 5 | Avg: 4.0</div>
-                    </div>
-                    <div class="player-score">20</div>
-                </div>
-                <div class="player-card">
-                    <div class="player-info">
-                        <div class="player-name">5. Eve</div>
-                        <div class="player-details">Games: 5 | Avg: 4.4</div>
-                    </div>
-                    <div class="player-score">22</div>
-                </div>
             </div>
         </div>
     </div>
     
     <script>
+        // Store player data for each date
+        const playerData = {
+            '2025-07-22': [
+            ],
+            '2025-07-21': [
+            ],
+            '2025-07-20': [
+            ],
+            '2025-07-19': [
+            ],
+            '2025-07-18': [
+            ],
+        };
+        
         // Tab functionality
         function openTab(tabId) {
             // Hide all tab contents
@@ -425,19 +327,49 @@
         }
         
         // Date navigation
-        function updateDate(date) {
+        function updateDate(date, buttonElement) {
             // Update active state of date buttons
             var dateButtons = document.getElementsByClassName("date-button");
             for (var i = 0; i < dateButtons.length; i++) {
                 dateButtons[i].classList.remove("active");
             }
-            event.currentTarget.classList.add("active");
+            buttonElement.classList.add("active");
             
-            // In a real implementation, this would load data for the selected date
-            console.log("Loading data for: " + date);
+            // Get player data for this date
+            const players = playerData[date] || [];
             
-            // For demo purposes, we're not actually loading new data
-            // This would typically involve an API call or data lookup
+            // Update table
+            const tableBody = document.getElementById("latest-scores");
+            tableBody.innerHTML = "";
+            
+            // Update player cards
+            const playerCards = document.querySelector("#latest .player-cards");
+            playerCards.innerHTML = "";
+            
+            // Add players to table and cards
+            players.forEach(player => {
+                // Add to table
+                const row = document.createElement("tr");
+                row.innerHTML = `
+                    <td>${player.rank}</td>
+                    <td>${player.name}</td>
+                    <td>${player.score}</td>
+                    <td>${player.pattern}</td>
+                `;
+                tableBody.appendChild(row);
+                
+                // Add to cards
+                const card = document.createElement("div");
+                card.className = "player-card";
+                card.innerHTML = `
+                    <div class="player-info">
+                        <div class="player-name">${player.rank}. ${player.name}</div>
+                        <div class="player-pattern">${player.pattern}</div>
+                    </div>
+                    <div class="player-score">${player.score}</div>
+                `;
+                playerCards.appendChild(card);
+            });
             
             // Notify parent frame of size change
             notifyParentOfResize();
@@ -445,7 +377,6 @@
         
         // Notify parent frame of size changes
         function notifyParentOfResize() {
-            // This is used when embedded in an iframe
             if (window.parent && window.parent !== window) {
                 var height = document.body.scrollHeight;
                 window.parent.postMessage({ type: 'resize', height: height }, '*');
@@ -454,21 +385,25 @@
         
         // Initialize
         window.addEventListener('load', function() {
-            // Set initial date from first button
-            var dateButtons = document.getElementsByClassName("date-button");
-            if (dateButtons.length > 0) {
-                var initialDate = dateButtons[0].getAttribute("onclick").match(/'([^']+)'/)[1];
-                console.log("Initial date: " + initialDate);
-            }
-            
-            // Open default tab
-            openTab('latest');
-            
-            // Set up resize observer to notify parent of size changes
-            var resizeObserver = new ResizeObserver(function() {
-                notifyParentOfResize();
-            });
-            resizeObserver.observe(document.body);
+            // Notify parent of initial size
+            notifyParentOfResize();
+        });
+        
+        // Listen for resize events
+        window.addEventListener('resize', function() {
+            notifyParentOfResize();
+        });
+        
+        // Last updated timestamp
+        document.addEventListener('DOMContentLoaded', function() {
+            var now = new Date();
+            var footer = document.createElement('p');
+            footer.style.fontSize = '12px';
+            footer.style.color = '#86888a';
+            footer.style.textAlign = 'center';
+            footer.style.marginTop = '20px';
+            footer.textContent = 'Last updated: ' + now.toLocaleString();
+            document.querySelector('.container').appendChild(footer);
         });
     </script>
 </body>

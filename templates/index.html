@@ -41,6 +41,16 @@
                         {% if score.has_score %}
                         <div class="score-{{ score.score }} score-display">
                             {{ score.score }}/6
+                            {% if score.emoji_pattern %}
+                            <div class="emoji-pattern">
+                                <div class="emoji-container">
+                                    {% for line in score.emoji_pattern.split('
+') %}
+                                    <div class="emoji-row">{{ line }}</div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            {% endif %}
                         </div>
                         {% else %}
                         <div class="score-none score-display">

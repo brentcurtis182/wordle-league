@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordle League - Leaderboard</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1 class="title">Wordle League</h1>
+            <p class="subtitle">Daily Wordle Score Tracking</p>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="tab-container">
+            <div class="tab-buttons">
+                <button class="tab-button active" data-tab="latest">Latest Scores</button>
+                <button class="tab-button" data-tab="stats">Player Stats</button>
+            </div>
+            
+            <div id="latest" class="tab-content active">
+                <h2>Wordle #{{ latest_wordle }} Scores</h2>
+                
+                <div class="wordle-links">
+                    {% for wordle in recent_wordles %}
+                        <a href="wordle-{{ wordle.wordle_number }}.html" class="wordle-link {% if wordle.wordle_number == latest_wordle %}current{% endif %}">
+                            #{{ wordle.wordle_number }}
+                        </a>
+                    {% endfor %}
+                </div>
+                
+                {% for score in latest_scores %}
+                    <div class="score-card">
+                        <div class="player-info">
+                            <div class="player-name">{{ score.name }}</div>
+                        </div>
+                        <div class="score-{{ score.score }} score-display">
+                            {{ score.score }}/6
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            
+            <div id="stats" class="tab-content">
+                <h2>Player Statistics</h2>
+                
+                <div class="card">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Player</th>
+                                <th>Games</th>
+                                <th>Avg Score</th>
+                                <th>Perfect Games</th>
+                                <th>Success Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for player in player_stats %}
+                                <tr>
+                                    <td>{{ player.name }}</td>
+                                    <td>{{ player.games_played }}</td>
+                                    <td>{{ player.average_score }}</td>
+                                    <td>{{ player.perfect_games }}</td>
+                                    <td>{{ player.success_rate }}%</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

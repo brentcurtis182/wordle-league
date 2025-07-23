@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordle #{{ wordle_number }} - Wordle League</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1 class="title">Wordle League</h1>
+            <p class="subtitle">Daily Wordle Score Tracking</p>
+        </div>
+    </header>
+    
+    <div class="container">
+        <h2>Wordle #{{ wordle_number }} Scores</h2>
+        
+        <div class="wordle-links">
+            <a href="index.html" class="wordle-link">Back to Latest</a>
+            {% for wordle in recent_wordles %}
+                <a href="wordle-{{ wordle.wordle_number }}.html" class="wordle-link {% if wordle.wordle_number == wordle_number %}current{% endif %}">
+                    #{{ wordle.wordle_number }}
+                </a>
+            {% endfor %}
+        </div>
+        
+        {% for score in scores %}
+            <div class="score-card">
+                <div class="player-info">
+                    <div class="player-name">{{ score.name }}</div>
+                </div>
+                <div class="score-{{ score.score }} score-display">
+                    {{ score.score }}/6
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

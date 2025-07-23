@@ -25,6 +25,15 @@ h2 {
     display: none; /* Hide h2 headers only on Latest tab */
 }
 
+#weekly h2, #alltime h2 {
+    display: block; /* Ensure h2 headers are visible in Weekly and All-Time tabs */
+    margin-top: 5px;
+}
+
+#weekly p, #alltime p {
+    display: block; /* Ensure paragraphs are visible in Weekly and All-Time tabs */
+}
+
 /* Remove extra spacing */
 .container {
     width: 100%;
@@ -88,6 +97,8 @@ h2 {
     letter-spacing: -0.5px;
     text-transform: uppercase;
     border-width: 1px;
+    text-align: center;
+    padding-left: 2px;
 }
 
 .tabs {

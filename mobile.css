@@ -88,22 +88,24 @@ h2 {
 /* Tab and date buttons */
 .tab-button {
     padding: 1px 0;
-    font-size: 8px;
-    margin: 0;
+    font-size: 7px;
+    margin: 0 1px;
     white-space: nowrap;
     min-width: 0;
     flex: 1;
     border-radius: 2px;
-    letter-spacing: -0.5px;
+    letter-spacing: -0.8px;
     text-transform: uppercase;
     border-width: 1px;
-    text-align: center;
-    padding-left: 2px;
+    text-align: left;
+    padding-left: 5px;
+    padding-right: 0;
+    overflow: hidden;
 }
 
 .tabs {
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     flex-wrap: nowrap;
     width: 100%;
     margin: 0;

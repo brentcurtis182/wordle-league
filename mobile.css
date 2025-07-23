@@ -1,0 +1,117 @@
+/* Mobile optimization styles */
+html, body {
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    position: relative;
+}
+
+.container {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    padding: 10px;
+    min-height: 100vh;
+}
+
+/* Player cards for mobile */
+.player-card {
+    background-color: #1a1a1b;
+    border-radius: 4px;
+    padding: 8px;
+    margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-left: 3px solid #538d4e;
+}
+
+.player-card.disqualified {
+    border-left-color: #b59f3b;
+}
+
+.player-info {
+    flex: 1;
+}
+
+.player-name {
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 2px;
+}
+
+.player-pattern {
+    font-size: 12px;
+    margin-bottom: 2px;
+}
+
+.player-score {
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+}
+
+.status {
+    font-size: 10px;
+    padding: 2px 4px;
+    border-radius: 3px;
+}
+
+/* Tab and date buttons */
+.tab-button {
+    padding: 6px 10px;
+    font-size: 13px;
+    margin: 0 2px 4px;
+}
+
+.date-button {
+    padding: 4px 8px;
+    font-size: 12px;
+    margin: 0 1px 3px;
+}
+
+/* Headers */
+h1 {
+    font-size: 20px;
+    margin-top: 5px;
+    margin-bottom: 10px;
+}
+
+h2 {
+    font-size: 16px;
+    margin-top: 5px;
+    margin-bottom: 8px;
+}
+
+p {
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+/* Table adjustments */
+th, td {
+    padding: 6px 8px;
+    font-size: 13px;
+}
+
+/* Distribution bars */
+.distribution-bar {
+    height: 12px;
+}
+
+/* Spacing */
+.tabs {
+    margin-bottom: 8px;
+}
+
+.date-nav {
+    margin-bottom: 10px;
+}
+
+/* Fix scrolling */
+body {
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+}

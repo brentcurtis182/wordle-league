@@ -16,7 +16,13 @@ h1 {
 }
 
 h2 {
-    display: none; /* Hide h2 headers completely */
+    font-size: 14px;
+    margin: 3px 0;
+    padding: 0;
+}
+
+#latest h2 {
+    display: none; /* Hide h2 headers only on Latest tab */
 }
 
 /* Remove extra spacing */
@@ -115,8 +121,9 @@ h2 {
 }
 
 p {
-    font-size: 11px;
-    margin-bottom: 3px;
+    font-size: 10px;
+    margin: 2px 0;
+    line-height: 1.2;
 }
 
 /* Table adjustments */

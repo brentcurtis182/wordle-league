@@ -37,9 +37,15 @@
                         <div class="player-info">
                             <div class="player-name">{{ score.name }}</div>
                         </div>
+                        {% if score.has_score %}
                         <div class="score-{{ score.score }} score-display">
                             {{ score.score }}/6
                         </div>
+                        {% else %}
+                        <div class="score-none score-display">
+                            No Score Posted
+                        </div>
+                        {% endif %}
                     </div>
                 {% endfor %}
             </div>

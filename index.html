@@ -3,197 +3,547 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Wordle League - Leaderboard</title>
-    <link rel="stylesheet" href="styles.css">
+    <title>Wordle League Leaderboard</title>
+    <link rel="stylesheet" href="mobile.css" media="screen and (max-width: 768px)">
     <style>
-        /* Emoji pattern styles */
-        .score-display {
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            height: 100%;
+            width: 100%;
+            font-family: Arial, sans-serif;
+            background-color: #121213;
+            color: #d7dadc;
+            overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+            position: relative;
+        }
+        
+        /* Status styles */
+        .qualified {
+            color: #538d4e;
+        }
+        
+        .disqualified {
+            color: #b59f3b;
+        }
+        
+        tr.qualified {
+            background-color: rgba(83, 141, 78, 0.1);
+        }
+        
+        tr.disqualified {
+            background-color: rgba(181, 159, 59, 0.1);
+        }
+        
+        .player-card.qualified {
+            border-left-color: #538d4e;
+            background-color: rgba(83, 141, 78, 0.1);
+        }
+        
+        .player-card.disqualified {
+            border-left-color: #b59f3b;
+        }
+        
+        .status {
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 5px;
+        }
+        
+        .status.qualified {
+            background-color: rgba(83, 141, 78, 0.2);
+        }
+        
+        .status.disqualified {
+            background-color: rgba(181, 159, 59, 0.2);
+        }
+        
+        .player-distribution {
+            font-size: 12px;
+            margin-top: 5px;
+            color: #888;
+        }
+        
+        /* Container styles */
+        .container {
+            width: 100%;
+            max-width: 100%;
+            margin: 0;
+            padding: 10px;
+            min-height: 100vh;
+        }
+        
+        /* Header styles */
+        h1, h2 {
+            text-align: center;
+            margin-bottom: 15px;
+            color: white;
+        }
+        
+        .date-header {
+            font-size: 18px;
+            color: #d7dadc;
+            margin-bottom: 15px;
+        }
+        
+        p {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        /* Tab navigation */
+        .tabs {
             display: flex;
-            align-items: center;
-        }
-        
-        .emoji-pattern {
-            margin-left: 15px;
-            font-size: 0.7rem;
-            line-height: 1.2;
-            display: inline-block;
-        }
-        
-        .emoji-row {
-            white-space: nowrap;
-            height: 1.2em;
-        }
-        
-        .emoji-container {
-            height: 7.2em; /* Space for 6 rows */
-            display: flex;
-            flex-direction: column;
             justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        .tab-button {
+            background-color: #3a3a3c;
+            color: #d7dadc;
+            border: none;
+            padding: 10px 20px;
+            margin: 0 5px 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        .tab-button:hover {
+            background-color: #565758;
+        }
+        
+        .tab-button.active {
+            background-color: #538d4e;
+            color: white;
+        }
+        
+        /* Tab content */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        /* Date navigation */
+        .date-nav {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .date-button {
+            background-color: #3a3a3c;
+            color: #d7dadc;
+            border: none;
+            padding: 8px 15px;
+            margin: 0 3px 5px;
+            cursor: pointer;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: background-color 0.3s;
+        }
+        
+        .date-button:hover {
+            background-color: #565758;
+        }
+        
+        .date-button.active {
+            background-color: #b59f3b;
+            color: white;
+        }
+        
+        /* Table styles */
+        .table-container {
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            background-color: #1a1a1b;
+        }
+        
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #3a3a3c;
+        }
+        
+        th {
+            background-color: #2a2a2b;
+            color: white;
+            font-weight: bold;
+        }
+        
+        tr:hover {
+            background-color: #2a2a2b;
+        }
+        
+        /* Player cards for mobile */
+        .player-cards {
+            display: none;
+        }
+        
+        .player-card {
+            background-color: #1a1a1b;
+            border-radius: 6px;
+            padding: 10px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-left: 3px solid #538d4e;
+        }
+            color: white;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 768px) {
+            .table-container {
+                display: none;
+            }
+            
+            .player-cards {
+                display: block;
+            }
+            
+            .container {
+                padding: 5px;
+                max-width: 100%;
+                width: 100%;
+                margin: 0;
+            }
+            
+            .tab-button {
+                padding: 8px 12px;
+                font-size: 14px;
+                margin: 0 2px 5px;
+            }
+            
+            h1 {
+                font-size: 22px;
+                margin-top: 5px;
+                margin-bottom: 10px;
+            }
+            
+            h2 {
+                font-size: 18px;
+                margin-top: 5px;
+                margin-bottom: 8px;
+            }
+            
+            p {
+                font-size: 14px;
+                margin-bottom: 8px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .player-card {
+                flex-direction: column;
+                align-items: flex-start;
+                padding: 10px;
+                margin-bottom: 10px;
+            }
+            
+            .player-score {
+                margin-top: 8px;
+                align-self: flex-end;
+            }
+            
+            h1 {
+                font-size: 20px;
+                margin-top: 5px;
+            }
+            
+            h2 {
+                font-size: 18px;
+            }
+            
+            .date-button {
+                padding: 5px 8px;
+                font-size: 12px;
+                margin: 0 1px 3px;
+            }
+            
+            .tabs {
+                margin-bottom: 10px;
+            }
+            
+            body {
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
         }
     </style>
 </head>
 <body>
-    <header style="padding: 10px 0; margin-bottom: 10px;">
-        <div class="container" style="padding: 10px;">
-            <h1 class="title" style="font-size: 24px; margin-bottom: 0;">Wordle League</h1>
-        </div>
-    </header>
-    
     <div class="container">
-        <div class="tab-container">
-            <div class="tab-buttons tabs">
-                <div style="width: 100%; display: flex; justify-content: center;">
-                    <button class="tab-button active" data-tab="latest">Latest Scores</button>
-                    <button class="tab-button" data-tab="weekly">Weekly Totals</button>
-                </div>
-                <div style="width: 100%; display: flex; justify-content: center;">
-                    <button class="tab-button" data-tab="stats">All-Time Stats</button>
-                </div>
+        <h1>Wordle League</h1>
+        
+        <div class="tabs">
+            <button class="tab-button active" onclick="openTab('latest')">Latest</button>
+            <button class="tab-button" onclick="openTab('weekly')">Weekly</button>
+            <button class="tab-button" onclick="openTab('alltime')">All-Time</button>
+        </div>
+        
+        <div id="latest" class="tab-content active">
+            <h2 class="date-header" style="color: #538d4e; font-weight: bold;">Today's Scores: <span id="current-date"></span></h2>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Player</th>
+                            <th>Score</th>
+                        </tr>
+                    </thead>
+                    <tbody id="latest-scores">
+                    </tbody>
+                </table>
             </div>
             
-            <div id="latest" class="tab-content active">
-                <h2>Wordle #1495 Scores</h2>
-                
-                <div class="wordle-links">
-                    
-                        <a href="wordle-1495.html" class="wordle-link current">
-                            #1495
-                        </a>
-                    
-                </div>
-                
-                
-                    <div class="score-card">
-                        <div class="player-info">
-                            <div class="player-name">Brent</div>
-                        </div>
-                        
-                        <div class="score-4 score-display">
-                            4/6
-                            
-                            <div class="emoji-pattern">
-                                <div class="emoji-container">
-                                    
-                                    <div class="emoji-row">⬛⬛⬛🟨🟨</div>
-                                    
-                                    <div class="emoji-row">⬛⬛🟩🟩🟩</div>
-                                    
-                                    <div class="emoji-row">⬛🟩🟩🟩🟩</div>
-                                    
-                                    <div class="emoji-row">🟩🟩🟩🟩🟩</div>
-                                    
-                                </div>
-                            </div>
-                            
-                        </div>
-                        
-                    </div>
-                
-                    <div class="score-card">
-                        <div class="player-info">
-                            <div class="player-name">Evan</div>
-                        </div>
-                        
-                        <div class="score-none score-display">
-                            No Score Posted
-                        </div>
-                        
-                    </div>
-                
-                    <div class="score-card">
-                        <div class="player-info">
-                            <div class="player-name">Joanna</div>
-                        </div>
-                        
-                        <div class="score-none score-display">
-                            No Score Posted
-                        </div>
-                        
-                    </div>
-                
-                    <div class="score-card">
-                        <div class="player-info">
-                            <div class="player-name">Malia</div>
-                        </div>
-                        
-                        <div class="score-none score-display">
-                            No Score Posted
-                        </div>
-                        
-                    </div>
-                
-                    <div class="score-card">
-                        <div class="player-info">
-                            <div class="player-name">Nanna</div>
-                        </div>
-                        
-                        <div class="score-none score-display">
-                            No Score Posted
-                        </div>
-                        
-                    </div>
-                
+            <div class="player-cards">
+            </div>
+        </div>
+        
+        <div id="weekly" class="tab-content">
+            <h2>Weekly Totals</h2>
+            <p>Top 5 scores count toward weekly total (Monday-Sunday).</p>
+            <p>Players with fewer than 5 games are disqualified and ranked below qualified players.</p>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Player</th>
+                            <th>Total</th>
+                            <th>Games</th>
+                            <th>Best 5</th>
+                            <th>Average</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
             </div>
             
-            <div id="weekly" class="tab-content">
-                <h2 style="margin-top: 5px; margin-bottom: 10px;">Weekly Totals</h2>
-                <p style="margin-top: 0; margin-bottom: 10px;">Top 5 scores count toward weekly total (Monday-Sunday). Lower is better!</p>
-                
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Player</th>
-                                <th>Weekly Score</th>
-                                <th>Used Scores</th>
-                                <th>Thrown Out</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            
-                            <tr >
-                                <td>Brent</td>
-                                <td class="weekly-score">N/A</td>
-                                <td class="used-scores">N/A</td>
-                                <td class="thrown-out">N/A</td>
-                            </tr>
-                            
-                        </tbody>
-                    </table>
-                </div>
+            <div class="player-cards">
+            </div>
+        </div>
+        
+        <div id="alltime" class="tab-content">
+            <h2>All Time Stats</h2>
+            <p>Career statistics for all players</p>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Player</th>
+                            <th>Games</th>
+                            <th>Average</th>
+                            <th>Best</th>
+                            <th>Worst</th>
+                            <th>Score Distribution</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    </tbody>
+                </table>
             </div>
             
-            <div id="stats" class="tab-content">
-                <h2 style="margin-top: 5px; margin-bottom: 10px;">All-Time Stats</h2>
-                
-                <div class="table-container">
-                    <table>
-                        <thead>
-                            <tr>
-                                <th>Player</th>
-                                <th>Games</th>
-                                <th>Avg</th>
-                                <th>Perfect</th>
-                                <th>Success %</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            
-                                <tr >
-                                    <td>Brent</td>
-                                    <td>1</td>
-                                    <td>4.0</td>
-                                    <td>0</td>
-                                    <td>100.0%</td>
-                                </tr>
-                            
-                        </tbody>
-                    </table>
-                </div>
+            <div class="player-cards">
             </div>
         </div>
     </div>
     
-    <script src="script.js"></script>
+    <script>
+        // Store player data for each date
+        const playerData = {
+            '2025-07-22': [
+            ],
+            '2025-07-21': [
+            ],
+            '2025-07-20': [
+            ],
+            '2025-07-19': [
+            ],
+            '2025-07-18': [
+            ],
+        };
+        
+        // Tab functionality
+        function openTab(tabId) {
+            // Hide all tab contents
+            var tabContents = document.getElementsByClassName("tab-content");
+            for (var i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove("active");
+            }
+            
+            // Deactivate all tab buttons
+            var tabButtons = document.getElementsByClassName("tab-button");
+            for (var i = 0; i < tabButtons.length; i++) {
+                tabButtons[i].classList.remove("active");
+            }
+            
+            // Show the selected tab content
+            document.getElementById(tabId).classList.add("active");
+            
+            // Activate the clicked button
+            event.currentTarget.classList.add("active");
+            
+            // Notify parent frame of size change
+            notifyParentOfResize();
+        }
+        
+        // Date navigation
+        function updateDate(date, buttonElement) {
+            // Update active state of date buttons
+            var dateButtons = document.getElementsByClassName("date-button");
+            for (var i = 0; i < dateButtons.length; i++) {
+                dateButtons[i].classList.remove("active");
+            }
+            buttonElement.classList.add("active");
+            
+            // Get player data for this date
+            var players = playerData[date];
+            
+            // Update table
+            var tableBody = document.getElementById('latest-scores');
+            var html = '';
+            
+            for (var i = 0; i < players.length; i++) {
+                var player = players[i];
+                html += '<tr>' +
+                    '<td>' + player.rank + '</td>' +
+                    '<td>' + player.name + '</td>' +
+                    '<td>' + player.score + '</td>' +
+                    '<td>' + player.pattern + '</td>' +
+                    '</tr>';
+            }
+            
+            tableBody.innerHTML = html;
+            
+            // Update player cards
+            var playerCards = document.querySelector('#latest .player-cards');
+            html = '';
+            
+            for (var i = 0; i < players.length; i++) {
+                var player = players[i];
+                html += '<div class="player-card">' +
+                    '<div class="player-info">' +
+                    '<div class="player-name">' + player.rank + '. ' + player.name + '</div>' +
+                    '<div class="player-pattern">' + player.pattern + '</div>' +
+                    '</div>' +
+                    '<div class="player-score">' + player.score + '</div>' +
+                    '</div>';
+            }
+            
+            playerCards.innerHTML = html;
+            
+            // Notify parent frame of size change
+            notifyParentOfResize();
+        }
+        
+        // Notify parent frame of size change
+        function notifyParentOfResize() {
+            if (window.parent && window.parent !== window) {
+                var height = document.body.scrollHeight;
+                window.parent.postMessage({ type: 'resize', height: height }, '*');
+                
+                // For Wix iframe API
+                if (window.Wix && typeof window.Wix.setHeight === 'function') {
+                    window.Wix.setHeight(height);
+                }
+            }
+        }
+        
+        // Initialize
+        window.addEventListener('load', function() {
+            notifyParentOfResize();
+        });
+        
+        window.addEventListener('resize', function() {
+            notifyParentOfResize();
+        });
+        
+        // Last updated timestamp and current date
+        document.addEventListener('DOMContentLoaded', function() {
+            var now = new Date();
+            var options = { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            var timestamp = now.toLocaleDateString('en-US', options);
+            
+            // Set current date in the Latest tab header
+            var dateOptions = { year: 'numeric', month: 'short', day: 'numeric' };
+            var currentDateDisplay = now.toLocaleDateString('en-US', dateOptions);
+            var currentDateElement = document.getElementById('current-date');
+            if (currentDateElement) {
+                currentDateElement.textContent = currentDateDisplay;
+            }
+            
+            // Highlight qualified players (5+ games)
+            var playerRows = document.querySelectorAll('tr');
+            playerRows.forEach(function(row) {
+                var gamesCell = row.querySelector('td:nth-child(4)');
+                if (gamesCell && parseInt(gamesCell.textContent) >= 5) {
+                    row.classList.add('qualified');
+                }
+            });
+            
+            var playerCards = document.querySelectorAll('.player-card');
+            playerCards.forEach(function(card) {
+                var detailsText = card.querySelector('.player-details');
+                if (detailsText && detailsText.textContent) {
+                    var gamesMatch = detailsText.textContent.match(/Games: ([0-9]+)/);
+                    if (gamesMatch && parseInt(gamesMatch[1]) >= 5) {
+                        card.classList.add('qualified');
+                    }
+                }
+            });
+            
+            var footer = document.createElement('p');
+            footer.style.fontSize = '12px';
+            footer.style.color = '#888';
+            footer.style.marginTop = '30px';
+            footer.style.textAlign = 'center';
+            footer.textContent = 'Last updated: ' + timestamp;
+            
+            document.querySelector('.container').appendChild(footer);
+        });
+    </script>
 </body>
 </html>

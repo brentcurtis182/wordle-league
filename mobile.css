@@ -24,7 +24,7 @@ h2 {
     width: 100%;
     max-width: 100%;
     margin: 0;
-    padding: 5px;
+    padding: 3px;
     min-height: 100vh;
 }
 
@@ -55,8 +55,7 @@ h2 {
 }
 
 .player-pattern {
-    font-size: 10px;
-    margin-bottom: 1px;
+    display: none; /* Hide pattern on mobile */
 }
 
 .player-score {
@@ -73,12 +72,14 @@ h2 {
 
 /* Tab and date buttons */
 .tab-button {
-    padding: 4px 4px;
-    font-size: 11px;
-    margin: 0 1px 2px;
+    padding: 1px;
+    font-size: 9px;
+    margin: 0;
     white-space: nowrap;
     min-width: 0;
     flex: 1;
+    border-radius: 2px;
+    letter-spacing: -0.5px;
 }
 
 .tabs {
@@ -86,7 +87,9 @@ h2 {
     justify-content: space-between;
     flex-wrap: nowrap;
     width: 100%;
-    margin: 3px 0;
+    margin: 1px 0;
+    max-width: 100%;
+    overflow: hidden;
 }
 
 .date-button {

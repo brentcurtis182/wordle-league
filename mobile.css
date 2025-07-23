@@ -10,13 +10,13 @@ html, body {
 
 /* Compact header for mobile */
 h1 {
-    font-size: 16px;
-    margin: 3px 0;
+    font-size: 14px;
+    margin: 2px 0;
+    padding: 0;
 }
 
 h2 {
-    font-size: 14px;
-    margin: 3px 0;
+    display: none; /* Hide h2 headers completely */
 }
 
 /* Remove extra spacing */
@@ -24,16 +24,16 @@ h2 {
     width: 100%;
     max-width: 100%;
     margin: 0;
-    padding: 3px;
+    padding: 2px;
     min-height: 100vh;
 }
 
 /* Player cards for mobile */
 .player-card {
     background-color: #1a1a1b;
-    border-radius: 3px;
-    padding: 5px;
-    margin-bottom: 5px;
+    border-radius: 2px;
+    padding: 3px;
+    margin-bottom: 3px;
     display: flex;
     justify-content: space-between;
     align-items: center;
@@ -50,8 +50,8 @@ h2 {
 
 .player-name {
     font-weight: bold;
-    font-size: 12px;
-    margin-bottom: 1px;
+    font-size: 11px;
+    margin-bottom: 0;
 }
 
 .player-pattern {
@@ -59,7 +59,7 @@ h2 {
 }
 
 .player-score {
-    font-size: 14px;
+    font-size: 12px;
     font-weight: bold;
     color: white;
 }
@@ -115,14 +115,14 @@ h2 {
 }
 
 p {
-    font-size: 13px;
-    margin-bottom: 6px;
+    font-size: 11px;
+    margin-bottom: 3px;
 }
 
 /* Table adjustments */
 th, td {
-    padding: 6px 8px;
-    font-size: 13px;
+    padding: 3px 4px;
+    font-size: 11px;
 }
 
 /* Distribution bars */

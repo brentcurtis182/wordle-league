@@ -8,24 +8,36 @@ html, body {
     position: relative;
 }
 
+/* Compact header for mobile */
+h1 {
+    font-size: 16px;
+    margin: 3px 0;
+}
+
+h2 {
+    font-size: 14px;
+    margin: 3px 0;
+}
+
+/* Remove extra spacing */
 .container {
     width: 100%;
     max-width: 100%;
     margin: 0;
-    padding: 10px;
+    padding: 5px;
     min-height: 100vh;
 }
 
 /* Player cards for mobile */
 .player-card {
     background-color: #1a1a1b;
-    border-radius: 4px;
-    padding: 8px;
-    margin-bottom: 8px;
+    border-radius: 3px;
+    padding: 5px;
+    margin-bottom: 5px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-left: 3px solid #538d4e;
+    border-left: 2px solid #538d4e;
 }
 
 .player-card.disqualified {
@@ -38,17 +50,17 @@ html, body {
 
 .player-name {
     font-weight: bold;
-    font-size: 14px;
-    margin-bottom: 2px;
+    font-size: 12px;
+    margin-bottom: 1px;
 }
 
 .player-pattern {
-    font-size: 12px;
-    margin-bottom: 2px;
+    font-size: 10px;
+    margin-bottom: 1px;
 }
 
 .player-score {
-    font-size: 18px;
+    font-size: 14px;
     font-weight: bold;
     color: white;
 }
@@ -61,15 +73,26 @@ html, body {
 
 /* Tab and date buttons */
 .tab-button {
-    padding: 6px 10px;
-    font-size: 13px;
-    margin: 0 2px 4px;
+    padding: 4px 4px;
+    font-size: 11px;
+    margin: 0 1px 2px;
+    white-space: nowrap;
+    min-width: 0;
+    flex: 1;
+}
+
+.tabs {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: nowrap;
+    width: 100%;
+    margin: 3px 0;
 }
 
 .date-button {
-    padding: 4px 8px;
-    font-size: 12px;
-    margin: 0 1px 3px;
+    padding: 3px 5px;
+    font-size: 10px;
+    margin: 0 1px 2px;
 }
 
 /* Headers */
@@ -107,7 +130,7 @@ th, td {
 }
 
 .date-nav {
-    margin-bottom: 10px;
+    margin-bottom: 5px;
 }
 
 /* Fix scrolling */

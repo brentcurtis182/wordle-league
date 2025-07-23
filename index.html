@@ -5,21 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wordle League - Leaderboard</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Emoji pattern styles */
+        .score-display {
+            display: flex;
+            align-items: center;
+        }
+        
+        .emoji-pattern {
+            margin-left: 15px;
+            font-size: 0.7rem;
+            line-height: 1.2;
+            display: inline-block;
+        }
+        
+        .emoji-row {
+            white-space: nowrap;
+            height: 1.2em;
+        }
+        
+        .emoji-container {
+            height: 7.2em; /* Space for 6 rows */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+    </style>
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1 class="title">Wordle League</h1>
-            <p class="subtitle">Daily Wordle Score Tracking</p>
+    <header style="padding: 10px 0; margin-bottom: 10px;">
+        <div class="container" style="padding: 10px;">
+            <h1 class="title" style="font-size: 24px; margin-bottom: 0;">Wordle League</h1>
         </div>
     </header>
     
     <div class="container">
         <div class="tab-container">
-            <div class="tab-buttons">
-                <button class="tab-button active" data-tab="latest">Latest Scores</button>
-                <button class="tab-button" data-tab="weekly">Weekly Totals</button>
-                <button class="tab-button" data-tab="stats">Player Stats</button>
+            <div class="tab-buttons tabs">
+                <div style="width: 100%; display: flex; justify-content: center;">
+                    <button class="tab-button active" data-tab="latest">Latest Scores</button>
+                    <button class="tab-button" data-tab="weekly">Weekly Totals</button>
+                </div>
+                <div style="width: 100%; display: flex; justify-content: center;">
+                    <button class="tab-button" data-tab="stats">All-Time Stats</button>
+                </div>
             </div>
             
             <div id="latest" class="tab-content active">
@@ -41,6 +70,20 @@
                         
                         <div class="score-4 score-display">
                             4/6
+                            
+                            <div class="emoji-pattern">
+                                <div class="emoji-container">
+                                    
+                                    <div class="emoji-row">⬛⬛⬛🟨🟨</div>
+                                    
+                                    <div class="emoji-row">⬛⬛🟩🟩🟩</div>
+                                    
+                                    <div class="emoji-row">⬛🟩🟩🟩🟩</div>
+                                    
+                                    <div class="emoji-row">🟩🟩🟩🟩🟩</div>
+                                    
+                                </div>
+                            </div>
                             
                         </div>
                         
@@ -93,8 +136,8 @@
             </div>
             
             <div id="weekly" class="tab-content">
-                <h2>Weekly Totals</h2>
-                <p>Top 5 scores count toward weekly total (Monday-Sunday). Lower is better!</p>
+                <h2 style="margin-top: 5px; margin-bottom: 10px;">Weekly Totals</h2>
+                <p style="margin-top: 0; margin-bottom: 10px;">Top 5 scores count toward weekly total (Monday-Sunday). Lower is better!</p>
                 
                 <div class="table-container">
                     <table>
@@ -108,11 +151,11 @@
                         </thead>
                         <tbody>
                             
-                            <tr>
+                            <tr >
                                 <td>Brent</td>
-                                <td class="weekly-score">No scores this week</td>
-                                <td class="used-scores">No scores this week</td>
-                                <td class="thrown-out">None</td>
+                                <td class="weekly-score">N/A</td>
+                                <td class="used-scores">N/A</td>
+                                <td class="thrown-out">N/A</td>
                             </tr>
                             
                         </tbody>
@@ -121,22 +164,22 @@
             </div>
             
             <div id="stats" class="tab-content">
-                <h2>Player Statistics</h2>
+                <h2 style="margin-top: 5px; margin-bottom: 10px;">All-Time Stats</h2>
                 
-                <div class="card">
-                    <table class="stats-table">
+                <div class="table-container">
+                    <table>
                         <thead>
                             <tr>
                                 <th>Player</th>
                                 <th>Games</th>
-                                <th>Avg Score</th>
-                                <th>Perfect Games</th>
-                                <th>Success Rate</th>
+                                <th>Avg</th>
+                                <th>Perfect</th>
+                                <th>Success %</th>
                             </tr>
                         </thead>
                         <tbody>
                             
-                                <tr>
+                                <tr >
                                     <td>Brent</td>
                                     <td>1</td>
                                     <td>4.0</td>

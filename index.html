@@ -21,6 +21,44 @@
             overflow-x: hidden;
         }
         
+        /* Status styles */
+        .qualified {
+            color: #538d4e;
+        }
+        
+        .disqualified {
+            color: #b59f3b;
+        }
+        
+        tr.disqualified {
+            background-color: rgba(181, 159, 59, 0.1);
+        }
+        
+        .player-card.disqualified {
+            border-left-color: #b59f3b;
+        }
+        
+        .status {
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 5px;
+        }
+        
+        .status.qualified {
+            background-color: rgba(83, 141, 78, 0.2);
+        }
+        
+        .status.disqualified {
+            background-color: rgba(181, 159, 59, 0.2);
+        }
+        
+        .player-distribution {
+            font-size: 12px;
+            margin-top: 5px;
+            color: #888;
+        }
+        
         /* Container styles */
         .container {
             width: 100%;
@@ -188,6 +226,8 @@
             
             .container {
                 padding: 10px;
+                max-width: 100%;
+                width: 100%;
             }
             
             .tab-button {
@@ -229,6 +269,7 @@
         <div class="tabs">
             <button class="tab-button active" onclick="openTab('latest')">Latest Scores</button>
             <button class="tab-button" onclick="openTab('weekly')">Weekly Totals</button>
+            <button class="tab-button" onclick="openTab('alltime')">All Time</button>
         </div>
         
         <div id="latest" class="tab-content active">
@@ -258,31 +299,31 @@
                             <td>1</td>
                             <td>Nanna</td>
                             <td>2</td>
-                            <td>ðŸŸ©ðŸŸ©â¬œâ¬œâ¬œ</td>
+                            <td>🟩🟩⬜⬜⬜</td>
                         </tr>
                         <tr>
                             <td>2</td>
                             <td>Brent</td>
                             <td>3</td>
-                            <td>ðŸŸ©ðŸŸ©ðŸŸ¨â¬œâ¬œ</td>
+                            <td>🟩🟩🟨⬜⬜</td>
                         </tr>
                         <tr>
                             <td>3</td>
                             <td>Joanna</td>
                             <td>3</td>
-                            <td>ðŸŸ©ðŸŸ©ðŸŸ¨â¬œâ¬œ</td>
+                            <td>🟩🟩🟨⬜⬜</td>
                         </tr>
                         <tr>
                             <td>4</td>
                             <td>Malia</td>
                             <td>4</td>
-                            <td>â¬œðŸŸ¨ðŸŸ©ðŸŸ©ðŸŸ©</td>
+                            <td>⬜🟨🟩🟩🟩</td>
                         </tr>
                         <tr>
                             <td>5</td>
                             <td>Evan</td>
                             <td>5</td>
-                            <td>ðŸŸ¨ðŸŸ¨ðŸŸ¨ðŸŸ©ðŸŸ©</td>
+                            <td>🟨🟨🟨🟩🟩</td>
                         </tr>
                     </tbody>
                 </table>
@@ -292,35 +333,35 @@
                 <div class="player-card">
                     <div class="player-info">
                         <div class="player-name">1. Nanna</div>
-                        <div class="player-pattern">ðŸŸ©ðŸŸ©â¬œâ¬œâ¬œ</div>
+                        <div class="player-pattern">🟩🟩⬜⬜⬜</div>
                     </div>
                     <div class="player-score">2</div>
                 </div>
                 <div class="player-card">
                     <div class="player-info">
                         <div class="player-name">2. Brent</div>
-                        <div class="player-pattern">ðŸŸ©ðŸŸ©ðŸŸ¨â¬œâ¬œ</div>
+                        <div class="player-pattern">🟩🟩🟨⬜⬜</div>
                     </div>
                     <div class="player-score">3</div>
                 </div>
                 <div class="player-card">
                     <div class="player-info">
                         <div class="player-name">3. Joanna</div>
-                        <div class="player-pattern">ðŸŸ©ðŸŸ©ðŸŸ¨â¬œâ¬œ</div>
+                        <div class="player-pattern">🟩🟩🟨⬜⬜</div>
                     </div>
                     <div class="player-score">3</div>
                 </div>
                 <div class="player-card">
                     <div class="player-info">
                         <div class="player-name">4. Malia</div>
-                        <div class="player-pattern">â¬œðŸŸ¨ðŸŸ©ðŸŸ©ðŸŸ©</div>
+                        <div class="player-pattern">⬜🟨🟩🟩🟩</div>
                     </div>
                     <div class="player-score">4</div>
                 </div>
                 <div class="player-card">
                     <div class="player-info">
                         <div class="player-name">5. Evan</div>
-                        <div class="player-pattern">ðŸŸ¨ðŸŸ¨ðŸŸ¨ðŸŸ©ðŸŸ©</div>
+                        <div class="player-pattern">🟨🟨🟨🟩🟩</div>
                     </div>
                     <div class="player-score">5</div>
                 </div>
@@ -330,6 +371,7 @@
         <div id="weekly" class="tab-content">
             <h2>Weekly Totals</h2>
             <p>Top 5 scores count toward weekly total (Monday-Sunday). Lower is better!</p>
+            <p>Players with fewer than 5 games are disqualified and ranked below qualified players.</p>
             
             <div class="table-container">
                 <table>
@@ -339,44 +381,162 @@
                             <th>Player</th>
                             <th>Total</th>
                             <th>Games</th>
+                            <th>Best 5</th>
                             <th>Average</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr class="disqualified">
+                            <td>1</td>
+                            <td>Nanna</td>
+                            <td>2</td>
+                            <td>1</td>
+                            <td>1</td>
+                            <td>2.0</td>
+                            <td class="disqualified">Disqualified</td>
+                        </tr>
+                        <tr class="disqualified">
+                            <td>2</td>
+                            <td>Brent</td>
+                            <td>3</td>
+                            <td>1</td>
+                            <td>1</td>
+                            <td>3.0</td>
+                            <td class="disqualified">Disqualified</td>
+                        </tr>
+                        <tr class="disqualified">
+                            <td>3</td>
+                            <td>Joanna</td>
+                            <td>3</td>
+                            <td>1</td>
+                            <td>1</td>
+                            <td>3.0</td>
+                            <td class="disqualified">Disqualified</td>
+                        </tr>
+                        <tr class="disqualified">
+                            <td>4</td>
+                            <td>Malia</td>
+                            <td>4</td>
+                            <td>1</td>
+                            <td>1</td>
+                            <td>4.0</td>
+                            <td class="disqualified">Disqualified</td>
+                        </tr>
+                        <tr class="disqualified">
+                            <td>5</td>
+                            <td>Evan</td>
+                            <td>5</td>
+                            <td>1</td>
+                            <td>1</td>
+                            <td>5.0</td>
+                            <td class="disqualified">Disqualified</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div class="player-cards">
+                <div class="player-card disqualified">
+                    <div class="player-info">
+                        <div class="player-name">1. Nanna <span class="status disqualified">Disqualified</span></div>
+                        <div class="player-details">Games: 1 | Best 5: 1 | Avg: 2.0</div>
+                    </div>
+                    <div class="player-score">2</div>
+                </div>
+                <div class="player-card disqualified">
+                    <div class="player-info">
+                        <div class="player-name">2. Brent <span class="status disqualified">Disqualified</span></div>
+                        <div class="player-details">Games: 1 | Best 5: 1 | Avg: 3.0</div>
+                    </div>
+                    <div class="player-score">3</div>
+                </div>
+                <div class="player-card disqualified">
+                    <div class="player-info">
+                        <div class="player-name">3. Joanna <span class="status disqualified">Disqualified</span></div>
+                        <div class="player-details">Games: 1 | Best 5: 1 | Avg: 3.0</div>
+                    </div>
+                    <div class="player-score">3</div>
+                </div>
+                <div class="player-card disqualified">
+                    <div class="player-info">
+                        <div class="player-name">4. Malia <span class="status disqualified">Disqualified</span></div>
+                        <div class="player-details">Games: 1 | Best 5: 1 | Avg: 4.0</div>
+                    </div>
+                    <div class="player-score">4</div>
+                </div>
+                <div class="player-card disqualified">
+                    <div class="player-info">
+                        <div class="player-name">5. Evan <span class="status disqualified">Disqualified</span></div>
+                        <div class="player-details">Games: 1 | Best 5: 1 | Avg: 5.0</div>
+                    </div>
+                    <div class="player-score">5</div>
+                </div>
+            </div>
+        </div>
+        
+        <div id="alltime" class="tab-content">
+            <h2>All Time Stats</h2>
+            <p>Career statistics for all players</p>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Rank</th>
+                            <th>Player</th>
+                            <th>Games</th>
+                            <th>Average</th>
+                            <th>Best</th>
+                            <th>Worst</th>
+                            <th>Score Distribution</th>
                         </tr>
                     </thead>
                     <tbody>
                         <tr>
                             <td>1</td>
                             <td>Nanna</td>
-                            <td>2</td>
                             <td>1</td>
                             <td>2.0</td>
+                            <td>2</td>
+                            <td>2</td>
+                            <td>1: 0 | 2: 1 | 3: 0 | 4: 0 | 5: 0 | 6: 0 | X: 0</td>
                         </tr>
                         <tr>
                             <td>2</td>
                             <td>Brent</td>
-                            <td>3</td>
                             <td>1</td>
                             <td>3.0</td>
+                            <td>3</td>
+                            <td>3</td>
+                            <td>1: 0 | 2: 0 | 3: 1 | 4: 0 | 5: 0 | 6: 0 | X: 0</td>
                         </tr>
                         <tr>
                             <td>3</td>
                             <td>Joanna</td>
-                            <td>3</td>
                             <td>1</td>
                             <td>3.0</td>
+                            <td>3</td>
+                            <td>3</td>
+                            <td>1: 0 | 2: 0 | 3: 1 | 4: 0 | 5: 0 | 6: 0 | X: 0</td>
                         </tr>
                         <tr>
                             <td>4</td>
                             <td>Malia</td>
-                            <td>4</td>
                             <td>1</td>
                             <td>4.0</td>
+                            <td>4</td>
+                            <td>4</td>
+                            <td>1: 0 | 2: 0 | 3: 0 | 4: 1 | 5: 0 | 6: 0 | X: 0</td>
                         </tr>
                         <tr>
                             <td>5</td>
                             <td>Evan</td>
-                            <td>5</td>
                             <td>1</td>
                             <td>5.0</td>
+                            <td>5</td>
+                            <td>5</td>
+                            <td>1: 0 | 2: 0 | 3: 0 | 4: 0 | 5: 1 | 6: 0 | X: 0</td>
                         </tr>
                     </tbody>
                 </table>
@@ -386,37 +546,42 @@
                 <div class="player-card">
                     <div class="player-info">
                         <div class="player-name">1. Nanna</div>
-                        <div class="player-details">Games: 1 | Avg: 2.0</div>
+                        <div class="player-details">Games: 1 | Best: 2 | Worst: 2</div>
+                        <div class="player-distribution">1: 0 | 2: 1 | 3: 0 | 4: 0 | 5: 0 | 6: 0 | X: 0</div>
                     </div>
-                    <div class="player-score">2</div>
+                    <div class="player-score">2.0</div>
                 </div>
                 <div class="player-card">
                     <div class="player-info">
                         <div class="player-name">2. Brent</div>
-                        <div class="player-details">Games: 1 | Avg: 3.0</div>
+                        <div class="player-details">Games: 1 | Best: 3 | Worst: 3</div>
+                        <div class="player-distribution">1: 0 | 2: 0 | 3: 1 | 4: 0 | 5: 0 | 6: 0 | X: 0</div>
                     </div>
-                    <div class="player-score">3</div>
+                    <div class="player-score">3.0</div>
                 </div>
                 <div class="player-card">
                     <div class="player-info">
                         <div class="player-name">3. Joanna</div>
-                        <div class="player-details">Games: 1 | Avg: 3.0</div>
+                        <div class="player-details">Games: 1 | Best: 3 | Worst: 3</div>
+                        <div class="player-distribution">1: 0 | 2: 0 | 3: 1 | 4: 0 | 5: 0 | 6: 0 | X: 0</div>
                     </div>
-                    <div class="player-score">3</div>
+                    <div class="player-score">3.0</div>
                 </div>
                 <div class="player-card">
                     <div class="player-info">
                         <div class="player-name">4. Malia</div>
-                        <div class="player-details">Games: 1 | Avg: 4.0</div>
+                        <div class="player-details">Games: 1 | Best: 4 | Worst: 4</div>
+                        <div class="player-distribution">1: 0 | 2: 0 | 3: 0 | 4: 1 | 5: 0 | 6: 0 | X: 0</div>
                     </div>
-                    <div class="player-score">4</div>
+                    <div class="player-score">4.0</div>
                 </div>
                 <div class="player-card">
                     <div class="player-info">
                         <div class="player-name">5. Evan</div>
-                        <div class="player-details">Games: 1 | Avg: 5.0</div>
+                        <div class="player-details">Games: 1 | Best: 5 | Worst: 5</div>
+                        <div class="player-distribution">1: 0 | 2: 0 | 3: 0 | 4: 0 | 5: 1 | 6: 0 | X: 0</div>
                     </div>
-                    <div class="player-score">5</div>
+                    <div class="player-score">5.0</div>
                 </div>
             </div>
         </div>
@@ -426,11 +591,11 @@
         // Store player data for each date
         const playerData = {
             '2025-07-22': [
-                {rank: 1, name: 'Nanna', score: '2', pattern: 'ðŸŸ©ðŸŸ©â¬œâ¬œâ¬œ'},
-                {rank: 2, name: 'Brent', score: '3', pattern: 'ðŸŸ©ðŸŸ©ðŸŸ¨â¬œâ¬œ'},
-                {rank: 3, name: 'Joanna', score: '3', pattern: 'ðŸŸ©ðŸŸ©ðŸŸ¨â¬œâ¬œ'},
-                {rank: 4, name: 'Malia', score: '4', pattern: 'â¬œðŸŸ¨ðŸŸ©ðŸŸ©ðŸŸ©'},
-                {rank: 5, name: 'Evan', score: '5', pattern: 'ðŸŸ¨ðŸŸ¨ðŸŸ¨ðŸŸ©ðŸŸ©'},
+                {rank: 1, name: 'Nanna', score: '2', pattern: '🟩🟩⬜⬜⬜'},
+                {rank: 2, name: 'Brent', score: '3', pattern: '🟩🟩🟨⬜⬜'},
+                {rank: 3, name: 'Joanna', score: '3', pattern: '🟩🟩🟨⬜⬜'},
+                {rank: 4, name: 'Malia', score: '4', pattern: '⬜🟨🟩🟩🟩'},
+                {rank: 5, name: 'Evan', score: '5', pattern: '🟨🟨🟨🟩🟩'},
             ],
             '2025-07-21': [
             ],
@@ -476,46 +641,46 @@
             buttonElement.classList.add("active");
             
             // Get player data for this date
-            const players = playerData[date] || [];
+            var players = playerData[date];
             
             // Update table
-            const tableBody = document.getElementById("latest-scores");
-            tableBody.innerHTML = "";
+            var tableBody = document.getElementById('latest-scores');
+            var html = '';
+            
+            for (var i = 0; i < players.length; i++) {
+                var player = players[i];
+                html += '<tr>' +
+                    '<td>' + player.rank + '</td>' +
+                    '<td>' + player.name + '</td>' +
+                    '<td>' + player.score + '</td>' +
+                    '<td>' + player.pattern + '</td>' +
+                    '</tr>';
+            }
+            
+            tableBody.innerHTML = html;
             
             // Update player cards
-            const playerCards = document.querySelector("#latest .player-cards");
-            playerCards.innerHTML = "";
+            var playerCards = document.querySelector('#latest .player-cards');
+            html = '';
             
-            // Add players to table and cards
-            players.forEach(player => {
-                // Add to table
-                const row = document.createElement("tr");
-                row.innerHTML = `
-                    <td>${player.rank}</td>
-                    <td>${player.name}</td>
-                    <td>${player.score}</td>
-                    <td>${player.pattern}</td>
-                `;
-                tableBody.appendChild(row);
-                
-                // Add to cards
-                const card = document.createElement("div");
-                card.className = "player-card";
-                card.innerHTML = `
-                    <div class="player-info">
-                        <div class="player-name">${player.rank}. ${player.name}</div>
-                        <div class="player-pattern">${player.pattern}</div>
-                    </div>
-                    <div class="player-score">${player.score}</div>
-                `;
-                playerCards.appendChild(card);
-            });
+            for (var i = 0; i < players.length; i++) {
+                var player = players[i];
+                html += '<div class="player-card">' +
+                    '<div class="player-info">' +
+                    '<div class="player-name">' + player.rank + '. ' + player.name + '</div>' +
+                    '<div class="player-pattern">' + player.pattern + '</div>' +
+                    '</div>' +
+                    '<div class="player-score">' + player.score + '</div>' +
+                    '</div>';
+            }
+            
+            playerCards.innerHTML = html;
             
             // Notify parent frame of size change
             notifyParentOfResize();
         }
         
-        // Notify parent frame of size changes
+        // Notify parent frame of size change
         function notifyParentOfResize() {
             if (window.parent && window.parent !== window) {
                 var height = document.body.scrollHeight;
@@ -525,11 +690,9 @@
         
         // Initialize
         window.addEventListener('load', function() {
-            // Notify parent of initial size
             notifyParentOfResize();
         });
         
-        // Listen for resize events
         window.addEventListener('resize', function() {
             notifyParentOfResize();
         });
@@ -537,12 +700,22 @@
         // Last updated timestamp
         document.addEventListener('DOMContentLoaded', function() {
             var now = new Date();
+            var options = { 
+                year: 'numeric', 
+                month: 'short', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            };
+            var timestamp = now.toLocaleDateString('en-US', options);
+            
             var footer = document.createElement('p');
             footer.style.fontSize = '12px';
-            footer.style.color = '#86888a';
+            footer.style.color = '#888';
+            footer.style.marginTop = '30px';
             footer.style.textAlign = 'center';
-            footer.style.marginTop = '20px';
-            footer.textContent = 'Last updated: ' + now.toLocaleString();
+            footer.textContent = 'Last updated: ' + timestamp;
+            
             document.querySelector('.container').appendChild(footer);
         });
     </script>

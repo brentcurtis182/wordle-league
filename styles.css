@@ -40,11 +40,20 @@ header {
 }
 .player-info {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    justify-content: center;
 }
 .player-name {
     font-weight: bold;
     font-size: 1.1em;
+    margin-bottom: 4px;
+}
+.player-score {
+    font-size: 1.1em;
+    font-weight: bold;
+    padding: 3px 8px;
+    border-radius: 3px;
+    display: inline-block;
 }
 .score-display {
     font-size: 1.2em;
@@ -90,10 +99,11 @@ header {
 
 /* Emoji pattern styles */
 .emoji-pattern {
-    margin-left: 15px;
     font-size: 0.7rem;
     line-height: 1.2;
-    display: inline-block;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
 }
 .emoji-row {
     white-space: nowrap;

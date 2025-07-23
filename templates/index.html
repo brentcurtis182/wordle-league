@@ -52,38 +52,26 @@
             </div>
             
             <div id="latest" class="tab-content active">
-                <h2>Wordle #{{ latest_wordle }} Scores</h2>
-                
-                <div class="wordle-links">
-                    {% for wordle in recent_wordles %}
-                        <a href="wordle-{{ wordle.wordle_number }}.html" class="wordle-link {% if wordle.wordle_number == latest_wordle %}current{% endif %}">
-                            #{{ wordle.wordle_number }}
-                        </a>
-                    {% endfor %}
-                </div>
+                <h2 style="margin-top: 5px; margin-bottom: 10px;">Latest Scores</h2>
                 
                 {% for score in latest_scores %}
                     <div class="score-card">
                         <div class="player-info">
                             <div class="player-name">{{ score.name }}</div>
-                        </div>
-                        {% if score.has_score %}
-                        <div class="score-{{ score.score }} score-display">
-                            {{ score.score }}/6
-                            {% if score.emoji_pattern %}
-                            <div class="emoji-pattern">
-                                <div class="emoji-container">
-                                    {% for line in score.emoji_pattern.split('
-') %}
-                                    <div class="emoji-row">{{ line }}</div>
-                                    {% endfor %}
-                                </div>
-                            </div>
+                            {% if score.has_score %}
+                            <div class="player-score score-{{ score.score }}">{{ score.score }}/6</div>
+                            {% else %}
+                            <div class="player-score score-none">No Score</div>
                             {% endif %}
                         </div>
-                        {% else %}
-                        <div class="score-none score-display">
-                            No Score Posted
+                        {% if score.has_score and score.emoji_pattern %}
+                        <div class="emoji-pattern">
+                            <div class="emoji-container">
+                                {% for line in score.emoji_pattern.split('
+') %}
+                                <div class="emoji-row">{{ line }}</div>
+                                {% endfor %}
+                            </div>
                         </div>
                         {% endif %}
                     </div>
@@ -106,12 +94,14 @@
                         </thead>
                         <tbody>
                             {% for player in player_stats %}
-                            <tr {% if player.games_played >= 5 %}class="highlight"{% endif %}>
+                            {% if player.weekly_score is not none or player.used_scores > 0 %}
+                            <tr {% if player.used_scores >= 5 %}class="highlight"{% endif %}>
                                 <td>{{ player.name }}</td>
-                                <td class="weekly-score">{{ player.weekly_score if player.weekly_score else 'N/A' }}</td>
-                                <td class="used-scores">{{ player.used_scores if player.used_scores else 'N/A' }}</td>
-                                <td class="thrown-out">{{ player.thrown_out if player.thrown_out else 'N/A' }}</td>
+                                <td class="weekly-score">{{ player.weekly_score }}</td>
+                                <td class="used-scores">{{ player.used_scores }}</td>
+                                <td class="thrown-out">{{ player.thrown_out|join(', ') if player.thrown_out else 'None' }}</td>
                             </tr>
+                            {% endif %}
                             {% endfor %}
                         </tbody>
                     </table>
@@ -134,6 +124,7 @@
                         </thead>
                         <tbody>
                             {% for player in player_stats %}
+                                {% if player.games_played > 0 %}
                                 <tr {% if player.games_played >= 5 %}class="highlight"{% endif %}>
                                     <td>{{ player.name }}</td>
                                     <td>{{ player.games_played }}</td>
@@ -141,6 +132,7 @@
                                     <td>{{ player.perfect_games }}</td>
                                     <td>{{ player.success_rate }}%</td>
                                 </tr>
+                                {% endif %}
                             {% endfor %}
                         </tbody>
                     </table>

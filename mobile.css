@@ -21,8 +21,15 @@ h2 {
     padding: 0;
 }
 
-#latest h2 {
-    display: none; /* Hide h2 headers only on Latest tab */
+#latest h2:not(.date-header) {
+    display: none; /* Hide h2 headers only on Latest tab, except for date header */
+}
+
+.date-header {
+    display: block !important; /* Always show date header */
+    font-size: 12px;
+    margin: 5px 0;
+    text-align: center;
 }
 
 #weekly h2, #alltime h2 {

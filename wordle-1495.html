@@ -84,19 +84,13 @@
 <body>
     <header>
         <div class="container">
-            <h1 class="title">Wordle League</h1>
-            <p class="subtitle">Daily Wordle Score Tracking</p>
+            <h1 class="title" style="font-size: 24px; margin-bottom: 5px;">Wordle League</h1>
         </div>
     </header>
     
     <div class="container">
-        <div class="wordle-links">
+        <div class="wordle-links" style="margin-bottom: 10px;">
             <a href="index.html" class="wordle-link">Back to Latest</a>
-            
-                <a href="wordle-1495.html" class="wordle-link current">
-                    #1495
-                </a>
-            
         </div>
         
         <div class="tabs">
@@ -106,7 +100,7 @@
         </div>
         
         <div id="latest" class="tab-content active">
-            <h2>Wordle #1495 Scores</h2>
+            <h2>July 23, 2025 - #1495</h2>
             
             
                 <div class="score-card">
@@ -181,14 +175,36 @@
                         </tr>
                     </thead>
                     <tbody>
-                        
-                        <tr>
+                        <tr style="background-color: rgba(106, 170, 100, 0.2);">
                             <td>Brent</td>
+                            <td class="weekly-score">4</td>
+                            <td class="used-scores">4</td>
+                            <td class="thrown-out">None</td>
+                        </tr>
+                        <tr>
+                            <td>Evan</td>
                             <td class="weekly-score">No scores this week</td>
                             <td class="used-scores">No scores this week</td>
                             <td class="thrown-out">None</td>
                         </tr>
-                        
+                        <tr>
+                            <td>Joanna</td>
+                            <td class="weekly-score">No scores this week</td>
+                            <td class="used-scores">No scores this week</td>
+                            <td class="thrown-out">None</td>
+                        </tr>
+                        <tr>
+                            <td>Malia</td>
+                            <td class="weekly-score">No scores this week</td>
+                            <td class="used-scores">No scores this week</td>
+                            <td class="thrown-out">None</td>
+                        </tr>
+                        <tr>
+                            <td>Nanna</td>
+                            <td class="weekly-score">No scores this week</td>
+                            <td class="used-scores">No scores this week</td>
+                            <td class="thrown-out">None</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -209,7 +225,6 @@
                         </tr>
                     </thead>
                     <tbody>
-                        
                         <tr>
                             <td>Brent</td>
                             <td>1</td>
@@ -217,7 +232,34 @@
                             <td>0</td>
                             <td>100.0%</td>
                         </tr>
-                        
+                        <tr>
+                            <td>Evan</td>
+                            <td>0</td>
+                            <td>-</td>
+                            <td>0</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>Joanna</td>
+                            <td>0</td>
+                            <td>-</td>
+                            <td>0</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>Malia</td>
+                            <td>0</td>
+                            <td>-</td>
+                            <td>0</td>
+                            <td>-</td>
+                        </tr>
+                        <tr>
+                            <td>Nanna</td>
+                            <td>0</td>
+                            <td>-</td>
+                            <td>0</td>
+                            <td>-</td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -225,5 +267,28 @@
     </div>
     
     <script src="script.js"></script>
+    <script>
+        function openTab(tabId) {
+            // Hide all tab contents
+            var tabContents = document.getElementsByClassName("tab-content");
+            for (var i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove("active");
+            }
+            // Deactivate all tab buttons
+            var tabButtons = document.getElementsByClassName("tab-button");
+            for (var i = 0; i < tabButtons.length; i++) {
+                tabButtons[i].classList.remove("active");
+            }
+            // Show the selected tab content and activate its button
+            document.getElementById(tabId).classList.add("active");
+            // Find and activate the button for this tab
+            var buttons = document.querySelectorAll('.tab-button');
+            for (var i = 0; i < buttons.length; i++) {
+                if (buttons[i].getAttribute('onclick').includes(tabId)) {
+                    buttons[i].classList.add('active');
+                }
+            }
+        }
+    </script>
 </body>
 </html>

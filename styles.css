@@ -18,9 +18,10 @@ header {
     margin-bottom: 10px;
 }
 .title {
-    margin: 0;
+    margin: 0 auto;
     color: #6aaa64;
     font-size: 24px;
+    text-align: center;
 }
 .subtitle {
     margin: 5px 0 0;
@@ -51,7 +52,10 @@ header {
 .player-score {
     font-size: 1.1em;
     font-weight: bold;
-    padding: 3px 8px;
+    display: inline-block;
+}
+.player-score span {
+    padding: 2px 6px;
     border-radius: 3px;
     display: inline-block;
 }

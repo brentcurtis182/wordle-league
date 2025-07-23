@@ -34,8 +34,8 @@
 </head>
 <body>
     <header style="padding: 10px 0; margin-bottom: 10px;">
-        <div class="container" style="padding: 10px;">
-            <h1 class="title" style="font-size: 24px; margin-bottom: 0;">Wordle League</h1>
+        <div class="container" style="padding: 10px; text-align: center;">
+            <h1 class="title" style="font-size: 24px; margin-bottom: 0; text-align: center;">Wordle League</h1>
         </div>
     </header>
     
@@ -59,9 +59,9 @@
                         <div class="player-info">
                             <div class="player-name">{{ score.name }}</div>
                             {% if score.has_score %}
-                            <div class="player-score score-{{ score.score }}">{{ score.score }}/6</div>
+                            <div class="player-score"><span class="score-{{ score.score }}">{{ score.score }}</span>/6</div>
                             {% else %}
-                            <div class="player-score score-none">No Score</div>
+                            <div class="player-score"><span class="score-none">No Score</span></div>
                             {% endif %}
                         </div>
                         {% if score.has_score and score.emoji_pattern %}
@@ -116,8 +116,6 @@
                                 <th>Player</th>
                                 <th>Games</th>
                                 <th>Avg</th>
-                                <th>Perfect</th>
-                                <th>Success %</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -126,8 +124,6 @@
                                     <td>{{ player.name }}</td>
                                     <td>{{ player.games_played }}</td>
                                     <td>{{ player.average_score if player.average_score is not none else '-' }}</td>
-                                    <td>{{ player.perfect_games }}</td>
-                                    <td>{{ player.success_rate if player.games_played > 0 else '-' }}{% if player.games_played > 0 %}%{% endif %}</td>
                                 </tr>
                             {% endfor %}
                         </tbody>

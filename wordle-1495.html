@@ -100,9 +100,9 @@
         </div>
         
         <div class="tabs">
-            <button class="tab-button active" onclick="openTab('latest')">Latest Scores</button>
-            <button class="tab-button" onclick="openTab('weekly')">Weekly Totals</button>
-            <button class="tab-button" onclick="openTab('stats')">Player Stats</button>
+            <button class="tab-button active" data-tab="latest">Latest Scores</button>
+            <button class="tab-button" data-tab="weekly">Weekly Totals</button>
+            <button class="tab-button" data-tab="stats">Player Stats</button>
         </div>
         
         <div id="latest" class="tab-content active">
@@ -224,27 +224,6 @@
         </div>
     </div>
     
-    <script>
-        // Tab functionality
-        function openTab(tabId) {
-            // Hide all tab contents
-            var tabContents = document.getElementsByClassName("tab-content");
-            for (var i = 0; i < tabContents.length; i++) {
-                tabContents[i].classList.remove("active");
-            }
-            
-            // Deactivate all tab buttons
-            var tabButtons = document.getElementsByClassName("tab-button");
-            for (var i = 0; i < tabButtons.length; i++) {
-                tabButtons[i].classList.remove("active");
-            }
-            
-            // Show the selected tab content
-            document.getElementById(tabId).classList.add("active");
-            
-            // Activate the clicked button
-            event.currentTarget.classList.add("active");
-        }
-    </script>
+    <script src="script.js"></script>
 </body>
 </html>

@@ -18,6 +18,7 @@
         <div class="tab-container">
             <div class="tab-buttons">
                 <button class="tab-button active" data-tab="latest">Latest Scores</button>
+                <button class="tab-button" data-tab="weekly">Weekly Totals</button>
                 <button class="tab-button" data-tab="stats">Player Stats</button>
             </div>
             
@@ -88,6 +89,34 @@
                         
                     </div>
                 
+            </div>
+            
+            <div id="weekly" class="tab-content">
+                <h2>Weekly Totals</h2>
+                <p>Top 5 scores count toward weekly total (Monday-Sunday). Lower is better!</p>
+                
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Player</th>
+                                <th>Weekly Score</th>
+                                <th>Used Scores</th>
+                                <th>Thrown Out</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                            <tr>
+                                <td>Brent</td>
+                                <td class="weekly-score">No scores this week</td>
+                                <td class="used-scores">No scores this week</td>
+                                <td class="thrown-out">None</td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
             </div>
             
             <div id="stats" class="tab-content">

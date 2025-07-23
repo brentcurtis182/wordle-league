@@ -5,33 +5,100 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wordle League - Leaderboard</title>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Tab navigation */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        .tab-button {
+            background-color: #1a1a1b;
+            color: #d7dadc;
+            border: 1px solid #3a3a3c;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        .tab-button:hover {
+            background-color: #3a3a3c;
+        }
+        
+        .tab-button.active {
+            background-color: #538d4e;
+            color: white;
+        }
+        
+        /* Tab content */
+        .tab-content {
+            display: none;
+            width: 100%;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Tables */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 auto;
+        }
+        
+        th {
+            background-color: #538d4e;
+            color: white;
+            text-align: left;
+            padding: 12px;
+            position: sticky;
+            top: 0;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #3a3a3c;
+        }
+        
+        tr:nth-child(even) {
+            background-color: rgba(58, 58, 60, 0.3);
+        }
+        
+        .weekly-score { color: #6aaa64; font-weight: bold; }
+        .used-scores { color: #c9b458; }
+        .thrown-out { color: #86888a; font-style: italic; }
+    </style>
 </head>
 <body>
     <header>
         <div class="container">
-            <h1 class="title">Wordle League</h1>
+            <h1 class="title" style="font-size: 24px; margin-bottom: 5px;">Wordle League</h1>
             <p class="subtitle">Daily Wordle Score Tracking</p>
         </div>
     </header>
     
     <div class="container">
         <div class="tab-container">
-            <div class="tab-buttons">
+            <div class="tab-buttons tabs">
                 <button class="tab-button active" data-tab="latest">Latest Scores</button>
                 <button class="tab-button" data-tab="weekly">Weekly Totals</button>
-                <button class="tab-button" data-tab="stats">Player Stats</button>
+                <button class="tab-button" data-tab="stats">All-Time Stats</button>
             </div>
             
             <div id="latest" class="tab-content active">
-                <h2>Wordle #1495 Scores</h2>
-                
-                <div class="wordle-links">
-                    
-                        <a href="wordle-1495.html" class="wordle-link current">
-                            #1495
-                        </a>
-                    
-                </div>
+                <h2>July 23, 2025 - #1495</h2>
                 
                 
                     <div class="score-card">
@@ -106,21 +173,43 @@
                             </tr>
                         </thead>
                         <tbody>
-                            
                             <tr>
                                 <td>Brent</td>
+                                <td class="weekly-score">4</td>
+                                <td class="used-scores">4</td>
+                                <td class="thrown-out">None</td>
+                            </tr>
+                            <tr>
+                                <td>Evan</td>
                                 <td class="weekly-score">No scores this week</td>
                                 <td class="used-scores">No scores this week</td>
                                 <td class="thrown-out">None</td>
                             </tr>
-                            
+                            <tr>
+                                <td>Joanna</td>
+                                <td class="weekly-score">No scores this week</td>
+                                <td class="used-scores">No scores this week</td>
+                                <td class="thrown-out">None</td>
+                            </tr>
+                            <tr>
+                                <td>Malia</td>
+                                <td class="weekly-score">No scores this week</td>
+                                <td class="used-scores">No scores this week</td>
+                                <td class="thrown-out">None</td>
+                            </tr>
+                            <tr>
+                                <td>Nanna</td>
+                                <td class="weekly-score">No scores this week</td>
+                                <td class="used-scores">No scores this week</td>
+                                <td class="thrown-out">None</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
             
             <div id="stats" class="tab-content">
-                <h2>Player Statistics</h2>
+                <h2>All-Time Statistics</h2>
                 
                 <div class="card">
                     <table class="stats-table">
@@ -134,15 +223,41 @@
                             </tr>
                         </thead>
                         <tbody>
-                            
-                                <tr>
-                                    <td>Brent</td>
-                                    <td>1</td>
-                                    <td>4.0</td>
-                                    <td>0</td>
-                                    <td>100.0%</td>
-                                </tr>
-                            
+                            <tr>
+                                <td>Brent</td>
+                                <td>1</td>
+                                <td>4.0</td>
+                                <td>0</td>
+                                <td>100.0%</td>
+                            </tr>
+                            <tr>
+                                <td>Evan</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>Joanna</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>Malia</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                            </tr>
+                            <tr>
+                                <td>Nanna</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
+                            </tr>
                         </tbody>
                     </table>
                 </div>
@@ -151,5 +266,38 @@
     </div>
     
     <script src="script.js"></script>
+    <script>
+        function openTab(tabId) {
+            // Hide all tab contents
+            var tabContents = document.getElementsByClassName("tab-content");
+            for (var i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove("active");
+            }
+            // Deactivate all tab buttons
+            var tabButtons = document.getElementsByClassName("tab-button");
+            for (var i = 0; i < tabButtons.length; i++) {
+                tabButtons[i].classList.remove("active");
+            }
+            // Show the selected tab content and activate its button
+            document.getElementById(tabId).classList.add("active");
+            // Find and activate the button for this tab
+            var buttons = document.querySelectorAll('.tab-button');
+            for (var i = 0; i < buttons.length; i++) {
+                if (buttons[i].getAttribute('data-tab') === tabId) {
+                    buttons[i].classList.add('active');
+                }
+            }
+        }
+        
+        // Add event listeners to tab buttons
+        document.addEventListener('DOMContentLoaded', function() {
+            var tabButtons = document.querySelectorAll('.tab-button');
+            tabButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    openTab(this.getAttribute('data-tab'));
+                });
+            });
+        });
+    </script>
 </body>
 </html>

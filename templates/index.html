@@ -94,14 +94,12 @@
                         </thead>
                         <tbody>
                             {% for player in player_stats %}
-                            {% if player.weekly_score is not none or player.used_scores > 0 %}
                             <tr {% if player.used_scores >= 5 %}class="highlight"{% endif %}>
                                 <td>{{ player.name }}</td>
-                                <td class="weekly-score">{{ player.weekly_score }}</td>
+                                <td class="weekly-score">{{ player.weekly_score if player.weekly_score is not none else '-' }}</td>
                                 <td class="used-scores">{{ player.used_scores }}</td>
-                                <td class="thrown-out">{{ player.thrown_out|join(', ') if player.thrown_out else 'None' }}</td>
+                                <td class="thrown-out">{{ player.thrown_out|join(', ') if player.thrown_out else '-' }}</td>
                             </tr>
-                            {% endif %}
                             {% endfor %}
                         </tbody>
                     </table>
@@ -124,15 +122,13 @@
                         </thead>
                         <tbody>
                             {% for player in player_stats %}
-                                {% if player.games_played > 0 %}
                                 <tr {% if player.games_played >= 5 %}class="highlight"{% endif %}>
                                     <td>{{ player.name }}</td>
                                     <td>{{ player.games_played }}</td>
-                                    <td>{{ player.average_score }}</td>
+                                    <td>{{ player.average_score if player.average_score is not none else '-' }}</td>
                                     <td>{{ player.perfect_games }}</td>
-                                    <td>{{ player.success_rate }}%</td>
+                                    <td>{{ player.success_rate if player.games_played > 0 else '-' }}{% if player.games_played > 0 %}%{% endif %}</td>
                                 </tr>
-                                {% endif %}
                             {% endfor %}
                         </tbody>
                     </table>

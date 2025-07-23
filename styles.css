@@ -32,7 +32,7 @@ header {
 .score-card {
     background-color: #1a1a1b;
     border-radius: 5px;
-    padding: 12px;
+    padding: 10px;
     margin-bottom: 8px;
     display: flex;
     justify-content: space-between;
@@ -99,18 +99,19 @@ header {
 
 /* Emoji pattern styles */
 .emoji-pattern {
-    font-size: 0.7rem;
-    line-height: 1.2;
+    font-size: 0.6rem;
+    line-height: 1.1;
     display: flex;
     align-items: center;
     justify-content: flex-end;
+    margin-left: auto;
 }
 .emoji-row {
     white-space: nowrap;
     height: 1.2em;
 }
 .emoji-container {
-    height: 7.2em; /* Space for 6 rows */
+    height: 6.6em; /* Space for 6 rows */
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -175,10 +176,12 @@ tr.highlight {
     background-color: #1a1a1b;
     border: 1px solid #3a3a3c;
     border-radius: 5px;
-    padding: 8px 15px;
+    padding: 10px 20px;
     color: #d7dadc;
     cursor: pointer;
-    margin: 0 5px 5px 0;
+    margin: 0 8px 8px 0;
+    font-size: 1.1em;
+    font-weight: bold;
 }
 .tab-button.active {
     background-color: #6aaa64;
@@ -192,11 +195,15 @@ tr.highlight {
 }
 @media (max-width: 768px) {
     .score-card {
-        flex-direction: column;
-        align-items: flex-start;
+        flex-direction: row;
+        align-items: center;
+        padding: 8px;
     }
-    .score-display {
-        margin-top: 10px;
+    .player-info {
+        flex: 1;
+    }
+    .emoji-pattern {
+        font-size: 0.5rem;
     }
 }
         

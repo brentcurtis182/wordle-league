@@ -19,6 +19,9 @@
             background-color: #121213;
             color: #d7dadc;
             overflow-x: hidden;
+            margin: 0;
+            padding: 0;
+            position: relative;
         }
         
         /* Status styles */
@@ -62,9 +65,10 @@
         /* Container styles */
         .container {
             width: 100%;
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
+            max-width: 100%;
+            margin: 0;
+            padding: 10px;
+            min-height: 100vh;
         }
         
         /* Header styles */
@@ -225,14 +229,33 @@
             }
             
             .container {
-                padding: 10px;
+                padding: 5px;
                 max-width: 100%;
                 width: 100%;
+                margin: 0;
             }
             
             .tab-button {
-                padding: 8px 16px;
+                padding: 8px 12px;
                 font-size: 14px;
+                margin: 0 2px 5px;
+            }
+            
+            h1 {
+                font-size: 22px;
+                margin-top: 5px;
+                margin-bottom: 10px;
+            }
+            
+            h2 {
+                font-size: 18px;
+                margin-top: 5px;
+                margin-bottom: 8px;
+            }
+            
+            p {
+                font-size: 14px;
+                margin-bottom: 8px;
             }
         }
         
@@ -240,24 +263,37 @@
             .player-card {
                 flex-direction: column;
                 align-items: flex-start;
+                padding: 10px;
+                margin-bottom: 10px;
             }
             
             .player-score {
-                margin-top: 10px;
+                margin-top: 8px;
+                align-self: flex-end;
             }
             
             h1 {
-                font-size: 24px;
+                font-size: 20px;
+                margin-top: 5px;
             }
             
             h2 {
-                font-size: 20px;
+                font-size: 18px;
             }
             
             .date-button {
-                padding: 6px 10px;
+                padding: 5px 8px;
                 font-size: 12px;
-                margin: 0 2px 4px;
+                margin: 0 1px 3px;
+            }
+            
+            .tabs {
+                margin-bottom: 10px;
+            }
+            
+            body {
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
             }
         }
     </style>
@@ -685,6 +721,11 @@
             if (window.parent && window.parent !== window) {
                 var height = document.body.scrollHeight;
                 window.parent.postMessage({ type: 'resize', height: height }, '*');
+                
+                // For Wix iframe API
+                if (window.Wix && typeof window.Wix.setHeight === 'function') {
+                    window.Wix.setHeight(height);
+                }
             }
         }
         

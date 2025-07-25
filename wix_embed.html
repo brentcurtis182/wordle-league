@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordle League - Leaderboard</title>
+    <style>
+        /* Embedded CSS from styles.css - Enhanced Design with Dark Theme */
+        body {
+            font-family: 'Roboto', 'Clear Sans', 'Helvetica Neue', Arial, sans-serif;
+            background-color: #121213;
+            color: #d7dadc;
+            margin: 0;
+            padding: 0;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        header {
+            background-color: #1a1a1b;
+            padding: 20px 0;
+            border-bottom: 1px solid #3a3a3c;
+            margin-bottom: 30px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+        }
+        h1, h2, h3 {
+            color: #ffffff;
+        }
+        .title {
+            font-size: 2.8rem;
+            font-weight: 700;
+            text-align: center;
+            margin: 0;
+            letter-spacing: -0.5px;
+            color: #ffffff;
+        }
+        .subtitle {
+            text-align: center;
+            color: #6aaa64;
+            margin-top: 5px;
+            font-size: 1.2rem;
+        }
+        .card {
+            background-color: #1a1a1b;
+            border: 1px solid #3a3a3c;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+        }
+        .score-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            margin-bottom: 15px;
+            background-color: #1a1a1b;
+            border: 1px solid #3a3a3c;
+            border-radius: 10px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+            transition: transform 0.2s;
+        }
+        
+        .score-card:hover {
+            transform: translateY(-3px);
+        }
+        .player-name {
+            font-weight: 500;
+            font-size: 1.3rem;
+            color: #d7dadc;
+        }
+        .score-1, .score-2 { color: #6aaa64; font-weight: bold; }
+        .score-3, .score-4 { color: #c9b458; font-weight: bold; }
+        .score-5, .score-6 { color: #86888a; font-weight: bold; }
+        .score-X { color: #dc3545; font-weight: bold; }
+        .score-none { color: #86888a; font-style: italic; }
+        .score-display {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .stats-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        .stats-table th, .stats-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #3a3a3c;
+        }
+        
+        .stats-table tr:nth-child(even) {
+            background-color: rgba(106, 170, 100, 0.1);
+        }
+        .stats-table th {
+            background-color: #538d4e;
+            color: white;
+            font-weight: 500;
+        }
+        .wordle-links {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .wordle-link {
+            background-color: #1a1a1b;
+            border: 1px solid #3a3a3c;
+            border-radius: 5px;
+            padding: 8px 12px;
+            color: #d7dadc;
+            text-decoration: none;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .wordle-link:hover {
+            background-color: #3a3a3c;
+            transform: translateY(-2px);
+        }
+        .current {
+            background-color: #6aaa64;
+            color: #ffffff;
+            border-color: #6aaa64;
+            box-shadow: 0 2px 4px rgba(106, 170, 100, 0.4);
+        }
+        .tab-container {
+            margin-bottom: 20px;
+        }
+        .tab-buttons {
+            display: flex;
+            margin-bottom: 20px;
+        }
+        .tab-button {
+            padding: 12px 24px;
+            background-color: #1a1a1b;
+            border: 1px solid #3a3a3c;
+            border-radius: 5px 5px 0 0;
+            color: #d7dadc;
+            cursor: pointer;
+            margin-right: 5px;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        .tab-button:hover {
+            background-color: #3a3a3c;
+        }
+        .tab-button.active {
+            background-color: #6aaa64;
+            color: #ffffff;
+            border-color: #6aaa64;
+            box-shadow: 0 -2px 5px rgba(0,0,0,0.1);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1 class="title">Wordle League</h1>
+            <p class="subtitle">Daily Wordle Score Tracking</p>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="tab-container">
+            <div class="tab-buttons">
+                <button class="tab-button active" data-tab="latest">Latest Scores</button>
+                <button class="tab-button" data-tab="stats">Player Stats</button>
+            </div>
+            
+            <div id="latest" class="tab-content active">
+                <h2>Wordle #1496 Scores</h2>
+                
+                <div class="wordle-links">
+                    
+                    <a href="#1496" class="wordle-link current">#1496</a>
+                    
+                    <a href="#1495" class="wordle-link ">#1495</a>
+                    
+                    <a href="#1494" class="wordle-link ">#1494</a>
+                    
+                </div>
+                
+                <div id="1496">
+                    
+                    <div class="score-card">
+                        <div class="player-info">
+                            <div class="player-name">Joanna</div>
+                        </div>
+                        
+                        <div class="score-2 score-display">
+                            2/6
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="score-card">
+                        <div class="player-info">
+                            <div class="player-name">Unknown (1212)</div>
+                        </div>
+                        
+                        <div class="score-2 score-display">
+                            2/6
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="score-card">
+                        <div class="player-info">
+                            <div class="player-name">Evan</div>
+                        </div>
+                        
+                        <div class="score-6 score-display">
+                            6/6
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="score-card">
+                        <div class="player-info">
+                            <div class="player-name">Brent</div>
+                        </div>
+                        
+                        <div class="score-X score-display">
+                            X/6
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="score-card">
+                        <div class="player-info">
+                            <div class="player-name">Malia</div>
+                        </div>
+                        
+                        <div class="score-none score-display">
+                            No Score Posted
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="score-card">
+                        <div class="player-info">
+                            <div class="player-name">Nanna</div>
+                        </div>
+                        
+                        <div class="score-none score-display">
+                            No Score Posted
+                        </div>
+                        
+                    </div>
+                    
+                    <div class="score-card">
+                        <div class="player-info">
+                            <div class="player-name">Unknown (5)</div>
+                        </div>
+                        
+                        <div class="score-none score-display">
+                            No Score Posted
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+            </div>
+            
+            <div id="stats" class="tab-content">
+                <h2>Player Statistics</h2>
+                
+                <div class="card">
+                    <table class="stats-table">
+                        <thead>
+                            <tr>
+                                <th>Player</th>
+                                <th>Games</th>
+                                <th>Avg Score</th>
+                                <th>Perfect Games</th>
+                                <th>Success Rate</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            
+                            <tr>
+                                <td>Brent</td>
+                                <td>3</td>
+                                <td>4.3</td>
+                                <td>0</td>
+                                <td>66.7%</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>Evan</td>
+                                <td>3</td>
+                                <td>4.7</td>
+                                <td>0</td>
+                                <td>100.0%</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>Joanna</td>
+                                <td>3</td>
+                                <td>3.3</td>
+                                <td>0</td>
+                                <td>100.0%</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>Malia</td>
+                                <td>0</td>
+                                <td>0.0</td>
+                                <td>0</td>
+                                <td>0.0%</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>Nanna</td>
+                                <td>0</td>
+                                <td>0.0</td>
+                                <td>0</td>
+                                <td>0.0%</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>Unknown (1212)</td>
+                                <td>1</td>
+                                <td>2.0</td>
+                                <td>0</td>
+                                <td>100.0%</td>
+                            </tr>
+                            
+                            <tr>
+                                <td>Unknown (5)</td>
+                                <td>1</td>
+                                <td>4.0</td>
+                                <td>0</td>
+                                <td>100.0%</td>
+                            </tr>
+                            
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Embedded JavaScript from script.js
+        document.addEventListener('DOMContentLoaded', function() {
+            // Tab functionality
+            const tabButtons = document.querySelectorAll('.tab-button');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const tabId = button.getAttribute('data-tab');
+                    
+                    // Remove active class from all buttons and contents
+                    tabButtons.forEach(btn => btn.classList.remove('active'));
+                    tabContents.forEach(content => content.classList.remove('active'));
+                    
+                    // Add active class to current button and content
+                    button.classList.add('active');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+            
+            // Handle Wordle puzzle navigation
+            const wordleLinks = document.querySelectorAll('.wordle-link');
+            wordleLinks.forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const puzzleId = link.getAttribute('href').substring(1);
+                    
+                    // Here you would typically load the data for that puzzle
+                    // For this demo, we'll just update the heading
+                    document.querySelector('#latest h2').textContent = `Wordle #${puzzleId} Scores`;
+                    
+                    // Update active link
+                    wordleLinks.forEach(l => l.classList.remove('current'));
+                    link.classList.add('current');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

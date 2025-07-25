@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordle League Leaderboard</title>
+    <style>
+        /* Reset and base styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            height: 100%;
+            width: 100%;
+            font-family: Arial, sans-serif;
+            background-color: #121213;
+            color: #d7dadc;
+            overflow-x: hidden;
+        }
+        
+        /* Container styles */
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        /* Header styles */
+        h1, h2 {
+            text-align: center;
+            margin-bottom: 15px;
+            color: white;
+        }
+        
+        p {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        
+        /* Tab navigation */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        .tab-button {
+            background-color: #1a1a1b;
+            color: #d7dadc;
+            border: 1px solid #3a3a3c;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        .tab-button:hover {
+            background-color: #3a3a3c;
+        }
+        
+        .tab-button.active {
+            background-color: #538d4e;
+            color: white;
+        }
+        
+        /* Tab content */
+        .tab-content {
+            display: none;
+            width: 100%;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Date navigation */
+        .date-nav {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        .date-button {
+            background-color: #1a1a1b;
+            color: #d7dadc;
+            border: 1px solid #3a3a3c;
+            padding: 8px 12px;
+            margin: 3px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        
+        .date-button:hover {
+            background-color: #3a3a3c;
+        }
+        
+        .date-button.active {
+            background-color: #538d4e;
+            color: white;
+        }
+        
+        /* Player scores */
+        .player-list {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .player-card {
+            background-color: #1a1a1b;
+            border: 1px solid #3a3a3c;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .player-name {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        
+        .player-score {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .score-1, .score-2 { color: #6aaa64; }
+        .score-3, .score-4 { color: #c9b458; }
+        .score-5, .score-6 { color: #86888a; }
+        .score-X { color: #dc3545; }
+        .score-none { color: #86888a; font-style: italic; }
+        
+        /* Tables */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 auto;
+        }
+        
+        th {
+            background-color: #538d4e;
+            color: white;
+            text-align: left;
+            padding: 12px;
+            position: sticky;
+            top: 0;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #3a3a3c;
+        }
+        
+        tr:nth-child(even) {
+            background-color: rgba(58, 58, 60, 0.3);
+        }
+        
+        .weekly-score { color: #6aaa64; font-weight: bold; }
+        .used-scores { color: #c9b458; }
+        .thrown-out { color: #86888a; font-style: italic; }
+        
+        /* Mobile adjustments */
+        @media (max-width: 768px) {
+            .container {
+                padding: 10px;
+            }
+            
+            .tab-button {
+                padding: 8px 15px;
+                font-size: 14px;
+            }
+            
+            .player-card {
+                padding: 10px;
+            }
+            
+            .player-name {
+                font-size: 16px;
+            }
+            
+            .player-score {
+                font-size: 18px;
+            }
+            
+            th, td {
+                padding: 8px;
+                font-size: 14px;
+            }
+        }
+        
+        @media (max-width: 480px) {
+            .player-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+            
+            .player-score {
+                margin-top: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Wordle League</h1>
+        
+        <div class="tabs">
+            <button class="tab-button active" onclick="openTab('latest')">Latest Scores</button>
+            <button class="tab-button" onclick="openTab('weekly')">Weekly Totals</button>
+            <button class="tab-button" onclick="openTab('stats')">Player Stats</button>
+        </div>
+        
+        <div id="latest" class="tab-content active">
+            <h2 id="daily-header">Wordle Daily Scores</h2>
+            
+            <div class="date-nav">
+                
+                <button class="date-button active" onclick="updateDate('N/A')">N/A</button>
+                
+            </div>
+            
+            <div class="player-list">
+                
+                <div class="player-card">
+                    <span class="player-name">Brent</span>
+                    
+                    <span class="player-score score-4">4/6</span>
+                    
+                </div>
+                
+                <div class="player-card">
+                    <span class="player-name">Joanna</span>
+                    
+                    <span class="player-score score-5">5/6</span>
+                    
+                </div>
+                
+                <div class="player-card">
+                    <span class="player-name">Evan</span>
+                    
+                    <span class="player-score score-none">No Score Posted</span>
+                    
+                </div>
+                
+                <div class="player-card">
+                    <span class="player-name">Malia</span>
+                    
+                    <span class="player-score score-none">No Score Posted</span>
+                    
+                </div>
+                
+                <div class="player-card">
+                    <span class="player-name">Nanna</span>
+                    
+                    <span class="player-score score-none">No Score Posted</span>
+                    
+                </div>
+                
+            </div>
+        </div>
+        
+        <div id="weekly" class="tab-content">
+            <h2>Weekly Totals</h2>
+            <p>Top 5 scores count toward weekly total (Monday-Sunday). Lower is better!</p>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Weekly Score</th>
+                            <th>Used Scores</th>
+                            <th>Thrown Out</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                        <tr>
+                            <td>Brent</td>
+                            <td class="weekly-score">4</td>
+                            <td class="used-scores">4</td>
+                            <td class="thrown-out">None</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>Joanna</td>
+                            <td class="weekly-score">5</td>
+                            <td class="used-scores">5</td>
+                            <td class="thrown-out">None</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>Evan</td>
+                            <td class="weekly-score">No scores this week</td>
+                            <td class="used-scores">No scores this week</td>
+                            <td class="thrown-out">None</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>Malia</td>
+                            <td class="weekly-score">No scores this week</td>
+                            <td class="used-scores">No scores this week</td>
+                            <td class="thrown-out">None</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>Nanna</td>
+                            <td class="weekly-score">No scores this week</td>
+                            <td class="used-scores">No scores this week</td>
+                            <td class="thrown-out">None</td>
+                        </tr>
+                        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="stats" class="tab-content">
+            <h2>Player Statistics</h2>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Games</th>
+                            <th>Avg</th>
+                            <th>Perfect</th>
+                            <th>Success %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                        <tr>
+                            <td>Brent</td>
+                            <td>1</td>
+                            <td>4.0</td>
+                            <td>0</td>
+                            <td>100.0%</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>Evan</td>
+                            <td>0</td>
+                            <td>0.0</td>
+                            <td>0</td>
+                            <td>0.0%</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>Joanna</td>
+                            <td>1</td>
+                            <td>5.0</td>
+                            <td>0</td>
+                            <td>100.0%</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>Malia</td>
+                            <td>0</td>
+                            <td>0.0</td>
+                            <td>0</td>
+                            <td>0.0%</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>Nanna</td>
+                            <td>0</td>
+                            <td>0.0</td>
+                            <td>0</td>
+                            <td>0.0%</td>
+                        </tr>
+                        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Tab functionality
+        function openTab(tabId) {
+            // Hide all tab contents
+            var tabContents = document.getElementsByClassName("tab-content");
+            for (var i = 0; i < tabContents.length; i++) {
+                tabContents[i].classList.remove("active");
+            }
+            
+            // Deactivate all tab buttons
+            var tabButtons = document.getElementsByClassName("tab-button");
+            for (var i = 0; i < tabButtons.length; i++) {
+                tabButtons[i].classList.remove("active");
+            }
+            
+            // Show the selected tab content
+            document.getElementById(tabId).classList.add("active");
+            
+            // Activate the clicked button
+            event.currentTarget.classList.add("active");
+            
+            // Notify parent frame of size change
+            notifyParentOfResize();
+        }
+        
+        // Date navigation
+        function updateDate(date) {
+            // Update header
+            document.getElementById("daily-header").textContent = "Wordle Daily Scores - " + date;
+            
+            // Update active button
+            var dateButtons = document.getElementsByClassName("date-button");
+            for (var i = 0; i < dateButtons.length; i++) {
+                dateButtons[i].classList.remove("active");
+                if (dateButtons[i].textContent === date) {
+                    dateButtons[i].classList.add("active");
+                }
+            }
+            
+            // In a real implementation, we would load scores for this date
+            // For now, we'll just update the header
+        }
+        
+        // Notify parent frame of size changes
+        function notifyParentOfResize() {
+            if (window.parent) {
+                window.parent.postMessage({
+                    type: 'setHeight',
+                    height: document.body.scrollHeight
+                }, '*');
+            }
+        }
+        
+        // Initialize
+        window.addEventListener('load', function() {
+            // Set initial date from first button
+            var dateButtons = document.getElementsByClassName("date-button");
+            if (dateButtons.length > 0) {
+                updateDate(dateButtons[0].textContent);
+            }
+            
+            // Notify parent of initial size
+            notifyParentOfResize();
+        });
+        
+        // Listen for resize events
+        window.addEventListener('resize', function() {
+            notifyParentOfResize();
+        });
+        
+        // Last updated timestamp
+        document.addEventListener('DOMContentLoaded', function() {
+            var now = new Date();
+            var footer = document.createElement('p');
+            footer.style.fontSize = '12px';
+            footer.style.color = '#86888a';
+            footer.style.textAlign = 'center';
+            footer.style.marginTop = '20px';
+            footer.textContent = 'Last updated: ' + now.toLocaleString();
+            document.querySelector('.container').appendChild(footer);
+        });
+    </script>
+</body>
+</html>

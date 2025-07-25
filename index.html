@@ -17,18 +17,23 @@
         
         .emoji-pattern {
             margin-left: 15px;
-            font-size: 0.7rem;
-            line-height: 1.2;
+            font-size: 0.6rem;
+            line-height: 0.9;
             display: inline-block;
+            letter-spacing: -0.1em;
+            font-family: monospace;
         }
         
         .emoji-row {
             white-space: nowrap;
-            height: 1.2em;
+            height: 0.9em;
+            margin: 0;
+            padding: 0;
+            display: block;
         }
         
         .emoji-container {
-            height: 7.2em; /* Space for 6 rows */
+            height: 5.4em; /* Space for 6 rows */
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -69,22 +74,8 @@
             </div>
             
             <div id="latest" class="tab-content active">
-                <h2 style="margin-top: 5px; margin-bottom: 10px; font-size: 16px; color: #6aaa64;">Wordle #1496 - July 24, 2025</h2>
+                <h2 style="margin-top: 5px; margin-bottom: 10px; font-size: 16px; color: #6aaa64; text-align: center;">Wordle #1496 - July 25, 2025</h2>
                 
-                <div class="wordle-links">
-                    <a href="index.html" class="wordle-link current">Latest</a>
-                    
-                        <a href="wordle-1496.html" class="wordle-link">#1496</a>
-                    
-                        <a href="wordle-1495.html" class="wordle-link">#1495</a>
-                    
-                        <a href="wordle-1495.html" class="wordle-link">#1495</a>
-                    
-                        <a href="wordle-1494.html" class="wordle-link">#1494</a>
-                    
-                        <a href="wordle-1494.html" class="wordle-link">#1494</a>
-                    
-                </div>
                 
                 
                     <div class="score-card">
@@ -97,17 +88,7 @@
                             
                         </div>
                         
-                        <div class="emoji-pattern">
-                            
-                            
-                            <div class="emoji-row">🟩🟩⬛⬛⬛</div>
-                            
-                            
-                            
-                            <div class="emoji-row">🟩🟩🟩🟩🟩</div>
-                            
-                            
-                        </div>
+                        <div class="emoji-pattern"><div class="emoji-row">⬛⬛🟩⬛🟩</div><div class="emoji-row">🟩🟩🟩🟩🟩</div></div>
                         
 
                     </div>
@@ -122,33 +103,7 @@
                             
                         </div>
                         
-                        <div class="emoji-pattern">
-                            
-                            
-                            <div class="emoji-row">🟩⬛⬛⬛⬛</div>
-                            
-                            
-                            
-                            <div class="emoji-row">🟨🟩⬛⬛⬛</div>
-                            
-                            
-                            
-                            <div class="emoji-row">🟩🟩⬛⬛⬛</div>
-                            
-                            
-                            
-                            <div class="emoji-row">🟩🟩⬛⬛⬛</div>
-                            
-                            
-                            
-                            <div class="emoji-row">🟩🟩🟩⬛⬛</div>
-                            
-                            
-                            
-                            <div class="emoji-row">🟩🟩🟩🟩🟩</div>
-                            
-                            
-                        </div>
+                        <div class="emoji-pattern"><div class="emoji-row">⬛⬛⬛⬛🟩</div><div class="emoji-row">⬛🟨⬛⬛🟩</div><div class="emoji-row">⬛⬛🟩⬛🟩</div><div class="emoji-row">⬛⬛🟩⬛🟩</div><div class="emoji-row">⬛⬛🟩🟩🟩</div><div class="emoji-row">🟩🟩🟩🟩🟩</div></div>
                         
 
                     </div>
@@ -163,33 +118,7 @@
                             
                         </div>
                         
-                        <div class="emoji-pattern">
-                            
-                            
-                            <div class="emoji-row">🟩🟩⬛⬛⬛</div>
-                            
-                            
-                            
-                            <div class="emoji-row">🟩🟩⬛⬛⬛</div>
-                            
-                            
-                            
-                            <div class="emoji-row">🟨🟨🟩⬛⬛</div>
-                            
-                            
-                            
-                            <div class="emoji-row">🟨🟩🟨⬛⬛</div>
-                            
-                            
-                            
-                            <div class="emoji-row">⬛⬛⬛⬛⬛</div>
-                            
-                            
-                            
-                            <div class="emoji-row">⬛⬛⬛⬛⬛</div>
-                            
-                            
-                        </div>
+                        <div class="emoji-pattern"><div class="emoji-row">⬛🟩⬛⬛🟩</div><div class="emoji-row">⬛🟩⬛⬛🟩</div><div class="emoji-row">⬛⬛⬛⬛⬛</div><div class="emoji-row">⬛🟨🟨⬛🟩</div><div class="emoji-row">🟨🟩⬛🟨⬛</div><div class="emoji-row">⬛⬛🟨🟨⬛</div></div>
                         
 
                     </div>
@@ -220,8 +149,8 @@
             
             <div id="weekly" class="tab-content">
                 <h2 style="margin-top: 5px; margin-bottom: 10px;">Weekly Totals</h2>
-                <p style="margin-top: 0; margin-bottom: 5px;">Top 5 scores count toward weekly total (Monday-Sunday). Lower is better!</p>
-                <p style="margin-top: 0; margin-bottom: 10px; font-size: 0.9em; font-style: italic;">Failed attempts (X/6) are tracked separately and don't count toward games played or weekly score.</p>
+                <p style="margin-top: 0; margin-bottom: 5px;">Top 5 scores count toward weekly total (Monday-Sunday).</p>
+                <p style="margin-top: 0; margin-bottom: 10px; font-size: 0.9em;">At least 5 scores needed to compete for the week!</p>
                 
                 <div class="table-container">
                     <table>
@@ -237,14 +166,6 @@
                         <tbody>
                             
                             <tr >
-                                <td>Brent</td>
-                                <td class="weekly-score">6</td>
-                                <td class="used-scores">2</td>
-                                <td class="failed-attempts">1</td>
-                                <td class="thrown-out">-</td>
-                            </tr>
-                            
-                            <tr >
                                 <td>Joanna</td>
                                 <td class="weekly-score">10</td>
                                 <td class="used-scores">3</td>
@@ -257,6 +178,14 @@
                                 <td class="weekly-score">14</td>
                                 <td class="used-scores">3</td>
                                 <td class="failed-attempts">0</td>
+                                <td class="thrown-out">-</td>
+                            </tr>
+                            
+                            <tr >
+                                <td>Brent</td>
+                                <td class="weekly-score">6</td>
+                                <td class="used-scores">2</td>
+                                <td class="failed-attempts">1</td>
                                 <td class="thrown-out">-</td>
                             </tr>
                             
@@ -297,15 +226,15 @@
                         <tbody>
                             
                                 <tr >
-                                    <td>Brent</td>
-                                    <td>3</td>
-                                    <td>4.33</td>
-                                </tr>
-                            
-                                <tr >
                                     <td>Joanna</td>
                                     <td>3</td>
                                     <td>3.33</td>
+                                </tr>
+                            
+                                <tr >
+                                    <td>Brent</td>
+                                    <td>3</td>
+                                    <td>4.33</td>
                                 </tr>
                             
                                 <tr >

@@ -17,18 +17,23 @@
         
         .emoji-pattern {
             margin-left: 15px;
-            font-size: 0.7rem;
-            line-height: 1.2;
+            font-size: 0.6rem;
+            line-height: 0.9;
             display: inline-block;
+            letter-spacing: -0.1em;
+            font-family: monospace;
         }
         
         .emoji-row {
             white-space: nowrap;
-            height: 1.2em;
+            height: 0.9em;
+            margin: 0;
+            padding: 0;
+            display: block;
         }
         
         .emoji-container {
-            height: 7.2em; /* Space for 6 rows */
+            height: 5.4em; /* Space for 6 rows */
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -69,14 +74,8 @@
             </div>
             
             <div id="latest" class="tab-content active">
-                <h2 style="margin-top: 5px; margin-bottom: 10px; font-size: 16px; color: #6aaa64;">Wordle #{{ latest_wordle }} - {{ today_formatted }}</h2>
+                <h2 style="margin-top: 5px; margin-bottom: 10px; font-size: 16px; color: #6aaa64; text-align: center;">Wordle #{{ latest_wordle }} - {{ today_formatted }}</h2>
                 
-                <div class="wordle-links">
-                    <a href="index.html" class="wordle-link current">Latest</a>
-                    {% for wordle in recent_wordles[:5] %}
-                        <a href="wordle-{{ wordle.wordle_number }}.html" class="wordle-link">#{{ wordle.wordle_number }}</a>
-                    {% endfor %}
-                </div>
                 
                 {% for score in latest_scores %}
                     <div class="score-card">
@@ -92,12 +91,12 @@
                         </div>
                         {% if score.has_score and score.emoji_pattern %}
                         <div class="emoji-pattern">
-                            {% for line in score.emoji_pattern.split('
-') %}
-                            {% if line.strip() %}
-                            <div class="emoji-row">{{ line }}</div>
-                            {% endif %}
-                            {% endfor %}
+                            {%- for line in score.emoji_pattern.split('
+') -%}
+                                {%- if line.strip() and not 'Wordle' in line -%}
+                                <div class="emoji-row">{{ line.strip() }}</div>
+                                {%- endif -%}
+                            {%- endfor -%}
                         </div>
                         {% endif %}
 
@@ -107,8 +106,8 @@
             
             <div id="weekly" class="tab-content">
                 <h2 style="margin-top: 5px; margin-bottom: 10px;">Weekly Totals</h2>
-                <p style="margin-top: 0; margin-bottom: 5px;">Top 5 scores count toward weekly total (Monday-Sunday). Lower is better!</p>
-                <p style="margin-top: 0; margin-bottom: 10px; font-size: 0.9em; font-style: italic;">Failed attempts (X/6) are tracked separately and don't count toward games played or weekly score.</p>
+                <p style="margin-top: 0; margin-bottom: 5px;">Top 5 scores count toward weekly total (Monday-Sunday).</p>
+                <p style="margin-top: 0; margin-bottom: 10px; font-size: 0.9em;">At least 5 scores needed to compete for the week!</p>
                 
                 <div class="table-container">
                     <table>
@@ -150,7 +149,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for player in player_stats %}
+                            {% for player in all_time_stats %}
                                 <tr {% if (player.games_played + player.failed_attempts) >= 5 %}class="highlight"{% endif %}>
                                     <td>{{ player.name }}</td>
                                     <td>{{ player.games_played + player.failed_attempts }}</td>

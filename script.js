@@ -17,5 +17,15 @@ document.addEventListener('DOMContentLoaded', function() {
             document.getElementById(tabId).classList.add('active');
         });
     });
+    
+    // Style failed attempts cells based on their values
+    const failedCells = document.querySelectorAll('.failed-attempts');
+    failedCells.forEach(cell => {
+        if (cell.textContent === '0') {
+            cell.style.backgroundColor = 'transparent';
+            cell.style.color = '#d7dadc';
+            cell.style.fontWeight = 'normal';
+        }
+    });
 });
         

@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wordle League - Leaderboard</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <link rel="stylesheet" href="styles.css">
     <style>
         /* Emoji pattern styles */
@@ -30,6 +33,20 @@
             flex-direction: column;
             justify-content: center;
         }
+        
+        /* Failed attempts column styling */
+        .failed-attempts {
+            background-color: rgba(128, 58, 58, 0.2);
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+        
+        /* When failed attempts is 0, make it less prominent */
+        td.failed-attempts:empty {
+            background-color: transparent;
+            color: #d7dadc;
+            font-weight: normal;
+        }
     </style>
 </head>
 <body>
@@ -52,67 +69,129 @@
             </div>
             
             <div id="latest" class="tab-content active">
-                <h2 style="margin-top: 5px; margin-bottom: 10px;">Latest Scores</h2>
+                <h2 style="margin-top: 5px; margin-bottom: 10px; font-size: 16px; color: #6aaa64;">Wordle #1496 - July 24, 2025</h2>
                 
+                <div class="wordle-links">
+                    <a href="index.html" class="wordle-link current">Latest</a>
+                    
+                        <a href="wordle-1496.html" class="wordle-link">#1496</a>
+                    
+                        <a href="wordle-1495.html" class="wordle-link">#1495</a>
+                    
+                        <a href="wordle-1495.html" class="wordle-link">#1495</a>
+                    
+                        <a href="wordle-1494.html" class="wordle-link">#1494</a>
+                    
+                        <a href="wordle-1494.html" class="wordle-link">#1494</a>
+                    
+                </div>
                 
-                    <div class="score-card">
-                        <div class="player-info">
-                            <div class="player-name">Brent</div>
-                            
-                            <div class="player-score"><span class="score-4">4/6</span></div>
-                            
-                        </div>
-                        
-                        <div class="emoji-pattern">
-                            <div class="emoji-container">
-                                
-                                <div class="emoji-row">⬛⬛⬛🟨🟨</div>
-                                
-                                <div class="emoji-row">⬛⬛🟩🟩🟩</div>
-                                
-                                <div class="emoji-row">⬛🟩🟩🟩🟩</div>
-                                
-                                <div class="emoji-row">🟩🟩🟩🟩🟩</div>
-                                
-                            </div>
-                        </div>
-                        
-                    </div>
                 
                     <div class="score-card">
                         <div class="player-info">
                             <div class="player-name">Joanna</div>
                             
-                            <div class="player-score"><span class="score-5">5/6</span></div>
+                            <div class="player-score">
+                                <span class="score-2">2/6</span>
+                            </div>
                             
                         </div>
                         
                         <div class="emoji-pattern">
-                            <div class="emoji-container">
-                                
-                                <div class="emoji-row">⬛⬛🟨🟨🟨</div>
-                                
-                                <div class="emoji-row">🟨🟨🟨🟨⬛</div>
-                                
-                                <div class="emoji-row">🟨⬛🟩🟨🟨</div>
-                                
-                                <div class="emoji-row">⬛🟩🟩🟩🟩</div>
-                                
-                                <div class="emoji-row">🟩🟩🟩🟩🟩</div>
-                                
-                            </div>
+                            
+                            
+                            <div class="emoji-row">🟩🟩⬛⬛⬛</div>
+                            
+                            
+                            
+                            <div class="emoji-row">🟩🟩🟩🟩🟩</div>
+                            
+                            
                         </div>
                         
+
                     </div>
                 
                     <div class="score-card">
                         <div class="player-info">
                             <div class="player-name">Evan</div>
                             
-                            <div class="player-score"><span class="score-none">No Score</span></div>
+                            <div class="player-score">
+                                <span class="score-6">6/6</span>
+                            </div>
                             
                         </div>
                         
+                        <div class="emoji-pattern">
+                            
+                            
+                            <div class="emoji-row">🟩⬛⬛⬛⬛</div>
+                            
+                            
+                            
+                            <div class="emoji-row">🟨🟩⬛⬛⬛</div>
+                            
+                            
+                            
+                            <div class="emoji-row">🟩🟩⬛⬛⬛</div>
+                            
+                            
+                            
+                            <div class="emoji-row">🟩🟩⬛⬛⬛</div>
+                            
+                            
+                            
+                            <div class="emoji-row">🟩🟩🟩⬛⬛</div>
+                            
+                            
+                            
+                            <div class="emoji-row">🟩🟩🟩🟩🟩</div>
+                            
+                            
+                        </div>
+                        
+
+                    </div>
+                
+                    <div class="score-card">
+                        <div class="player-info">
+                            <div class="player-name">Brent</div>
+                            
+                            <div class="player-score">
+                                <span class="score-X">X/6</span>
+                            </div>
+                            
+                        </div>
+                        
+                        <div class="emoji-pattern">
+                            
+                            
+                            <div class="emoji-row">🟩🟩⬛⬛⬛</div>
+                            
+                            
+                            
+                            <div class="emoji-row">🟩🟩⬛⬛⬛</div>
+                            
+                            
+                            
+                            <div class="emoji-row">🟨🟨🟩⬛⬛</div>
+                            
+                            
+                            
+                            <div class="emoji-row">🟨🟩🟨⬛⬛</div>
+                            
+                            
+                            
+                            <div class="emoji-row">⬛⬛⬛⬛⬛</div>
+                            
+                            
+                            
+                            <div class="emoji-row">⬛⬛⬛⬛⬛</div>
+                            
+                            
+                        </div>
+                        
+
                     </div>
                 
                     <div class="score-card">
@@ -123,6 +202,7 @@
                             
                         </div>
                         
+
                     </div>
                 
                     <div class="score-card">
@@ -133,13 +213,15 @@
                             
                         </div>
                         
+
                     </div>
                 
             </div>
             
             <div id="weekly" class="tab-content">
                 <h2 style="margin-top: 5px; margin-bottom: 10px;">Weekly Totals</h2>
-                <p style="margin-top: 0; margin-bottom: 10px;">Top 5 scores count toward weekly total (Monday-Sunday). Lower is better!</p>
+                <p style="margin-top: 0; margin-bottom: 5px;">Top 5 scores count toward weekly total (Monday-Sunday). Lower is better!</p>
+                <p style="margin-top: 0; margin-bottom: 10px; font-size: 0.9em; font-style: italic;">Failed attempts (X/6) are tracked separately and don't count toward games played or weekly score.</p>
                 
                 <div class="table-container">
                     <table>
@@ -148,6 +230,7 @@
                                 <th>Player</th>
                                 <th>Weekly Score</th>
                                 <th>Used Scores</th>
+                                <th>Failed</th>
                                 <th>Thrown Out</th>
                             </tr>
                         </thead>
@@ -155,22 +238,25 @@
                             
                             <tr >
                                 <td>Brent</td>
-                                <td class="weekly-score">4</td>
-                                <td class="used-scores">1</td>
+                                <td class="weekly-score">6</td>
+                                <td class="used-scores">2</td>
+                                <td class="failed-attempts">1</td>
                                 <td class="thrown-out">-</td>
                             </tr>
                             
                             <tr >
                                 <td>Joanna</td>
-                                <td class="weekly-score">5</td>
-                                <td class="used-scores">1</td>
+                                <td class="weekly-score">10</td>
+                                <td class="used-scores">3</td>
+                                <td class="failed-attempts">0</td>
                                 <td class="thrown-out">-</td>
                             </tr>
                             
                             <tr >
                                 <td>Evan</td>
-                                <td class="weekly-score">-</td>
-                                <td class="used-scores">0</td>
+                                <td class="weekly-score">14</td>
+                                <td class="used-scores">3</td>
+                                <td class="failed-attempts">0</td>
                                 <td class="thrown-out">-</td>
                             </tr>
                             
@@ -178,6 +264,7 @@
                                 <td>Malia</td>
                                 <td class="weekly-score">-</td>
                                 <td class="used-scores">0</td>
+                                <td class="failed-attempts">0</td>
                                 <td class="thrown-out">-</td>
                             </tr>
                             
@@ -185,6 +272,7 @@
                                 <td>Nanna</td>
                                 <td class="weekly-score">-</td>
                                 <td class="used-scores">0</td>
+                                <td class="failed-attempts">0</td>
                                 <td class="thrown-out">-</td>
                             </tr>
                             
@@ -195,6 +283,7 @@
             
             <div id="stats" class="tab-content">
                 <h2 style="margin-top: 5px; margin-bottom: 10px;">All-Time Stats</h2>
+                <p style="margin-top: 0; margin-bottom: 10px; font-size: 0.9em; font-style: italic;">Average includes all games. Failed attempts (X/6) count as 7 in the average calculation.</p>
                 
                 <div class="table-container">
                     <table>
@@ -209,20 +298,20 @@
                             
                                 <tr >
                                     <td>Brent</td>
-                                    <td>1</td>
-                                    <td>4.0</td>
+                                    <td>3</td>
+                                    <td>4.33</td>
                                 </tr>
                             
                                 <tr >
                                     <td>Joanna</td>
-                                    <td>1</td>
-                                    <td>5.0</td>
+                                    <td>3</td>
+                                    <td>3.33</td>
                                 </tr>
                             
                                 <tr >
                                     <td>Evan</td>
-                                    <td>0</td>
-                                    <td>-</td>
+                                    <td>3</td>
+                                    <td>4.67</td>
                                 </tr>
                             
                                 <tr >

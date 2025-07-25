@@ -131,7 +131,7 @@
         </div>
         
         <div id="latest" class="tab-content active">
-            <h2>Wordle #{{ wordle_number }} Scores</h2>
+            <h2>Wordle #{{ wordle_number }} - {{ today_date }}</h2>
             
             {% for score in scores %}
                 <div class="score-card">
@@ -140,7 +140,17 @@
                     </div>
                     {% if score.has_score %}
                     <div class="score-{{ score.score }} score-display">
-                        {{ score.score }}/6
+                        <div>{{ score.score }}/6</div>
+                        {% if score.emoji_pattern %}
+                        <div class="emoji-pattern">
+                            {% for line in score.emoji_pattern.split('
+') %}
+                            {% if line %}
+                            <div class="emoji-row">{{ line }}</div>
+                            {% endif %}
+                            {% endfor %}
+                        </div>
+                        {% endif %}
                     </div>
                     {% else %}
                     <div class="score-none score-display">
@@ -189,8 +199,6 @@
                             <th>Player</th>
                             <th>Games</th>
                             <th>Avg</th>
-                            <th>Perfect</th>
-                            <th>Success %</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -199,8 +207,6 @@
                             <td>{{ player.name }}</td>
                             <td>{{ player.games_played }}</td>
                             <td>{{ player.average_score }}</td>
-                            <td>{{ player.perfect_games }}</td>
-                            <td>{{ player.success_rate }}%</td>
                         </tr>
                         {% endfor %}
                     </tbody>

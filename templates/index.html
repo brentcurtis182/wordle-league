@@ -4,6 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Wordle League - Leaderboard</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
     <link rel="stylesheet" href="styles.css">
     <style>
         /* Emoji pattern styles */
@@ -30,6 +33,20 @@
             flex-direction: column;
             justify-content: center;
         }
+        
+        /* Failed attempts column styling */
+        .failed-attempts {
+            background-color: rgba(128, 58, 58, 0.2);
+            font-weight: bold;
+            color: #ff6b6b;
+        }
+        
+        /* When failed attempts is 0, make it less prominent */
+        td.failed-attempts:empty {
+            background-color: transparent;
+            color: #d7dadc;
+            font-weight: normal;
+        }
     </style>
 </head>
 <body>
@@ -52,35 +69,46 @@
             </div>
             
             <div id="latest" class="tab-content active">
-                <h2 style="margin-top: 5px; margin-bottom: 10px;">Latest Scores</h2>
+                <h2 style="margin-top: 5px; margin-bottom: 10px; font-size: 16px; color: #6aaa64;">Wordle #{{ latest_wordle }} - {{ today_formatted }}</h2>
+                
+                <div class="wordle-links">
+                    <a href="index.html" class="wordle-link current">Latest</a>
+                    {% for wordle in recent_wordles[:5] %}
+                        <a href="wordle-{{ wordle.wordle_number }}.html" class="wordle-link">#{{ wordle.wordle_number }}</a>
+                    {% endfor %}
+                </div>
                 
                 {% for score in latest_scores %}
                     <div class="score-card">
                         <div class="player-info">
                             <div class="player-name">{{ score.name }}</div>
                             {% if score.has_score %}
-                            <div class="player-score"><span class="score-{{ score.score }}">{{ score.score }}/6</span></div>
+                            <div class="player-score">
+                                <span class="score-{{ score.score }}">{{ score.score }}/6</span>
+                            </div>
                             {% else %}
                             <div class="player-score"><span class="score-none">No Score</span></div>
                             {% endif %}
                         </div>
                         {% if score.has_score and score.emoji_pattern %}
                         <div class="emoji-pattern">
-                            <div class="emoji-container">
-                                {% for line in score.emoji_pattern.split('
+                            {% for line in score.emoji_pattern.split('
 ') %}
-                                <div class="emoji-row">{{ line }}</div>
-                                {% endfor %}
-                            </div>
+                            {% if line.strip() %}
+                            <div class="emoji-row">{{ line }}</div>
+                            {% endif %}
+                            {% endfor %}
                         </div>
                         {% endif %}
+
                     </div>
                 {% endfor %}
             </div>
             
             <div id="weekly" class="tab-content">
                 <h2 style="margin-top: 5px; margin-bottom: 10px;">Weekly Totals</h2>
-                <p style="margin-top: 0; margin-bottom: 10px;">Top 5 scores count toward weekly total (Monday-Sunday). Lower is better!</p>
+                <p style="margin-top: 0; margin-bottom: 5px;">Top 5 scores count toward weekly total (Monday-Sunday). Lower is better!</p>
+                <p style="margin-top: 0; margin-bottom: 10px; font-size: 0.9em; font-style: italic;">Failed attempts (X/6) are tracked separately and don't count toward games played or weekly score.</p>
                 
                 <div class="table-container">
                     <table>
@@ -89,6 +117,7 @@
                                 <th>Player</th>
                                 <th>Weekly Score</th>
                                 <th>Used Scores</th>
+                                <th>Failed</th>
                                 <th>Thrown Out</th>
                             </tr>
                         </thead>
@@ -98,6 +127,7 @@
                                 <td>{{ player.name }}</td>
                                 <td class="weekly-score">{{ player.weekly_score if player.weekly_score is not none else '-' }}</td>
                                 <td class="used-scores">{{ player.used_scores }}</td>
+                                <td class="failed-attempts">{{ player.weekly_failed }}</td>
                                 <td class="thrown-out">{{ player.thrown_out|join(', ') if player.thrown_out else '-' }}</td>
                             </tr>
                             {% endfor %}
@@ -108,6 +138,7 @@
             
             <div id="stats" class="tab-content">
                 <h2 style="margin-top: 5px; margin-bottom: 10px;">All-Time Stats</h2>
+                <p style="margin-top: 0; margin-bottom: 10px; font-size: 0.9em; font-style: italic;">Average includes all games. Failed attempts (X/6) count as 7 in the average calculation.</p>
                 
                 <div class="table-container">
                     <table>
@@ -120,10 +151,10 @@
                         </thead>
                         <tbody>
                             {% for player in player_stats %}
-                                <tr {% if player.games_played >= 5 %}class="highlight"{% endif %}>
+                                <tr {% if (player.games_played + player.failed_attempts) >= 5 %}class="highlight"{% endif %}>
                                     <td>{{ player.name }}</td>
-                                    <td>{{ player.games_played }}</td>
-                                    <td>{{ player.average_score if player.average_score is not none else '-' }}</td>
+                                    <td>{{ player.games_played + player.failed_attempts }}</td>
+                                    <td>{{ player.all_time_average if player.all_time_average is not none else '-' }}</td>
                                 </tr>
                             {% endfor %}
                         </tbody>

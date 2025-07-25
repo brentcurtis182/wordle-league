@@ -17,26 +17,28 @@
         
         .emoji-pattern {
             margin-left: 15px;
-            font-size: 0.6rem;
-            line-height: 0.9;
+            font-size: 0.8rem;
+            line-height: 1.1;
             display: inline-block;
-            letter-spacing: -0.1em;
+            letter-spacing: 0;
             font-family: monospace;
+            text-align: right;
         }
         
         .emoji-row {
             white-space: nowrap;
-            height: 0.9em;
+            height: 1.1em;
             margin: 0;
             padding: 0;
             display: block;
         }
         
         .emoji-container {
-            height: 5.4em; /* Space for 6 rows */
+            height: auto;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            margin-left: auto;
         }
         
         /* Failed attempts column styling */
@@ -90,13 +92,15 @@
                             {% endif %}
                         </div>
                         {% if score.has_score and score.emoji_pattern %}
-                        <div class="emoji-pattern">
-                            {%- for line in score.emoji_pattern.split('
+                        <div class="emoji-container">
+                            <div class="emoji-pattern">
+                                {%- for line in score.emoji_pattern.split('
 ') -%}
-                                {%- if line.strip() and not 'Wordle' in line -%}
-                                <div class="emoji-row">{{ line.strip() }}</div>
-                                {%- endif -%}
-                            {%- endfor -%}
+                                    {%- if line.strip() and not 'Wordle' in line -%}
+                                    <div class="emoji-row">{{ line.strip() }}</div>
+                                    {%- endif -%}
+                                {%- endfor -%}
+                            </div>
                         </div>
                         {% endif %}
 

@@ -146,20 +146,6 @@
                         </tbody>
                     </table>
                 </div>
-                
-                <!-- Current week's Wordle links -->
-                <div style="margin-top: 20px; text-align: center;">
-                    <h3 style="margin-bottom: 10px; font-size: 14px; color: #d7dadc;">This Week's Wordles</h3>
-                    <div class="wordle-links" style="justify-content: center;">
-                        {% for wordle in current_week_wordles %}
-                            <a href="daily/wordle-{{ wordle.wordle_number }}.html" class="wordle-link">
-                                #{{ wordle.wordle_number }}
-                            </a>
-                        {% else %}
-                            <p style="color: #86888a; font-style: italic; font-size: 0.9em;">No Wordles played yet this week</p>
-                        {% endfor %}
-                    </div>
-                </div>
             </div>
             
             <div id="stats" class="tab-content">

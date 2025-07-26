@@ -97,7 +97,11 @@
                                 {%- for line in score.emoji_pattern.split('
 ') -%}
                                     {%- if line.strip() and not 'Wordle' in line -%}
+                                    {%- if 'emoji pattern detected' in line -%}
+                                    <div class="emoji-row">Score recorded for {{ score.name }}</div>
+                                    {%- else -%}
                                     <div class="emoji-row">{{ line.strip() }}</div>
+                                    {%- endif -%}
                                     {%- endif -%}
                                 {%- endfor -%}
                             </div>

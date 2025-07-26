@@ -101,13 +101,13 @@
                                         {%- if '⬛' in line or '⬜' in line or '🟨' in line or '🟩' in line -%}
                                             {%- set has_valid_emoji = true -%}
                                             <div class="emoji-row">{{ line.strip() }}</div>
-                                        {%- elif not 'emoji pattern detected' in line -%}
+                                        {%- elif not 'emoji pattern detected' in line and not 'Score recorded for' in line -%}
                                             <div class="emoji-row">{{ line.strip() }}</div>
                                         {%- endif -%}
                                     {%- endif -%}
                                 {%- endfor -%}
                                 {%- if not has_valid_emoji -%}
-                                    <div class="emoji-row">Score recorded for {{ score.name }}</div>
+                                    <!-- Removed 'Score recorded for [Name]' text -->
                                 {%- endif -%}
                             </div>
                         </div>

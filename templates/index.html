@@ -94,16 +94,21 @@
                         {% if score.has_score and score.emoji_pattern %}
                         <div class="emoji-container">
                             <div class="emoji-pattern">
+                                {%- set has_valid_emoji = false -%}
                                 {%- for line in score.emoji_pattern.split('
 ') -%}
                                     {%- if line.strip() and not 'Wordle' in line -%}
-                                    {%- if 'emoji pattern detected' in line -%}
-                                    <div class="emoji-row">Score recorded for {{ score.name }}</div>
-                                    {%- else -%}
-                                    <div class="emoji-row">{{ line.strip() }}</div>
-                                    {%- endif -%}
+                                        {%- if '⬛' in line or '⬜' in line or '🟨' in line or '🟩' in line -%}
+                                            {%- set has_valid_emoji = true -%}
+                                            <div class="emoji-row">{{ line.strip() }}</div>
+                                        {%- elif not 'emoji pattern detected' in line -%}
+                                            <div class="emoji-row">{{ line.strip() }}</div>
+                                        {%- endif -%}
                                     {%- endif -%}
                                 {%- endfor -%}
+                                {%- if not has_valid_emoji -%}
+                                    <div class="emoji-row">Score recorded for {{ score.name }}</div>
+                                {%- endif -%}
                             </div>
                         </div>
                         {% endif %}

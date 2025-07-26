@@ -174,8 +174,7 @@ tr.highlight {
 .tabs {
     display: flex;
     justify-content: center;
-    flex-wrap: wrap;
-    margin-bottom: 15px;
+    margin-bottom: 20px;
 }
 .tab-button {
     background-color: #1a1a1b;

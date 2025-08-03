@@ -1,5 +1,13 @@
 {
   "id": 1,
   "name": "Wordle Warriorz",
-  "scores": []
+  "scores": [
+    {
+      "wordle_number": 1506,
+      "name": "Brent",
+      "score": 5,
+      "emoji_pattern": "⬛🟩⬛⬛⬛\n🟨🟩⬛⬛⬛\n⬛🟩⬛🟩🟩\n⬛🟩🟩🟩🟩\n🟩🟩🟩🟩🟩",
+      "timestamp": "2025-08-03 10:26:28"
+    }
+  ]
 }

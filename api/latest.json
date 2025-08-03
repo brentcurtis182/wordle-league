@@ -1,5 +1,5 @@
 {
-  "update_time": "2025-08-02 23:04:06",
+  "update_time": "2025-08-02 23:17:40",
   "leagues": {
     "1": {
       "id": 1,
@@ -8,65 +8,472 @@
         {
           "wordle_number": 1505,
           "name": "Brent",
-          "score": 7,
-          "emoji_pattern": "⬛🟨⬛🟨⬛\n⬛⬛⬛🟨🟩\n⬛⬛🟩🟩🟩\n⬛🟩🟩🟩🟩\n⬛🟩🟩🟩🟩\n⬛🟩🟩🟩🟩",
-          "timestamp": "2025-08-02 19:49:29"
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-02 00:00:00"
         },
         {
           "wordle_number": 1505,
           "name": "Malia",
           "score": 4,
-          "emoji_pattern": "🟨⬛🟨⬛⬛\n⬛🟩⬛🟩🟩\n⬛🟩🟩🟩🟩\n🟩🟩🟩🟩🟩",
-          "timestamp": "2025-08-02 19:49:29"
+          "emoji_pattern": null,
+          "timestamp": "2025-08-02 00:00:00"
+        },
+        {
+          "wordle_number": 1505,
+          "name": "Evan",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-02 00:00:00"
+        },
+        {
+          "wordle_number": 1505,
+          "name": "Joanna",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-02 00:00:00"
         },
         {
           "wordle_number": 1505,
           "name": "Nanna",
-          "score": 3,
-          "emoji_pattern": "⬜⬜⬜⬜🟩\n⬜⬜⬜🟨🟩",
-          "timestamp": "2025-08-02 19:49:29"
-        },
-        {
-          "wordle_number": 1505,
-          "name": "Joanna",
-          "score": 5,
-          "emoji_pattern": "⬛⬛🟨🟨⬛\n⬛⬛🟩⬛🟨\n⬛🟩🟩🟩🟩\n⬛🟩🟩🟩🟩\n🟩🟩🟩🟩🟩",
-          "timestamp": "2025-08-02 19:49:28"
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-02 00:00:00"
         },
         {
           "wordle_number": 1504,
           "name": "Brent",
-          "score": 4,
-          "emoji_pattern": "⬛⬛⬛⬛⬛\n⬛🟨⬛🟨⬛\n⬛🟩🟩🟨⬛\n🟩🟩🟩🟩🟩",
-          "timestamp": "2025-08-02 19:49:28"
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-01 00:00:00"
         },
         {
           "wordle_number": 1504,
           "name": "Malia",
-          "score": 5,
-          "emoji_pattern": "🟨⬛⬛⬛⬛\n⬛🟩⬛🟨⬛\n🟩🟩🟩⬛⬛\n🟩🟩🟩⬛⬛\n🟩🟩🟩🟩🟩",
-          "timestamp": "2025-08-02 19:49:28"
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-01 00:00:00"
         },
         {
           "wordle_number": 1504,
           "name": "Evan",
-          "score": 5,
-          "emoji_pattern": "⬛🟩🟩⬛⬛\n⬛🟩🟩⬛⬛\n🟩🟩🟩⬛⬛\n🟩🟩🟩⬛⬛\n🟩🟩🟩🟩🟩",
-          "timestamp": "2025-08-02 19:49:28"
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-01 00:00:00"
         },
         {
           "wordle_number": 1504,
           "name": "Joanna",
           "score": 5,
-          "emoji_pattern": "⬛⬛🟨⬛⬛\n⬛🟨⬛⬛🟨\n🟨🟩⬛⬛🟩\n⬛🟩🟩⬛🟩\n🟩🟩🟩🟩🟩",
-          "timestamp": "2025-08-02 19:49:28"
+          "emoji_pattern": null,
+          "timestamp": "2025-08-01 00:00:00"
+        },
+        {
+          "wordle_number": 1504,
+          "name": "Nanna",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-01 00:00:00"
+        },
+        {
+          "wordle_number": 1503,
+          "name": "Brent",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-31 00:00:00"
+        },
+        {
+          "wordle_number": 1503,
+          "name": "Malia",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-31 00:00:00"
+        },
+        {
+          "wordle_number": 1503,
+          "name": "Evan",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-31 00:00:00"
+        },
+        {
+          "wordle_number": 1503,
+          "name": "Joanna",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-31 00:00:00"
+        },
+        {
+          "wordle_number": 1503,
+          "name": "Nanna",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-31 00:00:00"
+        },
+        {
+          "wordle_number": 1502,
+          "name": "Brent",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-30 00:00:00"
+        },
+        {
+          "wordle_number": 1502,
+          "name": "Malia",
+          "score": 6,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-30 00:00:00"
+        },
+        {
+          "wordle_number": 1502,
+          "name": "Evan",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-30 00:00:00"
+        },
+        {
+          "wordle_number": 1502,
+          "name": "Joanna",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-30 00:00:00"
+        },
+        {
+          "wordle_number": 1502,
+          "name": "Nanna",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-30 00:00:00"
+        },
+        {
+          "wordle_number": 1501,
+          "name": "Brent",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-29 00:00:00"
+        },
+        {
+          "wordle_number": 1501,
+          "name": "Malia",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-29 00:00:00"
+        },
+        {
+          "wordle_number": 1501,
+          "name": "Evan",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-29 00:00:00"
+        },
+        {
+          "wordle_number": 1501,
+          "name": "Joanna",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-29 00:00:00"
+        },
+        {
+          "wordle_number": 1501,
+          "name": "Nanna",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-29 00:00:00"
+        },
+        {
+          "wordle_number": 1500,
+          "name": "Brent",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-28 00:00:00"
+        },
+        {
+          "wordle_number": 1500,
+          "name": "Malia",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-28 00:00:00"
+        },
+        {
+          "wordle_number": 1500,
+          "name": "Evan",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-28 00:00:00"
+        },
+        {
+          "wordle_number": 1500,
+          "name": "Joanna",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-28 00:00:00"
+        },
+        {
+          "wordle_number": 1500,
+          "name": "Nanna",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-28 00:00:00"
         }
       ]
     },
     "2": {
       "id": 2,
       "name": "Wordle Gang",
-      "scores": []
+      "scores": [
+        {
+          "wordle_number": 1505,
+          "name": "Ana",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-02 00:00:00"
+        },
+        {
+          "wordle_number": 1505,
+          "name": "Kaylie",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-02 00:00:00"
+        },
+        {
+          "wordle_number": 1505,
+          "name": "Keith",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-02 00:00:00"
+        },
+        {
+          "wordle_number": 1505,
+          "name": "Rochelle",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-02 00:00:00"
+        },
+        {
+          "wordle_number": 1505,
+          "name": "Will",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-02 00:00:00"
+        },
+        {
+          "wordle_number": 1505,
+          "name": "Mylene",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-02 00:00:00"
+        },
+        {
+          "wordle_number": 1504,
+          "name": "Ana",
+          "score": 6,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-01 00:00:00"
+        },
+        {
+          "wordle_number": 1504,
+          "name": "Kaylie",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-01 00:00:00"
+        },
+        {
+          "wordle_number": 1504,
+          "name": "Keith",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-01 00:00:00"
+        },
+        {
+          "wordle_number": 1504,
+          "name": "Rochelle",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-01 00:00:00"
+        },
+        {
+          "wordle_number": 1504,
+          "name": "Will",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-01 00:00:00"
+        },
+        {
+          "wordle_number": 1504,
+          "name": "Mylene",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-01 00:00:00"
+        },
+        {
+          "wordle_number": 1503,
+          "name": "Ana",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-31 00:00:00"
+        },
+        {
+          "wordle_number": 1503,
+          "name": "Kaylie",
+          "score": 6,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-31 00:00:00"
+        },
+        {
+          "wordle_number": 1503,
+          "name": "Keith",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-31 00:00:00"
+        },
+        {
+          "wordle_number": 1503,
+          "name": "Rochelle",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-31 00:00:00"
+        },
+        {
+          "wordle_number": 1503,
+          "name": "Will",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-31 00:00:00"
+        },
+        {
+          "wordle_number": 1503,
+          "name": "Mylene",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-31 00:00:00"
+        },
+        {
+          "wordle_number": 1502,
+          "name": "Ana",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-30 00:00:00"
+        },
+        {
+          "wordle_number": 1502,
+          "name": "Kaylie",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-30 00:00:00"
+        },
+        {
+          "wordle_number": 1502,
+          "name": "Keith",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-30 00:00:00"
+        },
+        {
+          "wordle_number": 1502,
+          "name": "Rochelle",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-30 00:00:00"
+        },
+        {
+          "wordle_number": 1502,
+          "name": "Will",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-30 00:00:00"
+        },
+        {
+          "wordle_number": 1502,
+          "name": "Mylene",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-30 00:00:00"
+        },
+        {
+          "wordle_number": 1501,
+          "name": "Ana",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-29 00:00:00"
+        },
+        {
+          "wordle_number": 1501,
+          "name": "Kaylie",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-29 00:00:00"
+        },
+        {
+          "wordle_number": 1501,
+          "name": "Keith",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-29 00:00:00"
+        },
+        {
+          "wordle_number": 1501,
+          "name": "Rochelle",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-29 00:00:00"
+        },
+        {
+          "wordle_number": 1501,
+          "name": "Will",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-29 00:00:00"
+        },
+        {
+          "wordle_number": 1501,
+          "name": "Mylene",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-29 00:00:00"
+        },
+        {
+          "wordle_number": 1500,
+          "name": "Ana",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-28 00:00:00"
+        },
+        {
+          "wordle_number": 1500,
+          "name": "Kaylie",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-28 00:00:00"
+        },
+        {
+          "wordle_number": 1500,
+          "name": "Keith",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-28 00:00:00"
+        },
+        {
+          "wordle_number": 1500,
+          "name": "Rochelle",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-28 00:00:00"
+        },
+        {
+          "wordle_number": 1500,
+          "name": "Will",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-28 00:00:00"
+        },
+        {
+          "wordle_number": 1500,
+          "name": "Mylene",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-28 00:00:00"
+        }
+      ]
     },
     "3": {
       "id": 3,
@@ -75,72 +482,170 @@
         {
           "wordle_number": 1505,
           "name": "Vox",
-          "score": 7,
-          "emoji_pattern": "⬛🟨⬛🟨⬛\n⬛⬛⬛🟨🟩\n⬛⬛🟩🟩🟩\n⬛🟩🟩🟩🟩\n⬛🟩🟩🟩🟩\n⬛🟩🟩🟩🟩",
-          "timestamp": "2025-08-02 19:49:41"
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-02 00:00:00"
         },
         {
           "wordle_number": 1505,
+          "name": "Fuzwuz",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-02 00:00:00"
+        },
+        {
+          "wordle_number": 1505,
+          "name": "Pants",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-02 00:00:00"
+        },
+        {
+          "wordle_number": 1505,
+          "name": "Starslider",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-02 00:00:00"
+        },
+        {
+          "wordle_number": 1504,
+          "name": "Vox",
+          "score": 6,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-01 00:00:00"
+        },
+        {
+          "wordle_number": 1504,
+          "name": "Fuzwuz",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-01 00:00:00"
+        },
+        {
+          "wordle_number": 1504,
+          "name": "Pants",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-01 00:00:00"
+        },
+        {
+          "wordle_number": 1504,
+          "name": "Starslider",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-08-01 00:00:00"
+        },
+        {
+          "wordle_number": 1503,
+          "name": "Vox",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-31 00:00:00"
+        },
+        {
+          "wordle_number": 1503,
           "name": "Fuzwuz",
           "score": 6,
-          "emoji_pattern": "⬜⬜🟨🟩🟩\n⬜⬜⬜⬜⬜\n⬜🟩⬜🟩🟩\n⬜🟩🟩🟩🟩\n⬜🟩🟩🟩🟩\n🟩🟩🟩🟩🟩",
-          "timestamp": "2025-08-02 19:49:41"
+          "emoji_pattern": null,
+          "timestamp": "2025-07-31 00:00:00"
         },
         {
-          "wordle_number": 1505,
-          "name": "Starslider",
-          "score": 3,
-          "emoji_pattern": "🟨⬜⬜⬜🟨\n🟩🟩🟨🟨⬜\n🟩🟩🟩🟩🟩",
-          "timestamp": "2025-08-02 19:49:41"
-        },
-        {
-          "wordle_number": 1504,
-          "name": "Starslider",
-          "score": 5,
-          "emoji_pattern": "⬜⬜⬜⬜⬜\n⬜🟨🟨⬜⬜\n⬜⬜🟨🟨⬜\n⬜🟩⬜🟨🟨\n🟩🟩🟩🟩🟩",
-          "timestamp": "2025-08-02 19:49:41"
-        },
-        {
-          "wordle_number": 1504,
-          "name": "Vox",
+          "wordle_number": 1503,
+          "name": "Pants",
           "score": 4,
-          "emoji_pattern": "⬛⬛⬛⬛⬛\n⬛🟨⬛🟨⬛\n⬛🟩🟩🟨⬛\n🟩🟩🟩🟩🟩",
-          "timestamp": "2025-08-02 19:49:40"
-        },
-        {
-          "wordle_number": 1504,
-          "name": "Fuzwuz",
-          "score": 5,
-          "emoji_pattern": "⬜🟩⬜🟨⬜\n⬜🟩🟩⬜⬜\n⬜🟩🟩⬜⬜\n🟩🟩🟩⬜⬜\n🟩🟩🟩🟩🟩",
-          "timestamp": "2025-08-02 19:49:40"
-        },
-        {
-          "wordle_number": 1503,
-          "name": "Vox",
-          "score": 5,
-          "emoji_pattern": "⬛⬛🟩⬛⬛\n⬛🟨🟩⬛⬛\n⬛🟩🟩🟩🟩\n⬛🟩🟩🟩🟩\n🟩🟩🟩🟩🟩",
-          "timestamp": "2025-08-02 21:27:58"
-        },
-        {
-          "wordle_number": 1503,
-          "name": "Fuzwuz",
-          "score": 4,
-          "emoji_pattern": "⬜🟩⬜⬜⬜\n⬜🟩🟩🟨⬜\n🟩🟩🟩⬜⬜\n🟩🟩🟩🟩🟩",
-          "timestamp": "2025-08-02 19:49:40"
+          "emoji_pattern": null,
+          "timestamp": "2025-07-31 00:00:00"
         },
         {
           "wordle_number": 1503,
           "name": "Starslider",
-          "score": 3,
-          "emoji_pattern": "⬜⬜⬜🟨⬜\n⬜🟨🟩⬜⬜\n🟩🟩🟩🟩🟩",
-          "timestamp": "2025-08-02 19:49:40"
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-31 00:00:00"
         },
         {
           "wordle_number": 1502,
           "name": "Vox",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-30 00:00:00"
+        },
+        {
+          "wordle_number": 1502,
+          "name": "Fuzwuz",
           "score": 4,
-          "emoji_pattern": "🟨⬛⬛⬛⬛\n⬛⬛🟨🟨⬛\n⬛🟨🟩🟩⬛\n🟩🟩🟩🟩🟩",
-          "timestamp": "2025-08-02 19:49:40"
+          "emoji_pattern": null,
+          "timestamp": "2025-07-30 00:00:00"
+        },
+        {
+          "wordle_number": 1502,
+          "name": "Pants",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-30 00:00:00"
+        },
+        {
+          "wordle_number": 1502,
+          "name": "Starslider",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-30 00:00:00"
+        },
+        {
+          "wordle_number": 1501,
+          "name": "Vox",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-29 00:00:00"
+        },
+        {
+          "wordle_number": 1501,
+          "name": "Fuzwuz",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-29 00:00:00"
+        },
+        {
+          "wordle_number": 1501,
+          "name": "Pants",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-29 00:00:00"
+        },
+        {
+          "wordle_number": 1501,
+          "name": "Starslider",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-29 00:00:00"
+        },
+        {
+          "wordle_number": 1500,
+          "name": "Vox",
+          "score": 3,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-28 00:00:00"
+        },
+        {
+          "wordle_number": 1500,
+          "name": "Fuzwuz",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-28 00:00:00"
+        },
+        {
+          "wordle_number": 1500,
+          "name": "Pants",
+          "score": 4,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-28 00:00:00"
+        },
+        {
+          "wordle_number": 1500,
+          "name": "Starslider",
+          "score": 5,
+          "emoji_pattern": null,
+          "timestamp": "2025-07-28 00:00:00"
         }
       ]
     }

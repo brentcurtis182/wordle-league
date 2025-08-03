@@ -83,7 +83,7 @@
                     <div class="score-card">
                         <div class="player-info">
                             <div class="player-name">{{ score.name }}</div>
-                            {% if score.has_score %}
+                            {% if score.has_score and score.score != 'None' %}
                             <div class="player-score">
                                 <span class="score-{{ score.score }}">{{ score.score }}/6</span>
                             </div>
@@ -91,7 +91,7 @@
                             <div class="player-score"><span class="score-none">No Score</span></div>
                             {% endif %}
                         </div>
-                        {% if score.has_score %}
+                        {% if score.has_score and score.score != 'None' %}
                         <div class="emoji-container">
                             <div class="emoji-pattern">
                             {% if score.emoji_pattern %}
@@ -108,10 +108,8 @@
                                     {%- endif -%}
                                 {%- endfor -%}
                                 {%- if not has_valid_emoji -%}
-                                    <div class="emoji-row">{{ score.score }}/6</div>
+                                    <!-- Removed duplicate score display -->
                                 {%- endif -%}
-                            {% else %}
-                                <div class="emoji-row">{{ score.score }}/6</div>
                             {% endif %}
                             </div>
                         </div>

@@ -50,19 +50,19 @@
         }
         
         .tab-button {
-            background-color: #3a3a3c;
+            background-color: #1a1a1b;
             color: #d7dadc;
-            border: none;
+            border: 1px solid #3a3a3c;
             padding: 10px 20px;
-            margin: 0 5px 5px;
+            margin: 5px;
             cursor: pointer;
-            border-radius: 4px;
+            border-radius: 5px;
             font-size: 16px;
             transition: background-color 0.3s;
         }
         
         .tab-button:hover {
-            background-color: #565758;
+            background-color: #3a3a3c;
         }
         
         .tab-button.active {
@@ -73,50 +73,78 @@
         /* Tab content */
         .tab-content {
             display: none;
-            animation: fadeIn 0.5s;
+            width: 100%;
         }
         
         .tab-content.active {
             display: block;
         }
         
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
-        }
-        
         /* Date navigation */
         .date-nav {
             display: flex;
             justify-content: center;
-            align-items: center;
-            margin-bottom: 20px;
             flex-wrap: wrap;
+            margin-bottom: 20px;
         }
         
         .date-button {
-            background-color: #3a3a3c;
+            background-color: #1a1a1b;
             color: #d7dadc;
-            border: none;
-            padding: 8px 15px;
-            margin: 0 3px 5px;
+            border: 1px solid #3a3a3c;
+            padding: 8px 12px;
+            margin: 3px;
             cursor: pointer;
-            border-radius: 4px;
+            border-radius: 5px;
             font-size: 14px;
-            transition: background-color 0.3s;
         }
         
         .date-button:hover {
-            background-color: #565758;
+            background-color: #3a3a3c;
         }
         
         .date-button.active {
-            background-color: #b59f3b;
+            background-color: #538d4e;
             color: white;
         }
         
-        /* Table styles */
+        /* Player scores */
+        .player-list {
+            width: 100%;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .player-card {
+            background-color: #1a1a1b;
+            border: 1px solid #3a3a3c;
+            border-radius: 5px;
+            padding: 15px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .player-name {
+            font-size: 18px;
+            font-weight: 500;
+        }
+        
+        .player-score {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        
+        .score-1, .score-2 { color: #6aaa64; }
+        .score-3, .score-4 { color: #c9b458; }
+        .score-5, .score-6 { color: #86888a; }
+        .score-X { color: #dc3545; }
+        .score-none { color: #86888a; font-style: italic; }
+        
+        /* Tables */
         .table-container {
+            width: 100%;
             overflow-x: auto;
             margin-bottom: 20px;
         }
@@ -124,66 +152,57 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
-            background-color: #1a1a1b;
-        }
-        
-        th, td {
-            padding: 12px 15px;
-            text-align: left;
-            border-bottom: 1px solid #3a3a3c;
+            margin: 0 auto;
         }
         
         th {
-            background-color: #2a2a2b;
+            background-color: #538d4e;
             color: white;
-            font-weight: bold;
+            text-align: left;
+            padding: 12px;
+            position: sticky;
+            top: 0;
         }
         
-        tr:hover {
-            background-color: #2a2a2b;
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #3a3a3c;
         }
         
-        /* Player cards for mobile */
-        .player-cards {
-            display: none;
+        tr:nth-child(even) {
+            background-color: rgba(58, 58, 60, 0.3);
         }
         
-        .player-card {
-            background-color: #1a1a1b;
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            border-left: 4px solid #538d4e;
-        }
+        .weekly-score { color: #6aaa64; font-weight: bold; }
+        .used-scores { color: #c9b458; }
+        .thrown-out { color: #86888a; font-style: italic; }
         
-        .player-info {
-            flex: 1;
-        }
-        
-        .player-name {
-            font-weight: bold;
-            font-size: 18px;
-            margin-bottom: 5px;
-        }
-        
-        .player-score {
-            font-size: 24px;
-            font-weight: bold;
-            color: white;
-        }
-        
-        /* Responsive design */
+        /* Mobile adjustments */
         @media (max-width: 768px) {
-            .table-container {
-                display: none;
+            .container {
+                padding: 10px;
             }
             
-            .player-cards {
-                display: block;
+            .tab-button {
+                padding: 8px 15px;
+                font-size: 14px;
+            }
+            
+            .player-card {
+                padding: 10px;
+            }
+            
+            .player-name {
+                font-size: 16px;
+            }
+            
+            .player-score {
+                font-size: 18px;
+            }
+            
+            th, td {
+                padding: 8px;
+                font-size: 14px;
             }
         }
         
@@ -194,7 +213,7 @@
             }
             
             .player-score {
-                margin-top: 10px;
+                margin-top: 5px;
             }
         }
     </style>
@@ -206,101 +225,73 @@
         <div class="tabs">
             <button class="tab-button active" onclick="openTab('latest')">Latest Scores</button>
             <button class="tab-button" onclick="openTab('weekly')">Weekly Totals</button>
+            <button class="tab-button" onclick="openTab('stats')">Player Stats</button>
         </div>
         
         <div id="latest" class="tab-content active">
-            <h2>Latest Scores</h2>
-            <p>Lower is better!</p>
+            <h2 id="daily-header">Wordle Daily Scores</h2>
             
             <div class="date-nav">
-                <button class="date-button active" onclick="updateDate('2025-07-22')">Jul 22</button>
-                <button class="date-button" onclick="updateDate('2025-07-21')">Jul 21</button>
-                <button class="date-button" onclick="updateDate('2025-07-20')">Jul 20</button>
-                <button class="date-button" onclick="updateDate('2025-07-19')">Jul 19</button>
-                <button class="date-button" onclick="updateDate('2025-07-18')">Jul 18</button>
+                
+                <button class="date-button active" onclick="updateDate('07/22')">07/22</button>
+                
+                <button class="date-button " onclick="updateDate('07/21')">07/21</button>
+                
+                <button class="date-button " onclick="updateDate('07/20')">07/20</button>
+                
+                <button class="date-button " onclick="updateDate('07/19')">07/19</button>
+                
+                <button class="date-button " onclick="updateDate('07/18')">07/18</button>
+                
+                <button class="date-button " onclick="updateDate('07/17')">07/17</button>
+                
+                <button class="date-button " onclick="updateDate('07/16')">07/16</button>
+                
+                <button class="date-button " onclick="updateDate('07/15')">07/15</button>
+                
+                <button class="date-button " onclick="updateDate('07/14')">07/14</button>
+                
+                <button class="date-button " onclick="updateDate('07/13')">07/13</button>
+                
             </div>
             
-            <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Rank</th>
-                            <th>Player</th>
-                            <th>Score</th>
-                            <th>Pattern</th>
-                        </tr>
-                    </thead>
-                    <tbody id="latest-scores">
-                        <tr>
-                            <td>1</td>
-                            <td>Alice</td>
-                            <td>2</td>
-                            <td>🟩🟩🟩🟩🟩</td>
-                        </tr>
-                        <tr>
-                            <td>2</td>
-                            <td>Bob</td>
-                            <td>3</td>
-                            <td>⬛🟨🟩🟩🟩</td>
-                        </tr>
-                        <tr>
-                            <td>3</td>
-                            <td>Charlie</td>
-                            <td>4</td>
-                            <td>⬛⬛🟨🟩🟩</td>
-                        </tr>
-                        <tr>
-                            <td>4</td>
-                            <td>David</td>
-                            <td>4</td>
-                            <td>⬛🟨⬛🟩🟩</td>
-                        </tr>
-                        <tr>
-                            <td>5</td>
-                            <td>Eve</td>
-                            <td>5</td>
-                            <td>⬛⬛⬛🟨🟩</td>
-                        </tr>
-                    </tbody>
-                </table>
-            </div>
-            
-            <div class="player-cards">
+            <div class="player-list">
+                
                 <div class="player-card">
-                    <div class="player-info">
-                        <div class="player-name">1. Alice</div>
-                        <div class="player-pattern">🟩🟩🟩🟩🟩</div>
-                    </div>
-                    <div class="player-score">2</div>
+                    <span class="player-name">Brent</span>
+                    
+                    <span class="player-score score-none">No Score Posted</span>
+                    
                 </div>
+                
                 <div class="player-card">
-                    <div class="player-info">
-                        <div class="player-name">2. Bob</div>
-                        <div class="player-pattern">⬛🟨🟩🟩🟩</div>
-                    </div>
-                    <div class="player-score">3</div>
+                    <span class="player-name">Evan</span>
+                    
+                    <span class="player-score score-none">No Score Posted</span>
+                    
                 </div>
+                
                 <div class="player-card">
-                    <div class="player-info">
-                        <div class="player-name">3. Charlie</div>
-                        <div class="player-pattern">⬛⬛🟨🟩🟩</div>
-                    </div>
-                    <div class="player-score">4</div>
+                    <span class="player-name">Joanna</span>
+                    
+                    <span class="player-score score-none">No Score Posted</span>
+                    
                 </div>
+                
                 <div class="player-card">
-                    <div class="player-info">
-                        <div class="player-name">4. David</div>
-                        <div class="player-pattern">⬛🟨⬛🟩🟩</div>
-                    </div>
-                    <div class="player-score">4</div>
+                    <span class="player-name">Malia</span>
+                    
+                    <span class="player-score score-none">No Score Posted</span>
+                    
                 </div>
+                
                 <div class="player-card">
-                    <div class="player-info">
-                        <div class="player-name">5. Eve</div>
-                        <div class="player-pattern">⬛⬛⬛🟨🟩</div>
-                    </div>
-                    <div class="player-score">5</div>
+                    <span class="player-name">Nanna</span>
+                    
+                    <span class="player-score score-none">No Score Posted</span>
+                    
                 </div>
+                
             </div>
         </div>
         
@@ -312,89 +303,112 @@
                 <table>
                     <thead>
                         <tr>
-                            <th>Rank</th>
                             <th>Player</th>
-                            <th>Total</th>
-                            <th>Games</th>
-                            <th>Average</th>
+                            <th>Weekly Score</th>
+                            <th>Used Scores</th>
+                            <th>Thrown Out</th>
                         </tr>
                     </thead>
                     <tbody>
+                        
                         <tr>
-                            <td>1</td>
-                            <td>Alice</td>
-                            <td>15</td>
-                            <td>5</td>
-                            <td>3.0</td>
+                            <td>Brent</td>
+                            <td class="weekly-score">No scores this week</td>
+                            <td class="used-scores">No scores this week</td>
+                            <td class="thrown-out">None</td>
                         </tr>
+                        
                         <tr>
-                            <td>2</td>
-                            <td>Bob</td>
-                            <td>17</td>
-                            <td>5</td>
-                            <td>3.4</td>
+                            <td>Evan</td>
+                            <td class="weekly-score">No scores this week</td>
+                            <td class="used-scores">No scores this week</td>
+                            <td class="thrown-out">None</td>
                         </tr>
+                        
                         <tr>
-                            <td>3</td>
-                            <td>Charlie</td>
-                            <td>19</td>
-                            <td>5</td>
-                            <td>3.8</td>
+                            <td>Joanna</td>
+                            <td class="weekly-score">No scores this week</td>
+                            <td class="used-scores">No scores this week</td>
+                            <td class="thrown-out">None</td>
                         </tr>
+                        
                         <tr>
-                            <td>4</td>
-                            <td>David</td>
-                            <td>20</td>
-                            <td>5</td>
-                            <td>4.0</td>
+                            <td>Malia</td>
+                            <td class="weekly-score">No scores this week</td>
+                            <td class="used-scores">No scores this week</td>
+                            <td class="thrown-out">None</td>
                         </tr>
+                        
                         <tr>
-                            <td>5</td>
-                            <td>Eve</td>
-                            <td>22</td>
-                            <td>5</td>
-                            <td>4.4</td>
+                            <td>Nanna</td>
+                            <td class="weekly-score">No scores this week</td>
+                            <td class="used-scores">No scores this week</td>
+                            <td class="thrown-out">None</td>
                         </tr>
+                        
                     </tbody>
                 </table>
             </div>
+        </div>
+        
+        <div id="stats" class="tab-content">
+            <h2>Player Statistics</h2>
             
-            <div class="player-cards">
-                <div class="player-card">
-                    <div class="player-info">
-                        <div class="player-name">1. Alice</div>
-                        <div class="player-details">Games: 5 | Avg: 3.0</div>
-                    </div>
-                    <div class="player-score">15</div>
-                </div>
-                <div class="player-card">
-                    <div class="player-info">
-                        <div class="player-name">2. Bob</div>
-                        <div class="player-details">Games: 5 | Avg: 3.4</div>
-                    </div>
-                    <div class="player-score">17</div>
-                </div>
-                <div class="player-card">
-                    <div class="player-info">
-                        <div class="player-name">3. Charlie</div>
-                        <div class="player-details">Games: 5 | Avg: 3.8</div>
-                    </div>
-                    <div class="player-score">19</div>
-                </div>
-                <div class="player-card">
-                    <div class="player-info">
-                        <div class="player-name">4. David</div>
-                        <div class="player-details">Games: 5 | Avg: 4.0</div>
-                    </div>
-                    <div class="player-score">20</div>
-                </div>
-                <div class="player-card">
-                    <div class="player-info">
-                        <div class="player-name">5. Eve</div>
-                        <div class="player-details">Games: 5 | Avg: 4.4</div>
-                    </div>
-                    <div class="player-score">22</div>
-                </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Games</th>
+                            <th>Avg</th>
+                            <th>Perfect</th>
+                            <th>Success %</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                        <tr>
+                            <td>Brent</td>
+                            <td>0</td>
+                            <td>0.0</td>
+                            <td>0</td>
+                            <td>0.0%</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>Evan</td>
+                            <td>0</td>
+                            <td>0.0</td>
+                            <td>0</td>
+                            <td>0.0%</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>Joanna</td>
+                            <td>0</td>
+                            <td>0.0</td>
+                            <td>0</td>
+                            <td>0.0%</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>Malia</td>
+                            <td>0</td>
+                            <td>0.0</td>
+                            <td>0</td>
+                            <td>0.0%</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>Nanna</td>
+                            <td>0</td>
+                            <td>0.0</td>
+                            <td>0</td>
+                            <td>0.0%</td>
+                        </tr>
+                        
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -426,29 +440,29 @@
         
         // Date navigation
         function updateDate(date) {
-            // Update active state of date buttons
+            // Update header
+            document.getElementById("daily-header").textContent = "Wordle Daily Scores - " + date;
+            
+            // Update active button
             var dateButtons = document.getElementsByClassName("date-button");
             for (var i = 0; i < dateButtons.length; i++) {
                 dateButtons[i].classList.remove("active");
+                if (dateButtons[i].textContent === date) {
+                    dateButtons[i].classList.add("active");
+                }
             }
-            event.currentTarget.classList.add("active");
             
-            // In a real implementation, this would load data for the selected date
-            console.log("Loading data for: " + date);
-            
-            // For demo purposes, we're not actually loading new data
-            // This would typically involve an API call or data lookup
-            
-            // Notify parent frame of size change
-            notifyParentOfResize();
+            // In a real implementation, we would load scores for this date
+            // For now, we'll just update the header
         }
         
         // Notify parent frame of size changes
         function notifyParentOfResize() {
-            // This is used when embedded in an iframe
-            if (window.parent && window.parent !== window) {
-                var height = document.body.scrollHeight;
-                window.parent.postMessage({ type: 'resize', height: height }, '*');
+            if (window.parent) {
+                window.parent.postMessage({
+                    type: 'setHeight',
+                    height: document.body.scrollHeight
+                }, '*');
             }
         }
         
@@ -457,18 +471,28 @@
             // Set initial date from first button
             var dateButtons = document.getElementsByClassName("date-button");
             if (dateButtons.length > 0) {
-                var initialDate = dateButtons[0].getAttribute("onclick").match(/'([^']+)'/)[1];
-                console.log("Initial date: " + initialDate);
+                updateDate(dateButtons[0].textContent);
             }
             
-            // Open default tab
-            openTab('latest');
-            
-            // Set up resize observer to notify parent of size changes
-            var resizeObserver = new ResizeObserver(function() {
-                notifyParentOfResize();
-            });
-            resizeObserver.observe(document.body);
+            // Notify parent of initial size
+            notifyParentOfResize();
+        });
+        
+        // Listen for resize events
+        window.addEventListener('resize', function() {
+            notifyParentOfResize();
+        });
+        
+        // Last updated timestamp
+        document.addEventListener('DOMContentLoaded', function() {
+            var now = new Date();
+            var footer = document.createElement('p');
+            footer.style.fontSize = '12px';
+            footer.style.color = '#86888a';
+            footer.style.textAlign = 'center';
+            footer.style.marginTop = '20px';
+            footer.textContent = 'Last updated: ' + now.toLocaleString();
+            document.querySelector('.container').appendChild(footer);
         });
     </script>
 </body>

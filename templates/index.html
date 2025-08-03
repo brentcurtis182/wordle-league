@@ -91,9 +91,10 @@
                             <div class="player-score"><span class="score-none">No Score</span></div>
                             {% endif %}
                         </div>
-                        {% if score.has_score and score.emoji_pattern %}
+                        {% if score.has_score %}
                         <div class="emoji-container">
                             <div class="emoji-pattern">
+                            {% if score.emoji_pattern %}
                                 {%- set has_valid_emoji = false -%}
                                 {%- for line in score.emoji_pattern.split('
 ') -%}
@@ -107,8 +108,11 @@
                                     {%- endif -%}
                                 {%- endfor -%}
                                 {%- if not has_valid_emoji -%}
-                                    <!-- No emoji pattern available -->
+                                    <div class="emoji-row">{{ score.score }}/6</div>
                                 {%- endif -%}
+                            {% else %}
+                                <div class="emoji-row">{{ score.score }}/6</div>
+                            {% endif %}
                             </div>
                         </div>
                         {% endif %}

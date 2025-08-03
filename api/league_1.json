@@ -5,65 +5,65 @@
     {
       "wordle_number": 1505,
       "name": "Brent",
-      "score": 4,
-      "emoji_pattern": null,
-      "timestamp": "2025-08-02 00:00:00"
+      "score": 7,
+      "emoji_pattern": "⬛🟨⬛🟨⬛\n⬛⬛⬛🟨🟩\n⬛⬛🟩🟩🟩\n⬛🟩🟩🟩🟩\n⬛🟩🟩🟩🟩\n⬛🟩🟩🟩🟩",
+      "timestamp": "2025-08-02 23:58:28"
     },
     {
       "wordle_number": 1505,
       "name": "Malia",
       "score": 4,
-      "emoji_pattern": null,
-      "timestamp": "2025-08-02 00:00:00"
-    },
-    {
-      "wordle_number": 1505,
-      "name": "Evan",
-      "score": 3,
-      "emoji_pattern": null,
-      "timestamp": "2025-08-02 00:00:00"
+      "emoji_pattern": "🟨⬛🟨⬛⬛\n⬛🟩⬛🟩🟩\n⬛🟩🟩🟩🟩\n🟩🟩🟩🟩🟩",
+      "timestamp": "2025-08-02 23:58:28"
     },
     {
       "wordle_number": 1505,
       "name": "Joanna",
       "score": 5,
-      "emoji_pattern": null,
-      "timestamp": "2025-08-02 00:00:00"
+      "emoji_pattern": "⬛⬛🟨🟨⬛\n⬛⬛🟩⬛🟨\n⬛🟩🟩🟩🟩\n⬛🟩🟩🟩🟩\n🟩🟩🟩🟩🟩",
+      "timestamp": "2025-08-02 23:58:28"
     },
     {
       "wordle_number": 1505,
       "name": "Nanna",
-      "score": 4,
+      "score": 3,
+      "emoji_pattern": "⬜⬜⬜⬜🟩\n⬜⬜⬜🟨🟩",
+      "timestamp": "2025-08-02 23:58:28"
+    },
+    {
+      "wordle_number": 1505,
+      "name": "Evan",
+      "score": 3,
       "emoji_pattern": null,
       "timestamp": "2025-08-02 00:00:00"
     },
     {
       "wordle_number": 1504,
       "name": "Brent",
-      "score": 3,
-      "emoji_pattern": null,
-      "timestamp": "2025-08-01 00:00:00"
+      "score": 4,
+      "emoji_pattern": "⬛⬛⬛⬛⬛\n⬛🟨⬛🟨⬛\n⬛🟩🟩🟨⬛\n🟩🟩🟩🟩🟩",
+      "timestamp": "2025-08-02 23:58:28"
     },
     {
       "wordle_number": 1504,
       "name": "Malia",
-      "score": 3,
-      "emoji_pattern": null,
-      "timestamp": "2025-08-01 00:00:00"
+      "score": 5,
+      "emoji_pattern": "🟨⬛⬛⬛⬛\n⬛🟩⬛🟨⬛\n🟩🟩🟩⬛⬛\n🟩🟩🟩⬛⬛\n🟩🟩🟩🟩🟩",
+      "timestamp": "2025-08-02 23:58:28"
     },
     {
       "wordle_number": 1504,
       "name": "Evan",
-      "score": 3,
-      "emoji_pattern": null,
-      "timestamp": "2025-08-01 00:00:00"
+      "score": 5,
+      "emoji_pattern": "⬛🟩🟩⬛⬛\n⬛🟩🟩⬛⬛\n🟩🟩🟩⬛⬛\n🟩🟩🟩⬛⬛\n🟩🟩🟩🟩🟩",
+      "timestamp": "2025-08-02 23:58:28"
     },
     {
       "wordle_number": 1504,
       "name": "Joanna",
       "score": 5,
-      "emoji_pattern": null,
-      "timestamp": "2025-08-01 00:00:00"
+      "emoji_pattern": "⬛⬛🟨⬛⬛\n⬛🟨⬛⬛🟨\n🟨🟩⬛⬛🟩\n⬛🟩🟩⬛🟩\n🟩🟩🟩🟩🟩",
+      "timestamp": "2025-08-02 23:58:28"
     },
     {
       "wordle_number": 1504,

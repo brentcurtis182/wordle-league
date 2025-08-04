@@ -1,10 +1,17 @@
 {
-  "update_time": "2025-08-04 10:02:25",
+  "update_time": "2025-08-04 10:03:26",
   "leagues": {
     "1": {
       "id": 1,
       "name": "Wordle Warriorz",
       "scores": [
+        {
+          "wordle_number": 1507,
+          "name": "Brent",
+          "score": 5,
+          "emoji_pattern": "⬛⬛🟨⬛⬛\n⬛🟩🟨⬛⬛\n⬛🟩⬛⬛🟨\n🟨🟩⬛🟨⬛\n🟩🟩🟩🟩🟩",
+          "timestamp": "2025-08-04 10:03:12"
+        },
         {
           "wordle_number": 1507,
           "name": "Joanna",
@@ -58,6 +65,13 @@
       "id": 3,
       "name": "Wordle PAL",
       "scores": [
+        {
+          "wordle_number": 1507,
+          "name": "Vox",
+          "score": 5,
+          "emoji_pattern": "⬛⬛🟨⬛⬛\n⬛🟩🟨⬛⬛\n⬛🟩⬛⬛🟨\n🟨🟩⬛🟨⬛\n🟩🟩🟩🟩🟩",
+          "timestamp": "2025-08-04 10:03:22"
+        },
         {
           "wordle_number": 1506,
           "name": "Fuzwuz",

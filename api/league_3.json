@@ -3,6 +3,13 @@
   "name": "Wordle PAL",
   "scores": [
     {
+      "wordle_number": 1508,
+      "name": "Vox",
+      "score": 2,
+      "emoji_pattern": "🟩⬛⬛🟨⬛\n🟩🟩🟩🟩🟩",
+      "timestamp": "2025-08-05 09:39:22"
+    },
+    {
       "wordle_number": 1507,
       "name": "Starslider",
       "score": 4,

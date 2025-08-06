@@ -3,6 +3,13 @@
   "name": "Wordle Gang",
   "scores": [
     {
+      "wordle_number": 1509,
+      "name": "Will",
+      "score": 5,
+      "emoji_pattern": "🟨⬛⬛⬛⬛\n⬛⬛🟨⬛⬛\n⬛🟨🟨🟨⬛\n⬛🟨🟨🟨⬛\n🟩🟩🟩🟩🟩",
+      "timestamp": "2025-08-06 07:55:17"
+    },
+    {
       "wordle_number": 1508,
       "name": "Keith",
       "score": 4,

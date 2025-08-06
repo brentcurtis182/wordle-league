@@ -1,10 +1,17 @@
 {
-  "update_time": "2025-08-06 08:29:42",
+  "update_time": "2025-08-06 08:30:42",
   "leagues": {
     "1": {
       "id": 1,
       "name": "Wordle Warriorz",
       "scores": [
+        {
+          "wordle_number": 1509,
+          "name": "Brent",
+          "score": 3,
+          "emoji_pattern": "⬛⬛⬛⬛⬛\n🟨🟨⬛🟩⬛\n🟩🟩🟩🟩🟩",
+          "timestamp": "2025-08-06 08:30:10"
+        },
         {
           "wordle_number": 1508,
           "name": "Evan",
@@ -118,6 +125,13 @@
       "scores": [
         {
           "wordle_number": 1509,
+          "name": "Brent",
+          "score": 3,
+          "emoji_pattern": "⬛⬛⬛⬛⬛\n🟨🟨⬛🟩⬛\n🟩🟩🟩🟩🟩",
+          "timestamp": "2025-08-06 08:30:18"
+        },
+        {
+          "wordle_number": 1509,
           "name": "Rochelle",
           "score": 2,
           "emoji_pattern": "🟨🟨🟨⬜⬜\n🟩🟩🟩🟩🟩",
@@ -171,6 +185,13 @@
       "id": 3,
       "name": "Wordle PAL",
       "scores": [
+        {
+          "wordle_number": 1509,
+          "name": "Vox",
+          "score": 3,
+          "emoji_pattern": "⬛⬛⬛⬛⬛\n🟨🟨⬛🟩⬛\n🟩🟩🟩🟩🟩",
+          "timestamp": "2025-08-06 08:30:25"
+        },
         {
           "wordle_number": 1508,
           "name": "Starslider",
@@ -267,6 +288,13 @@
       "id": 5,
       "name": "Wordle Vball",
       "scores": [
+        {
+          "wordle_number": 1509,
+          "name": "Brent",
+          "score": 3,
+          "emoji_pattern": "⬛⬛⬛⬛⬛\n🟨🟨⬛🟩⬛\n🟩🟩🟩🟩🟩",
+          "timestamp": "2025-08-06 08:30:38"
+        },
         {
           "wordle_number": 1508,
           "name": "Shawna",

@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta http-equiv="last-modified" content="Wed, 06 Aug 2025 13:15:15 GMT">
+    <meta http-equiv="last-modified" content="Wed, 06 Aug 2025 12:16:48 GMT">
+    <meta http-equiv="last-modified" content="Wed, 06 Aug 2025 11:55:40 GMT">
+    <meta http-equiv="last-modified" content="Tue, 05 Aug 2025 14:52:27 GMT">
+    <title>Wordle 1505 - Wordle Warriorz</title>
+    <meta charset="utf-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        h1, h2 {
+            color: #333;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+        }
+        th, td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .emoji-pattern {
+            font-family: monospace;
+            white-space: pre;
+        }
+        .nav {
+            margin: 20px 0;
+        }
+        .nav a {
+            margin-right: 15px;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Wordle 1505 - Wordle Warriorz</h1>
+    <div class="nav">
+        <a href="../index.html">Home</a>
+        <a href="index.html">League Home</a>
+    </div>
+    <h2>Scores for August 02, 2025</h2>
+    <table>
+        <tr>
+            <th>Player</th>
+            <th>Score</th>
+            <th>Pattern</th>
+        </tr>
+
+        <tr>
+            <td>Nanna</td>
+            <td>3/6</td>
+            <td class="emoji-pattern">⬜⬜⬜⬜🟩
+⬜⬜⬜🟨🟩</td>
+        </tr>
+        <tr>
+            <td>Malia</td>
+            <td>4/6</td>
+            <td class="emoji-pattern">🟨⬛🟨⬛⬛
+⬛🟩⬛🟩🟩
+⬛🟩🟩🟩🟩
+🟩🟩🟩🟩🟩</td>
+        </tr>
+        <tr>
+            <td>Joanna</td>
+            <td>5/6</td>
+            <td class="emoji-pattern">⬛⬛🟨🟨⬛
+⬛⬛🟩⬛🟨
+⬛🟩🟩🟩🟩
+⬛🟩🟩🟩🟩
+🟩🟩🟩🟩🟩</td>
+        </tr>
+        <tr>
+            <td>Brent</td>
+            <td>X/6</td>
+            <td class="emoji-pattern">⬛🟨⬛🟨⬛
+⬛⬛⬛🟨🟩
+⬛⬛🟩🟩🟩
+⬛🟩🟩🟩🟩
+⬛🟩🟩🟩🟩
+⬛🟩🟩🟩🟩</td>
+        </tr>
+    </table>
+</body>
+</html>

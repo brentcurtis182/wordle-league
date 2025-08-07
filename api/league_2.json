@@ -4,6 +4,13 @@
   "scores": [
     {
       "wordle_number": 1509,
+      "name": "Keith",
+      "score": 3,
+      "emoji_pattern": "⬜🟨⬜⬜🟨\n⬜🟩🟨⬜⬜\n🟩🟩🟩🟩🟩",
+      "timestamp": "2025-08-06 20:16:17"
+    },
+    {
+      "wordle_number": 1509,
       "name": "Joanna",
       "score": 2,
       "emoji_pattern": "⬛🟨⬛🟨🟩\n🟩🟩🟩🟩🟩",

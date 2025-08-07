@@ -1,5 +1,5 @@
 {
-  "update_time": "2025-08-06 20:15:41",
+  "update_time": "2025-08-06 20:16:42",
   "leagues": {
     "1": {
       "id": 1,
@@ -144,6 +144,13 @@
       "id": 2,
       "name": "Wordle Gang",
       "scores": [
+        {
+          "wordle_number": 1509,
+          "name": "Keith",
+          "score": 3,
+          "emoji_pattern": "⬜🟨⬜⬜🟨\n⬜🟩🟨⬜⬜\n🟩🟩🟩🟩🟩",
+          "timestamp": "2025-08-06 20:16:17"
+        },
         {
           "wordle_number": 1509,
           "name": "Joanna",

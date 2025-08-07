@@ -137,6 +137,13 @@
                                 <th>Used Scores</th>
                                 <th>Failed</th>
                                 <th>Thrown Out</th>
+                                <th>Mon</th>
+                                <th>Tue</th>
+                                <th>Wed</th>
+                                <th>Thu</th>
+                                <th>Fri</th>
+                                <th>Sat</th>
+                                <th>Sun</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -147,6 +154,13 @@
                                 <td class="used-scores">{{ player.used_scores }}</td>
                                 <td class="failed-attempts">{{ player.weekly_failed }}</td>
                                 <td class="thrown-out">{{ player.thrown_out|join(', ') if player.thrown_out else '-' }}</td>
+                                <td class="day-score">{{ player.monday_score if player.monday_score is not none else '-' }}</td>
+                                <td class="day-score">{{ player.tuesday_score if player.tuesday_score is not none else '-' }}</td>
+                                <td class="day-score">{{ player.wednesday_score if player.wednesday_score is not none else '-' }}</td>
+                                <td class="day-score">{{ player.thursday_score if player.thursday_score is not none else '-' }}</td>
+                                <td class="day-score">{{ player.friday_score if player.friday_score is not none else '-' }}</td>
+                                <td class="day-score">{{ player.saturday_score if player.saturday_score is not none else '-' }}</td>
+                                <td class="day-score">{{ player.sunday_score if player.sunday_score is not none else '-' }}</td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -170,7 +184,7 @@
                         </thead>
                         <tbody>
                             {% for player in all_time_stats %}
-                                <tr {% if (player.games_played + player.failed_attempts) >= 5 %}class="highlight"{% endif %}>
+                                <tr>
                                     <td>{{ player.name }}</td>
                                     <td>{{ player.games_played + player.failed_attempts }}</td>
                                     <td>{{ player.all_time_average if player.all_time_average is not none else '-' }}</td>

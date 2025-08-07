@@ -1,5 +1,5 @@
 {
-  "update_time": "2025-08-07 09:14:44",
+  "update_time": "2025-08-07 09:15:44",
   "leagues": {
     "1": {
       "id": 1,
@@ -7,17 +7,17 @@
       "scores": [
         {
           "wordle_number": 1510,
+          "name": "Nanna",
+          "score": 3,
+          "emoji_pattern": "⬜🟨⬜⬜⬜\n⬜🟨🟩🟨⬜\n🟩🟩🟩🟩🟩",
+          "timestamp": "2025-08-07 09:15:10"
+        },
+        {
+          "wordle_number": 1510,
           "name": "Malia",
           "score": 4,
           "emoji_pattern": "🟨⬛⬛⬛🟨\n⬛🟨🟨⬛⬛\n⬛🟨🟩🟨⬛\n🟩🟩🟩🟩🟩",
           "timestamp": "2025-08-07 08:55:10"
-        },
-        {
-          "wordle_number": 1510,
-          "name": "Nanna",
-          "score": 3,
-          "emoji_pattern": "⬜🟨⬜⬜⬜\n⬜🟨🟩🟨⬜",
-          "timestamp": "2025-08-07 08:47:09"
         },
         {
           "wordle_number": 1510,

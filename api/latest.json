@@ -1,5 +1,5 @@
 {
-  "update_time": "2025-08-07 20:53:44",
+  "update_time": "2025-08-07 20:54:44",
   "leagues": {
     "1": {
       "id": 1,
@@ -276,6 +276,13 @@
       "id": 3,
       "name": "Wordle PAL",
       "scores": [
+        {
+          "wordle_number": 1510,
+          "name": "Starslider",
+          "score": 4,
+          "emoji_pattern": "⬜⬜⬜⬜⬜\n⬜🟩⬜⬜⬜\n🟩🟩🟨⬜⬜\n🟩🟩🟩🟩🟩",
+          "timestamp": "2025-08-07 20:54:25"
+        },
         {
           "wordle_number": 1510,
           "name": "Vox",

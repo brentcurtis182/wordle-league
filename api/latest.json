@@ -1,10 +1,17 @@
 {
-  "update_time": "2025-08-08 09:05:47",
+  "update_time": "2025-08-08 09:06:46",
   "leagues": {
     "1": {
       "id": 1,
       "name": "Wordle Warriorz",
       "scores": [
+        {
+          "wordle_number": 1511,
+          "name": "Nanna",
+          "score": 5,
+          "emoji_pattern": "⬜⬜⬜⬜🟩\n⬜⬜⬜⬜⬜\n⬜⬜🟨⬜🟩\n🟨🟨⬜⬜🟩\n🟩🟩🟩🟩🟩",
+          "timestamp": "2025-08-08 09:06:11"
+        },
         {
           "wordle_number": 1510,
           "name": "Evan",

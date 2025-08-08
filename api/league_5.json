@@ -3,6 +3,13 @@
   "name": "Wordle Vball",
   "scores": [
     {
+      "wordle_number": 1511,
+      "name": "Jason",
+      "score": 6,
+      "emoji_pattern": "⬛⬛⬛⬛🟩\n⬛⬛🟨⬛⬛\n⬛🟨⬛⬛⬛\n⬛🟨🟨⬛🟩\n⬛🟨⬛🟩🟩\n🟩🟩🟩🟩🟩",
+      "timestamp": "2025-08-08 08:01:41"
+    },
+    {
       "wordle_number": 1510,
       "name": "Brent",
       "score": 3,

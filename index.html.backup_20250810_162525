@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordle Leagues</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .league-links {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 30px;
+            gap: 15px;
+        }
+        .league-link {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #6aaa64;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 18px;
+            transition: background-color 0.3s;
+            min-width: 200px;
+            text-align: center;
+        }
+        .league-link:hover {
+            background-color: #538d4e;
+        }
+    </style>
+</head>
+<body>
+    <header style="padding: 10px 0; margin-bottom: 10px;">
+        <div class="container" style="padding: 10px; text-align: center;">
+            <h1 class="title" style="font-size: 24px; margin-bottom: 0; text-align: center;">Wordle Leagues</h1>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="league-links">
+            <a class="league-link" href="">Wordle Warriorz</a>
+            <a class="league-link" href="wordle-gang/">Wordle Gang</a>
+            <a class="league-link" href="wordle-pal/">Wordle PAL</a>
+            <a class="league-link" href="wordle-party/">Wordle Party</a>
+            <a class="league-link" href="wordle-vball/">Wordle Vball</a>
+        </div>
+    </div>
+</body>
+</html>

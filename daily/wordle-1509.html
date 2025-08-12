@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta http-equiv="last-modified" content="Wed, 06 Aug 2025 13:15:16 GMT">
+    <meta http-equiv="last-modified" content="Wed, 06 Aug 2025 12:16:48 GMT">
+    <meta http-equiv="last-modified" content="Wed, 06 Aug 2025 11:55:41 GMT">
+    <meta http-equiv="last-modified" content="Tue, 05 Aug 2025 14:52:27 GMT">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wordle #1509 - Wordle League</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Tab navigation */
+        .tabs {
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 20px;
+        }
+        
+        /* Emoji pattern styles */
+        .score-display {
+            display: flex;
+            align-items: center;
+        }
+        
+        .emoji-pattern {
+            margin-left: 15px;
+            font-size: 0.7rem;
+            line-height: 1.2;
+            display: inline-block;
+        }
+        
+        .emoji-row {
+            white-space: nowrap;
+            height: 1.2em;
+        }
+        
+        .emoji-container {
+            height: 7.2em; /* Space for 6 rows */
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        .tab-button {
+            background-color: #1a1a1b;
+            color: #d7dadc;
+            border: 1px solid #3a3a3c;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        
+        .tab-button:hover {
+            background-color: #3a3a3c;
+        }
+        
+        .tab-button.active {
+            background-color: #538d4e;
+            color: white;
+        }
+        
+        /* Tab content */
+        .tab-content {
+            display: none;
+            width: 100%;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Tables */
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 0 auto;
+        }
+        
+        th {
+            background-color: #538d4e;
+            color: white;
+            text-align: left;
+            padding: 12px;
+            position: sticky;
+            top: 0;
+        }
+        
+        td {
+            padding: 12px;
+            border-bottom: 1px solid #3a3a3c;
+        }
+        
+        tr:nth-child(even) {
+            background-color: rgba(58, 58, 60, 0.3);
+        }
+        
+        .weekly-score { color: #6aaa64; font-weight: bold; }
+        .used-scores { color: #c9b458; }
+        .thrown-out { color: #86888a; font-style: italic; }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1 class="title">Wordle League</h1>
+            <p class="subtitle">Daily Wordle Score Tracking</p>
+        </div>
+    </header>
+    
+    <div class="container">
+        <div class="wordle-links">
+            <a href="index.html" class="wordle-link">Back to Latest</a>
+        </div>
+        
+        <div class="tabs">
+            <button class="tab-button active" onclick="openTab('latest')">Latest Scores</button>
+            <button class="tab-button" onclick="openTab('weekly')">Weekly Totals</button>
+            <button class="tab-button" onclick="openTab('stats')">Player Stats</button>
+        </div>
+        
+        <div id="latest" class="tab-content active">
+            <h2>Wordle #1509 - </h2>
+            
+            
+                <div class="score-card">
+                    <div class="player-info">
+                        <div class="player-name">Malia</div>
+                    </div>
+                    
+                    <div class="score-2 score-display">
+                        <div>2/6</div>
+                        
+                        <div class="emoji-pattern">
+                            
+                            
+                            <div class="emoji-row">🟨⬛⬛⬛🟨</div>
+                            
+                            
+                            
+                            <div class="emoji-row">🟩🟩🟩🟩🟩</div>
+                            
+                            
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+            
+                <div class="score-card">
+                    <div class="player-info">
+                        <div class="player-name">Joanna</div>
+                    </div>
+                    
+                    <div class="score-2 score-display">
+                        <div>2/6</div>
+                        
+                        <div class="emoji-pattern">
+                            
+                            
+                            <div class="emoji-row">⬛🟨⬛🟨🟩</div>
+                            
+                            
+                            
+                            <div class="emoji-row">🟩🟩🟩🟩🟩</div>
+                            
+                            
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+            
+                <div class="score-card">
+                    <div class="player-info">
+                        <div class="player-name">Brent</div>
+                    </div>
+                    
+                    <div class="score-3 score-display">
+                        <div>3/6</div>
+                        
+                        <div class="emoji-pattern">
+                            
+                            
+                            <div class="emoji-row">⬛⬛⬛⬛⬛</div>
+                            
+                            
+                            
+                            <div class="emoji-row">🟨🟨⬛🟩⬛</div>
+                            
+                            
+                            
+                            <div class="emoji-row">🟩🟩🟩🟩🟩</div>
+                            
+                            
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+            
+                <div class="score-card">
+                    <div class="player-info">
+                        <div class="player-name">Nanna</div>
+                    </div>
+                    
+                    <div class="score-5 score-display">
+                        <div>5/6</div>
+                        
+                        <div class="emoji-pattern">
+                            
+                            
+                            <div class="emoji-row">⬜⬜🟨⬜⬜</div>
+                            
+                            
+                            
+                            <div class="emoji-row">⬜🟨🟨⬜⬜</div>
+                            
+                            
+                            
+                            <div class="emoji-row">🟨🟨🟨🟨⬜</div>
+                            
+                            
+                            
+                            <div class="emoji-row">🟨🟩🟨🟩🟩</div>
+                            
+                            
+                            
+                            <div class="emoji-row">🟩🟩🟩🟩🟩</div>
+                            
+                            
+                        </div>
+                        
+                    </div>
+                    
+                </div>
+            
+                <div class="score-card">
+                    <div class="player-info">
+                        <div class="player-name">Evan</div>
+                    </div>
+                    
+                    <div class="score-none score-display">
+                        No Score Posted
+                    </div>
+                    
+                </div>
+            
+        </div>
+        
+        <div id="weekly" class="tab-content">
+            <h2>Weekly Totals</h2>
+            <p>Top 5 scores count toward weekly total (Monday-Sunday). Lower is better!</p>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Weekly Score</th>
+                            <th>Used Scores</th>
+                            <th>Thrown Out</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                        <tr>
+                            <td>Brent</td>
+                            <td class="weekly-score">14</td>
+                            <td class="used-scores">5</td>
+                            <td class="thrown-out">1</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>Joanna</td>
+                            <td class="weekly-score">18</td>
+                            <td class="used-scores">5</td>
+                            <td class="thrown-out">None</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>Nanna</td>
+                            <td class="weekly-score">20</td>
+                            <td class="used-scores">5</td>
+                            <td class="thrown-out">None</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>Malia</td>
+                            <td class="weekly-score">16</td>
+                            <td class="used-scores">4</td>
+                            <td class="thrown-out">None</td>
+                        </tr>
+                        
+                        <tr>
+                            <td>Evan</td>
+                            <td class="weekly-score">13</td>
+                            <td class="used-scores">3</td>
+                            <td class="thrown-out">None</td>
+                        </tr>
+                        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div id="stats" class="tab-content">
+            <h2>Player Statistics</h2>
+            
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Player</th>
+                            <th>Games</th>
+                            <th>Avg</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        
+                        <tr>
+                            <td>Brent</td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        
+                        <tr>
+                            <td>Joanna</td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        
+                        <tr>
+                            <td>Nanna</td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        
+                        <tr>
+                            <td>Malia</td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        
+                        <tr>
+                            <td>Evan</td>
+                            <td></td>
+                            <td></td>
+                        </tr>
+                        
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <script src="script.js"></script>
+</body>
+</html>

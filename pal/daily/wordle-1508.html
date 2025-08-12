@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Wordle 1508 - Wordle PAL</title>
+    <meta charset="utf-8">
+    <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+    <h1>Wordle 1508 - Wordle PAL</h1>
+    <div id="content">
+        <h2>Scores for August 05, 2025</h2>
+        <table>
+            <tr>
+                <th>Player</th>
+                <th>Score</th>
+                <th>Pattern</th>
+            </tr>
+            
+            <tr>
+                <td>Vox</td>
+                <td>2</td>
+                <td>🟩⬛⬛🟨⬛
+🟩🟩🟩🟩🟩</td>
+            </tr>
+            
+            <tr>
+                <td>Starslider</td>
+                <td>4</td>
+                <td>⬜⬜⬜⬜⬜
+⬜⬜🟩⬜🟩
+🟩⬜🟩⬜🟩
+🟩🟩🟩🟩🟩</td>
+            </tr>
+            
+            <tr>
+                <td>Fuzwuz</td>
+                <td>-</td>
+                <td></td>
+            </tr>
+            
+            <tr>
+                <td>Pants</td>
+                <td>-</td>
+                <td></td>
+            </tr>
+            
+        </table>
+    </div>
+    <script>
+    function scrollToTop() {
+        // Use setTimeout to ensure this happens after the link navigation
+        setTimeout(function() {
+            window.scrollTo(0, 0);
+        }, 0);
+    }
+    </script>
+    <div id="back-to-top" style="
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        background-color: #538d4e;
+        color: white;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        text-align: center;
+        line-height: 50px;
+        cursor: pointer;
+        display: none;
+        z-index: 1000;
+        font-weight: bold;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+    ">↑</div>
+    
+    <script>
+    // Show/hide the back to top button
+    window.onscroll = function() {
+        var backToTopBtn = document.getElementById("back-to-top");
+        if (document.body.scrollTop > 300 || document.documentElement.scrollTop > 300) {
+            backToTopBtn.style.display = "block";
+        } else {
+            backToTopBtn.style.display = "none";
+        }
+    };
+    
+    // Scroll to top when clicked
+    document.getElementById("back-to-top").onclick = function() {
+        document.body.scrollTop = 0; // For Safari
+        document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+    };
+    </script>
+</body>
+</html>

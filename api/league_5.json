@@ -3,48 +3,6 @@
   "name": "Wordle Vball",
   "scores": [
     {
-      "wordle_number": 1516,
-      "name": "Jason",
-      "score": 6,
-      "emoji_pattern": "⬛⬛⬛⬛🟨\n🟨⬛⬛⬛⬛\n⬛🟨🟨🟨🟨\n⬛🟨🟨🟨🟨\n🟨🟩🟩🟩⬛\n🟩🟩🟩🟩🟩",
-      "timestamp": "2025-08-13 09:46:06"
-    },
-    {
-      "wordle_number": 1516,
-      "name": "Shawna",
-      "score": 5,
-      "emoji_pattern": "⬜⬜⬜🟨🟩\n⬜⬜⬜⬜🟩\n⬜🟨⬜🟨🟩\n⬜🟩⬜🟩🟩\n🟩🟩🟩🟩🟩",
-      "timestamp": "2025-08-13 09:46:05"
-    },
-    {
-      "wordle_number": 1515,
-      "name": "Shawna",
-      "score": 5,
-      "emoji_pattern": "⬜🟨⬜⬜⬜\n⬜⬜🟨🟨⬜\n🟨🟨⬜⬜⬜\n🟩🟩⬜⬜⬜\n🟩🟩🟩🟩🟩",
-      "timestamp": "2025-08-12 23:10:21"
-    },
-    {
-      "wordle_number": 1515,
-      "name": "Brent",
-      "score": 3,
-      "emoji_pattern": "⬛⬛⬛⬛⬛\n⬛🟩⬛🟩⬛\n🟩🟩🟩🟩🟩",
-      "timestamp": "2025-08-12 10:51:13"
-    },
-    {
-      "wordle_number": 1515,
-      "name": "Jason",
-      "score": 4,
-      "emoji_pattern": "⬛⬛🟨⬛⬛\n⬛⬛🟨🟨⬛\n⬛🟩🟩🟩🟨\n🟩🟩🟩🟩🟩",
-      "timestamp": "2025-08-12 09:00:05"
-    },
-    {
-      "wordle_number": 1514,
-      "name": "Brent",
-      "score": 3,
-      "emoji_pattern": "🟩🟨⬛🟩⬛\n🟩🟨🟩🟩⬛\n🟩🟩🟩🟩🟩",
-      "timestamp": "2025-08-11 20:07:52"
-    },
-    {
       "wordle_number": 1514,
       "name": "Jason",
       "score": 3,

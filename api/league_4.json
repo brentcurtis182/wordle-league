@@ -3,48 +3,6 @@
   "name": "Wordle Party",
   "scores": [
     {
-      "wordle_number": 1516,
-      "name": "Matt",
-      "score": 3,
-      "emoji_pattern": "🟨⬜🟨⬜⬜\n🟩⬜🟨🟨🟨\n🟩🟩🟩🟩🟩",
-      "timestamp": "2025-08-13 09:45:57"
-    },
-    {
-      "wordle_number": 1516,
-      "name": "Jess",
-      "score": 4,
-      "emoji_pattern": "⬜⬜⬜🟨⬜\n⬜⬜⬜⬜🟨\n🟩⬜⬜🟩⬜\n🟩🟩🟩🟩🟩",
-      "timestamp": "2025-08-13 09:45:56"
-    },
-    {
-      "wordle_number": 1515,
-      "name": "Brent",
-      "score": 3,
-      "emoji_pattern": "⬛⬛⬛⬛⬛\n⬛🟩⬛🟩⬛\n🟩🟩🟩🟩🟩",
-      "timestamp": "2025-08-12 10:51:04"
-    },
-    {
-      "wordle_number": 1515,
-      "name": "Matt",
-      "score": 3,
-      "emoji_pattern": "⬜🟨⬜⬜⬜\n🟨🟨⬜🟨🟨\n🟩🟩🟩🟩🟩",
-      "timestamp": "2025-08-12 08:59:56"
-    },
-    {
-      "wordle_number": 1515,
-      "name": "Jess",
-      "score": 3,
-      "emoji_pattern": "🟨⬜⬜⬜⬜\n🟨⬜🟨⬜🟩\n🟩🟩🟩🟩🟩",
-      "timestamp": "2025-08-12 08:59:56"
-    },
-    {
-      "wordle_number": 1514,
-      "name": "Brent",
-      "score": 3,
-      "emoji_pattern": "🟩🟨⬛🟩⬛\n🟩🟨🟩🟩⬛\n🟩🟩🟩🟩🟩",
-      "timestamp": "2025-08-11 20:07:43"
-    },
-    {
       "wordle_number": 1514,
       "name": "Matt",
       "score": 3,

@@ -82,6 +82,7 @@
 <h2 style="margin-top: 5px; margin-bottom: 10px; font-size: 16px; color: #6aaa64; text-align: center;">Wordle #1515 - August 12, 2025</h2>
 <div class="score-card"><div class="player-info"><div class="player-name">Vox</div><div class="player-score"><span style="color: #6aaa64; background-color: rgba(106, 170, 100, 0.15); padding: 2px 8px; border-radius: 3px; display: inline-block; font-weight: bold;">3/6</span></div></div><div class="emoji-container"><div class="emoji-pattern"><div class="emoji-row">⬛⬛⬛⬛⬛</div><div class="emoji-row">⬛🟩⬛🟩⬛</div><div class="emoji-row">🟩🟩🟩🟩🟩</div></div></div></div><div class="score-card"><div class="player-info"><div class="player-name">Fuzwuz</div><div class="player-score"><span>No Score</span></div></div><div class="emoji-container"><div class="emoji-pattern"></div></div></div><div class="score-card"><div class="player-info"><div class="player-name">Pants</div><div class="player-score"><span>No Score</span></div></div><div class="emoji-container"><div class="emoji-pattern"></div></div></div><div class="score-card"><div class="player-info"><div class="player-name">Starslider</div><div class="player-score"><span>No Score</span></div></div><div class="emoji-container"><div class="emoji-pattern"></div></div></div></div>
 <div class="tab-content" id="weekly">
+<h2 style="margin-top: 5px; margin-bottom: 10px;">Weekly Totals (Aug 11 - Aug 17)</h2>
 <p style="margin-top: 0; margin-bottom: 5px;; font-style: italic;">Top 5 scores count toward weekly total (Monday-Sunday).</p>
 <p style="margin-top: 0; margin-bottom: 10px; font-size: 0.9em;">At least 5 scores needed to compete for the week!</p>
 <div class="table-container">
@@ -114,6 +115,6 @@
 </table></div></div>
 </div>
 </div>
-<script src="script.js?v=1755050273"></script>
-<script src="../tabs.js?v=1755050273"></script></body>
+<script src="script.js"></script>
+<script src="../tabs.js"></script></body>
 </html>

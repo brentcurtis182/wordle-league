@@ -94,7 +94,6 @@
 <div class="tab-content" id="stats">
 <div class="season-container" style="margin-bottom: 30px;">
 <h3 style="margin-bottom: 10px; color: #6aaa64;">Season 1</h3>
-<p style="margin-bottom: 15px; font-size: 14px; font-style: italic;">If players are tied at the end of the week, then both players get a weekly win. First Player to get <b>4 weekly wins</b>, is the Season Champ!</p>
 <table class="season-table">
 <thead>
 <tr>
@@ -103,12 +102,12 @@
 <th>Wordle Week (Score)</th>
 </tr>
 </thead>
-<tbody><tr><td>Vox</td><td>1</td><td>Aug 4th - (14)</td></tr></tbody>
-</table>
+<tbody><tr><td>Vox</td><td><strong>2</strong></td><td>Aug 4th - (14), Aug 11th - (21)</td></tr></tbody>
+</table><p style="margin-bottom: 15px; font-size: 14px; font-style: italic;">If players are tied at the end of the week, then both players get a weekly win. First Player to get <b>4 weekly wins</b>, is the Season Champ!</p>
 </div>
 <div class="table-container">
 </div>
-<div class="all-time-container"><h2 style="margin-top: 5px; margin-bottom: 10px;">All-Time Stats</h2><p style="font-style: italic;">All time stats includes every game played since this league began!</p><table>
+<div class="all-time-container"><h2 style="margin-top: 5px; margin-bottom: 10px;">All-Time Stats</h2><table>
 <thead><tr><th>Player</th><th>Games</th><th>Avg</th></tr></thead>
 <tbody><tr class="highlight" style="background-color: rgba(106, 170, 100, 0.15);"><td><strong>Vox</strong></td><td>5</td><td>4.20</td></tr><tr><td><strong>Fuzwuz</strong></td><td>-</td><td>-</td></tr><tr><td><strong>Pants</strong></td><td>-</td><td>-</td></tr><tr><td><strong>Starslider</strong></td><td>-</td><td>-</td></tr></tbody>
 </table></div></div>

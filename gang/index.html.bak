@@ -60,7 +60,40 @@
             font-weight: normal;
         }
     </style>
-</head>
+<style>
+        /* Fixed first column in weekly table */
+        .weekly-container {
+            position: relative;
+            overflow-x: auto;
+        }
+        
+        .weekly-container table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        .weekly-container th:first-child,
+        .weekly-container td:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 1;
+            background-color: #ffffff;
+            border-right: 1px solid #ddd;
+        }
+        
+        /* Add shadow effect on scroll */
+        .weekly-container td:first-child::after,
+        .weekly-container th:first-child::after {
+            content: "";
+            position: absolute;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            width: 10px;
+            pointer-events: none;
+            box-shadow: inset -5px 0 5px -5px rgba(0,0,0,0.1);
+        }
+        </style></head>
 <body>
 <header style="padding: 10px 0; margin-bottom: 10px;">
 <div class="container" style="padding: 10px; text-align: center;">

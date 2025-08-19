@@ -60,40 +60,7 @@
             font-weight: normal;
         }
     </style>
-<style>
-        /* Fixed first column in weekly table */
-        .weekly-container {
-            position: relative;
-            overflow-x: auto;
-        }
-        
-        .weekly-container table {
-            border-collapse: separate;
-            border-spacing: 0;
-        }
-        
-        .weekly-container th:first-child,
-        .weekly-container td:first-child {
-            position: sticky;
-            left: 0;
-            z-index: 1;
-            background-color: #ffffff;
-            border-right: 1px solid #ddd;
-        }
-        
-        /* Add shadow effect on scroll */
-        .weekly-container td:first-child::after,
-        .weekly-container th:first-child::after {
-            content: "";
-            position: absolute;
-            top: 0;
-            right: 0;
-            bottom: 0;
-            width: 10px;
-            pointer-events: none;
-            box-shadow: inset -5px 0 5px -5px rgba(0,0,0,0.1);
-        }
-        </style></head>
+</head>
 <body>
 <header style="padding: 10px 0; margin-bottom: 10px;">
 <div class="container" style="padding: 10px; text-align: center;">
@@ -117,9 +84,9 @@
 <div class="tab-content" id="weekly">
 <p style="margin-top: 0; margin-bottom: 5px;; font-style: italic;">Top 5 scores count toward weekly total (Monday-Sunday).</p>
 <p style="margin-top: 0; margin-bottom: 10px; font-size: 0.9em;">At least 5 scores needed to compete for the week!</p>
-<div class="table-container">
+<div class="table-container" style="overflow-x: auto;">
 <table>
-<thead><tr><th>Player</th><th>Weekly Score</th><th>Used Scores</th><th>Failed</th><th>Thrown Out</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr></thead>
+<thead><tr><th class="sticky-header" style="left: 0">Player</th><th>Weekly Score</th><th>Used Scores</th><th>Failed</th><th>Thrown Out</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr></thead>
 <tbody><tr><td>Brent</td><td style="font-weight: bold;">2</td><td>1</td><td>-</td><td>-</td><td class="good" style="color: #6aaa64; font-weight: bold;">2</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr><tr><td>Jason</td><td style="font-weight: bold;">4</td><td>1</td><td>-</td><td>-</td><td class="medium" style="color: #c9b458; font-weight: bold;">4</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr><tr><td>Shawna</td><td style="font-weight: bold;">4</td><td>1</td><td>-</td><td>-</td><td class="medium" style="color: #c9b458; font-weight: bold;">4</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td><td>-</td></tr></tbody>
 </table><p class="note" style="font-style: italic; margin-top: 10px;">Failed attempts do not count towards your 'Used Scores'</p>
 </div>

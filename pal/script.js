@@ -1,3 +1,4 @@
+
 document.addEventListener('DOMContentLoaded', function() {
     // Tab functionality
     const tabButtons = document.querySelectorAll('.tab-button');
@@ -27,3 +28,4 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 });
+        

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes"/>
-<title>Last Test - Wordle League</title>
+<title>Max Player Test - Wordle League</title>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>
@@ -17,29 +17,27 @@
     
     .emoji-pattern {
         margin-left: 15px;
-        font-size: 0.8rem;
-        line-height: 1.2;
         display: inline-block;
-        letter-spacing: 0;
         text-align: right;
     }
     
     .emoji-row {
         white-space: nowrap;
-        height: 1.4em;
-        margin: 0;
-        padding: 0;
-        display: block;
+        display: flex;
+        gap: 4px;
+        margin-bottom: 3px;
+    }
+    .emoji-row:last-child {
+        margin-bottom: 0;
     }
     
     /* Custom branded Wordle blocks - unique 3D tiles */
     .wl-block {
         display: inline-block;
-        width: 1.1em;
-        height: 1.1em;
-        margin: 1px;
+        width: 23px;
+        height: 23px;
         border-radius: 3px;
-        vertical-align: middle;
+        flex-shrink: 0;
         border: 1px solid rgba(0,0,0,0.2);
     }
     .wl-cyan {
@@ -90,7 +88,7 @@
 </nav>
 <header style="padding: 10px 0; margin-bottom: 10px;">
 <div class="container" style="padding: 10px; text-align: center;">
-<h1 class="title" style="font-size: 24px; margin-bottom: 0; text-align: center;">Last Test</h1>
+<h1 class="title" style="font-size: 24px; margin-bottom: 0; text-align: center;">Max Player Test</h1>
 </div>
 </header>
 <div class="container">
@@ -105,10 +103,10 @@
 </div>
 </div>
 <div class="tab-content active" id="latest">
-<h2 style="margin-top: 5px; margin-bottom: 10px; font-size: 16px; color: #00E8DA; text-align: center;">Wordle #1689 - February 02, 2026</h2>
+<h2 style="margin-top: 5px; margin-bottom: 10px; font-size: 16px; color: #00E8DA; text-align: center;">Wordle #1701 - February 14, 2026</h2>
 <div class="score-card">
     <div class="player-info">
-        <div class="player-name">Vox</div>
+        <div class="player-name">Bob</div>
         <div class="player-score"><span>No Score</span></div>
     </div>
     <div class="emoji-container"><div class="emoji-pattern"></div></div>
@@ -137,7 +135,7 @@
 </thead>
 <tbody>
 <tr>
-    <td class="sticky-column"><strong>Vox</strong></td>
+    <td class="sticky-column"><strong>Bob</strong></td>
     <td style="font-weight: bold;">-</td>
     <td>0</td>
     <td>-</td>
@@ -173,7 +171,7 @@
 <thead><tr><th>Player</th><th>Games</th><th>Avg</th></tr></thead>
 <tbody>
 <tr>
-    <td><strong>Vox</strong></td>
+    <td><strong>Bob</strong></td>
     <td>-</td>
     <td>-</td>
 </tr>

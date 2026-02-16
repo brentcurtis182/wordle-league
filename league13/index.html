@@ -192,7 +192,7 @@
 </thead>
 <tbody>
 <tr>
-    <td class="sticky-column"><strong>Davin</strong></td>
+    <td class="sticky-column"><strong style="color: #00E8DA;">Davin</strong></td>
     <td class="score-col-weekly-1" style="font-weight: bold;">6</td>
     <td class="score-col-season-1" style="display:none; font-weight: bold;">Immune</td>
     <td>2</td>
@@ -207,7 +207,7 @@
 <tr>
     <td class="sticky-column"><strong>Ricky</strong></td>
     <td class="score-col-weekly-1" style="font-weight: bold;">6</td>
-    <td class="score-col-season-1" style="display:none; font-weight: bold;">-</td>
+    <td class="score-col-season-1" style="display:none; font-weight: bold;">24</td>
     <td>2</td>
     <td>-</td>
     <td>-</td>
@@ -220,7 +220,7 @@
 <tr>
     <td class="sticky-column"><strong>jo</strong></td>
     <td class="score-col-weekly-1" style="font-weight: bold;">7</td>
-    <td class="score-col-season-1" style="display:none; font-weight: bold;">14</td>
+    <td class="score-col-season-1" style="display:none; font-weight: bold;">21</td>
     <td>2</td>
     <td>-</td>
     <td>-</td>
@@ -233,7 +233,7 @@
 <tr>
     <td class="sticky-column"><strong>Christa</strong></td>
     <td class="score-col-weekly-1" style="font-weight: bold;">9</td>
-    <td class="score-col-season-1" style="display:none; font-weight: bold;">-</td>
+    <td class="score-col-season-1" style="display:none; font-weight: bold;">28</td>
     <td>2</td>
     <td>-</td>
     <td>-</td>
@@ -246,7 +246,7 @@
 <tr>
     <td class="sticky-column"><strong>Donald</strong></td>
     <td class="score-col-weekly-1" style="font-weight: bold;">9</td>
-    <td class="score-col-season-1" style="display:none; font-weight: bold;">-</td>
+    <td class="score-col-season-1" style="display:none; font-weight: bold;">27</td>
     <td>2</td>
     <td>-</td>
     <td>-</td>
@@ -289,7 +289,7 @@
 </thead>
 <tbody>
 <tr>
-    <td class="sticky-column"><strong>Amanda</strong></td>
+    <td class="sticky-column"><strong style="color: #FFA64D;">Amanda</strong></td>
     <td class="score-col-weekly-2" style="font-weight: bold;">8</td>
     <td class="score-col-season-2" style="display:none; font-weight: bold;">Immune</td>
     <td>2</td>
@@ -304,7 +304,7 @@
 <tr>
     <td class="sticky-column"><strong>Chris</strong></td>
     <td class="score-col-weekly-2" style="font-weight: bold;">8</td>
-    <td class="score-col-season-2" style="display:none; font-weight: bold;">28</td>
+    <td class="score-col-season-2" style="display:none; font-weight: bold;">109</td>
     <td>2</td>
     <td>-</td>
     <td>-</td>
@@ -317,7 +317,7 @@
 <tr>
     <td class="sticky-column"><strong>Homey</strong></td>
     <td class="score-col-weekly-2" style="font-weight: bold;">11</td>
-    <td class="score-col-season-2" style="display:none; font-weight: bold;">-</td>
+    <td class="score-col-season-2" style="display:none; font-weight: bold;">149</td>
     <td>2</td>
     <td>-</td>
     <td>-</td>
@@ -330,7 +330,7 @@
 <tr>
     <td class="sticky-column"><strong>Jane</strong></td>
     <td class="score-col-weekly-2" style="font-weight: bold;">3</td>
-    <td class="score-col-season-2" style="display:none; font-weight: bold;">15</td>
+    <td class="score-col-season-2" style="display:none; font-weight: bold;">111</td>
     <td>1</td>
     <td>-</td>
     <td>-</td>
@@ -347,17 +347,45 @@
 </div>
 <p style="margin-top: 10px; font-size: 0.85em; color: #d7dadc; font-style: italic;">Failed attempts do not count towards your 'Used Scores'<br>Weekly score uses only your best 5 scores. Additional scores appear in 'Thrown Out'</p>
 <script>
+var originalOrder = {};
 function toggleScoreView(divNum) {
     var sel = document.getElementById('score-toggle-' + divNum);
     var mode = sel.value;
     var weeklyCols = document.querySelectorAll('.score-col-weekly-' + divNum);
     var seasonCols = document.querySelectorAll('.score-col-season-' + divNum);
+    var table = document.getElementById('div-table-' + divNum);
+    var tbody = table.querySelector('tbody');
+    var rows = Array.from(tbody.querySelectorAll('tr'));
+    
     if (mode === 'season') {
         weeklyCols.forEach(function(el) { el.style.display = 'none'; });
         seasonCols.forEach(function(el) { el.style.display = ''; });
+        // Save original order if not saved
+        if (!originalOrder[divNum]) {
+            originalOrder[divNum] = rows.map(function(r) { return r; });
+        }
+        // Sort by season total: numeric ascending (lower=better), Immune and - go to bottom
+        rows.sort(function(a, b) {
+            var aCell = a.querySelector('.score-col-season-' + divNum);
+            var bCell = b.querySelector('.score-col-season-' + divNum);
+            var aVal = aCell ? aCell.textContent.trim() : '-';
+            var bVal = bCell ? bCell.textContent.trim() : '-';
+            var aNum = (aVal === 'Immune' || aVal === '-' || aVal === '0') ? 99999 : parseInt(aVal);
+            var bNum = (bVal === 'Immune' || bVal === '-' || bVal === '0') ? 99999 : parseInt(bVal);
+            if (aVal === 'Immune' && bVal !== 'Immune') return 1;
+            if (bVal === 'Immune' && aVal !== 'Immune') return -1;
+            if (aVal === '-' && bVal !== '-') return 1;
+            if (bVal === '-' && aVal !== '-') return -1;
+            return aNum - bNum;
+        });
+        rows.forEach(function(r) { tbody.appendChild(r); });
     } else {
         weeklyCols.forEach(function(el) { el.style.display = ''; });
         seasonCols.forEach(function(el) { el.style.display = 'none'; });
+        // Restore original order
+        if (originalOrder[divNum]) {
+            originalOrder[divNum].forEach(function(r) { tbody.appendChild(r); });
+        }
     }
 }
 </script>
@@ -376,22 +404,6 @@ function toggleScoreView(divNum) {
 </tr>
 </tbody>
 </table>
-<p class="season-winner-message" style="color: #00E8DA; font-weight: bold; margin-top: 10px; cursor: pointer;" onclick="document.getElementById('div1-season-modal-1').style.display='flex'">Division I Season 1 Winner: Ricky <span style="font-size: 0.8em; opacity: 0.7;">&#9656;</span></p>
-</div>
-<div id="div1-season-modal-1" class="season-modal-overlay" onclick="if(event.target===this)this.style.display='none'" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
-  <div style="background:#1a1a1b; border:1px solid #333; border-radius:10px; padding:20px; max-width:320px; width:90%; max-height:80vh; overflow-y:auto;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-      <h3 style="color:#00E8DA; margin:0;">Division I Season 1</h3>
-      <span onclick="document.getElementById('div1-season-modal-1').style.display='none'" style="color:#d7dadc; cursor:pointer; font-size:1.5rem; line-height:1; padding:4px 8px;">&times;</span>
-    </div>
-    <table class="season-table" style="width:100%;">
-      <thead><tr><th>Player</th><th>Wins</th></tr></thead>
-      <tbody><tr><td><strong>Ricky</strong></td><td style="text-align:center;">3</td></tr>
-<tr><td><strong>jo</strong></td><td style="text-align:center;">1</td></tr>
-<tr><td><strong>Donald</strong></td><td style="text-align:center;">1</td></tr>
-</tbody>
-    </table>
-  </div>
 </div>
 <div class="season-container" style="margin-bottom: 30px;">
 <h3 style="margin-bottom: 10px; color: #FFA64D;">Division II - Season 1</h3>
@@ -417,6 +429,8 @@ function toggleScoreView(divNum) {
 </table>
 <p style="margin-top: 5px; font-size: 14px; font-style: italic;">If players are tied at the end of the week, all players get a weekly win. First Player to get <strong style="color: #00E8DA;">3 weekly wins</strong> is the Season Champ!</p>
 </div>
+<p class="season-winner-message" style="color: #00E8DA; font-weight: bold; margin-top: 10px; cursor: pointer;" onclick="document.getElementById('div1-season-modal-1').style.display='flex'">Division I Winner: Ricky <span style="font-size: 0.8em; opacity: 0.7;">&#9656;</span></p>
+<p class="season-winner-message" style="color: #FFA64D; font-weight: bold; margin-top: 5px;">Division II Winner: <span style="font-style: italic; opacity: 0.6;">In Progress</span></p>
 <div class="all-time-container">
 <h2 style="margin-top: 5px; margin-bottom: 10px;">All-Time Stats</h2>
 <table>
@@ -469,6 +483,21 @@ function toggleScoreView(divNum) {
 </tr>
 </tbody>
 </table>
+</div>
+<div id="div1-season-modal-1" class="season-modal-overlay" onclick="if(event.target===this)this.style.display='none'" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
+  <div style="background:#1a1a1b; border:1px solid #333; border-radius:10px; padding:20px; max-width:320px; width:90%; max-height:80vh; overflow-y:auto;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <h3 style="color:#00E8DA; margin:0;">Division I Season 1</h3>
+      <span onclick="document.getElementById('div1-season-modal-1').style.display='none'" style="color:#d7dadc; cursor:pointer; font-size:1.5rem; line-height:1; padding:4px 8px;">&times;</span>
+    </div>
+    <table class="season-table" style="width:100%;">
+      <thead><tr><th>Player</th><th>Wins</th></tr></thead>
+      <tbody><tr><td><strong>Ricky</strong></td><td style="text-align:center;">3</td></tr>
+<tr><td><strong>jo</strong></td><td style="text-align:center;">1</td></tr>
+<tr><td><strong>Donald</strong></td><td style="text-align:center;">1</td></tr>
+</tbody>
+    </table>
+  </div>
 </div>
 
 </div>

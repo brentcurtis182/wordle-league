@@ -206,20 +206,6 @@
 <td>-</td>
 </tr>
 <tr>
-    <td class="sticky-column"><strong>Dustin</strong></td>
-    <td class="score-col-weekly-1" style="font-weight: bold;">3</td>
-    <td class="score-col-season-1" style="display:none; font-weight: bold;">47</td>
-    <td>1</td>
-    <td>-</td>
-    <td>-</td>
-<td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td>-</td>
-<td>-</td>
-<td>-</td>
-<td>-</td>
-<td>-</td>
-<td>-</td>
-</tr>
-<tr>
     <td class="sticky-column"><strong>Jason</strong></td>
     <td class="score-col-weekly-1" style="font-weight: bold;">3</td>
     <td class="score-col-season-1" style="display:none; font-weight: bold;">38</td>
@@ -237,6 +223,20 @@
     <td class="sticky-column"><strong>Dani</strong></td>
     <td class="score-col-weekly-1" style="font-weight: bold;">4</td>
     <td class="score-col-season-1" style="display:none; font-weight: bold;">43</td>
+    <td>1</td>
+    <td>-</td>
+    <td>-</td>
+<td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
+    <td class="sticky-column"><strong>Rob</strong></td>
+    <td class="score-col-weekly-1" style="font-weight: bold;">4</td>
+    <td class="score-col-season-1" style="display:none; font-weight: bold;">39</td>
     <td>1</td>
     <td>-</td>
     <td>-</td>
@@ -280,6 +280,20 @@
 </thead>
 <tbody>
 <tr>
+    <td class="sticky-column"><strong>Dustin</strong></td>
+    <td class="score-col-weekly-2" style="font-weight: bold;">3</td>
+    <td class="score-col-season-2" style="display:none; font-weight: bold;">47</td>
+    <td>1</td>
+    <td>-</td>
+    <td>-</td>
+<td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
     <td class="sticky-column"><strong>Jess</strong></td>
     <td class="score-col-weekly-2" style="font-weight: bold;">3</td>
     <td class="score-col-season-2" style="display:none; font-weight: bold;">40</td>
@@ -311,20 +325,6 @@
     <td class="sticky-column"><strong>Meghan</strong></td>
     <td class="score-col-weekly-2" style="font-weight: bold;">4</td>
     <td class="score-col-season-2" style="display:none; font-weight: bold;">43</td>
-    <td>1</td>
-    <td>-</td>
-    <td>-</td>
-<td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td>-</td>
-<td>-</td>
-<td>-</td>
-<td>-</td>
-<td>-</td>
-<td>-</td>
-</tr>
-<tr>
-    <td class="sticky-column"><strong>Rob</strong></td>
-    <td class="score-col-weekly-2" style="font-weight: bold;">4</td>
-    <td class="score-col-season-2" style="display:none; font-weight: bold;">39</td>
     <td>1</td>
     <td>-</td>
     <td>-</td>
@@ -525,21 +525,25 @@ function toggleScoreView(divNum) {
     </table>
   </div>
 </div>
-<div id="div-season-full-list-modal" class="season-modal-overlay" onclick="if(event.target===this)this.style.display='none'" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
+<div id="div-season-full-list-modal" class="season-modal-overlay" onclick="if(event.target===this){var dvs=document.querySelectorAll('[id^=div-fl-detail-]');for(var i=0;i<dvs.length;i++)dvs[i].style.display='none';document.getElementById('div-fl-list-view').style.display='block';this.style.display='none'}" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
   <div style="background:#1a1a1b; border:1px solid #333; border-radius:10px; padding:24px; max-width:320px; width:90%; max-height:80vh; overflow-y:auto;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-      <h3 style="color:#FFA64D; margin:0;">Season Winners</h3>
+    <div id="div-fl-list-view">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+        <h3 style="color:#FFA64D; margin:0;">Season Winners</h3>
+        <span onclick="var dvs=document.querySelectorAll('[id^=div-fl-detail-]');for(var i=0;i<dvs.length;i++)dvs[i].style.display='none';document.getElementById('div-fl-list-view').style.display='block';document.getElementById('div-season-full-list-modal').style.display='none'" style="color:#d7dadc; cursor:pointer; font-size:1.5rem; line-height:1; padding:4px 8px;">&times;</span>
+      </div>
+      <div style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #333; cursor:pointer;" onclick="document.getElementById('div-fl-detail-reg-4').style.display='block'; document.getElementById('div-fl-list-view').style.display='none';"><span style="color:#d7dadc; font-weight:600; min-width:90px;">Season 4:</span><span style="color:#d7dadc; font-weight:bold; margin-left:12px;">Dani <span style="font-size:0.8em; opacity:0.7; color:#00E8DA;">&#9656;</span></span></div>
+<div style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #333; cursor:pointer;" onclick="document.getElementById('div-fl-detail-reg-3').style.display='block'; document.getElementById('div-fl-list-view').style.display='none';"><span style="color:#d7dadc; font-weight:600; min-width:90px;">Season 3:</span><span style="color:#d7dadc; font-weight:bold; margin-left:12px;">Rob <span style="font-size:0.8em; opacity:0.7; color:#00E8DA;">&#9656;</span></span></div>
+<div style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #333; cursor:pointer;" onclick="document.getElementById('div-fl-detail-reg-2').style.display='block'; document.getElementById('div-fl-list-view').style.display='none';"><span style="color:#d7dadc; font-weight:600; min-width:90px;">Season 2:</span><span style="color:#d7dadc; font-weight:bold; margin-left:12px;">Brent <span style="font-size:0.8em; opacity:0.7; color:#00E8DA;">&#9656;</span></span></div>
+<div style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #333;"><span style="color:#d7dadc; font-weight:600; min-width:90px;">Season 1:</span><span style="color:#d7dadc; font-weight:bold; margin-left:12px;">Brent</span></div>
+
+    </div>
+    <div id="div-fl-detail-reg-4" style="display:none; padding-top:4px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <span onclick="document.getElementById('div-fl-detail-reg-4').style.display='none'; document.getElementById('div-fl-list-view').style.display='block';" style="color:#FFA64D; cursor:pointer; font-size:1.2rem; padding:6px 10px; background:#2a2a2c; border-radius:6px;">&#8592;</span>
       <span onclick="document.getElementById('div-season-full-list-modal').style.display='none'" style="color:#d7dadc; cursor:pointer; font-size:1.5rem; line-height:1; padding:4px 8px;">&times;</span>
     </div>
-    <div style="margin-bottom: 10px;"><p style="color: #00E8DA; font-weight: bold; margin: 0; cursor: pointer;" onclick="document.getElementById('full-list-season-4').style.display='flex'">Season 4 Winner: Dani <span style="font-size: 0.8em; opacity: 0.7;">&#9656;</span></p></div><div style="margin-bottom: 10px;"><p style="color: #00E8DA; font-weight: bold; margin: 0; cursor: pointer;" onclick="document.getElementById('full-list-season-3').style.display='flex'">Season 3 Winner: Rob <span style="font-size: 0.8em; opacity: 0.7;">&#9656;</span></p></div><div style="margin-bottom: 10px;"><p style="color: #00E8DA; font-weight: bold; margin: 0; cursor: pointer;" onclick="document.getElementById('full-list-season-2').style.display='flex'">Season 2 Winner: Brent <span style="font-size: 0.8em; opacity: 0.7;">&#9656;</span></p></div><div style="margin-bottom: 10px;"><p style="color: #00E8DA; font-weight: bold; margin: 0;">Season 1 Winner: Brent</p></div>
-  </div>
-</div>
-<div id="full-list-season-4" class="season-modal-overlay" onclick="if(event.target===this)this.style.display='none'" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
-  <div style="background:#1a1a1b; border:1px solid #333; border-radius:10px; padding:20px; max-width:320px; width:90%; max-height:80vh; overflow-y:auto;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-      <h3 style="color:#00E8DA; margin:0;">Season 4 Breakdown</h3>
-      <span onclick="document.getElementById('full-list-season-4').style.display='none'" style="color:#d7dadc; cursor:pointer; font-size:1.5rem; line-height:1; padding:4px 8px;">&times;</span>
-    </div>
+    <h3 style="color:#00E8DA; margin:0 0 14px 0; text-align:center;">Season 4</h3>
     <table class="season-table" style="width:100%;">
       <thead><tr><th>Player</th><th>Wins</th></tr></thead>
       <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td><strong>Dani</strong></td><td style="text-align:center;">4</td></tr>
@@ -552,14 +556,13 @@ function toggleScoreView(divNum) {
 <tr><td><strong>Meghan</strong></td><td style="text-align:center;">1</td></tr>
 </tbody>
     </table>
-  </div>
 </div>
-<div id="full-list-season-3" class="season-modal-overlay" onclick="if(event.target===this)this.style.display='none'" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
-  <div style="background:#1a1a1b; border:1px solid #333; border-radius:10px; padding:20px; max-width:320px; width:90%; max-height:80vh; overflow-y:auto;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-      <h3 style="color:#00E8DA; margin:0;">Season 3 Breakdown</h3>
-      <span onclick="document.getElementById('full-list-season-3').style.display='none'" style="color:#d7dadc; cursor:pointer; font-size:1.5rem; line-height:1; padding:4px 8px;">&times;</span>
+<div id="div-fl-detail-reg-3" style="display:none; padding-top:4px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <span onclick="document.getElementById('div-fl-detail-reg-3').style.display='none'; document.getElementById('div-fl-list-view').style.display='block';" style="color:#FFA64D; cursor:pointer; font-size:1.2rem; padding:6px 10px; background:#2a2a2c; border-radius:6px;">&#8592;</span>
+      <span onclick="document.getElementById('div-season-full-list-modal').style.display='none'" style="color:#d7dadc; cursor:pointer; font-size:1.5rem; line-height:1; padding:4px 8px;">&times;</span>
     </div>
+    <h3 style="color:#00E8DA; margin:0 0 14px 0; text-align:center;">Season 3</h3>
     <table class="season-table" style="width:100%;">
       <thead><tr><th>Player</th><th>Wins</th></tr></thead>
       <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td><strong>Rob</strong></td><td style="text-align:center;">4</td></tr>
@@ -568,14 +571,13 @@ function toggleScoreView(divNum) {
 <tr><td><strong>Meghan</strong></td><td style="text-align:center;">1</td></tr>
 </tbody>
     </table>
-  </div>
 </div>
-<div id="full-list-season-2" class="season-modal-overlay" onclick="if(event.target===this)this.style.display='none'" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
-  <div style="background:#1a1a1b; border:1px solid #333; border-radius:10px; padding:20px; max-width:320px; width:90%; max-height:80vh; overflow-y:auto;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-      <h3 style="color:#00E8DA; margin:0;">Season 2 Breakdown</h3>
-      <span onclick="document.getElementById('full-list-season-2').style.display='none'" style="color:#d7dadc; cursor:pointer; font-size:1.5rem; line-height:1; padding:4px 8px;">&times;</span>
+<div id="div-fl-detail-reg-2" style="display:none; padding-top:4px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+      <span onclick="document.getElementById('div-fl-detail-reg-2').style.display='none'; document.getElementById('div-fl-list-view').style.display='block';" style="color:#FFA64D; cursor:pointer; font-size:1.2rem; padding:6px 10px; background:#2a2a2c; border-radius:6px;">&#8592;</span>
+      <span onclick="document.getElementById('div-season-full-list-modal').style.display='none'" style="color:#d7dadc; cursor:pointer; font-size:1.5rem; line-height:1; padding:4px 8px;">&times;</span>
     </div>
+    <h3 style="color:#00E8DA; margin:0 0 14px 0; text-align:center;">Season 2</h3>
     <table class="season-table" style="width:100%;">
       <thead><tr><th>Player</th><th>Wins</th></tr></thead>
       <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td><strong>Brent</strong></td><td style="text-align:center;">4</td></tr>
@@ -583,6 +585,8 @@ function toggleScoreView(divNum) {
 <tr><td><strong>Jess</strong></td><td style="text-align:center;">2</td></tr>
 </tbody>
     </table>
+</div>
+
   </div>
 </div>
 

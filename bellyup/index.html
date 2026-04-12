@@ -155,14 +155,23 @@
 </div>
 </div>
 <div class="tab-content" id="weekly">
+<div style="margin-bottom: 30px;">
 <p style="margin-top: 0; margin-bottom: 5px; font-style: italic;">Top 5 scores count toward weekly total (Monday-Sunday).</p>
-<p style="margin-top: 0; margin-bottom: 20px; font-size: 0.9em;">At least 5 scores needed to compete for the week!</p>
+<p style="margin-top: 0; margin-bottom: 10px; font-size: 0.9em;">At least 5 scores needed to compete for the week!</p>
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+  <h3 style="color: #00E8DA; margin: 0;">DIVISION I</h3>
+  <select id="score-toggle-1" onchange="toggleScoreView(1)" style="background: #2a2a2c; color: #d7dadc; border: 1px solid #444; border-radius: 6px; padding: 4px 8px; font-size: 0.85em;">
+    <option value="weekly">Weekly Score</option>
+    <option value="season">Season Total</option>
+  </select>
+</div>
 <div class="table-container" style="overflow-x: auto;">
-<table>
+<table id="div-table-1">
 <thead>
 <tr>
     <th class="sticky-column">Player</th>
-    <th>Weekly Score</th>
+    <th class="score-col-weekly-1">Weekly Score</th>
+    <th class="score-col-season-1" style="display:none;">Season Total</th>
     <th>Used Scores</th>
     <th>Failed</th>
     <th>Thrown Out</th>
@@ -179,15 +188,17 @@
 <tbody>
 <tr style="background-color: rgba(0, 232, 218, 0.15);">
     <td class="sticky-column"><strong>Meredith</strong></td>
-    <td style="font-weight: bold;">17</td>
+    <td class="score-col-weekly-1" style="font-weight: bold;">17</td>
+    <td class="score-col-season-1" style="display:none; font-weight: bold;">17</td>
     <td>5</td>
     <td>-</td>
     <td>5, 5</td>
     <td>-</td>
 <td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="medium" style="color: #FFA64D; font-weight: bold;">5</td><td class="medium" style="color: #FFA64D; font-weight: bold;">5</td><td class="good" style="color: #00E8DA; font-weight: bold;">2</td><td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td></tr>
-<tr class="highlight" style="background-color: rgba(0, 232, 218, 0.15);">
+<tr style="background-color: rgba(0, 232, 218, 0.15);">
     <td class="sticky-column"><strong>Jeremy</strong></td>
-    <td style="font-weight: bold;">17</td>
+    <td class="score-col-weekly-1" style="font-weight: bold;">17</td>
+    <td class="score-col-season-1" style="display:none; font-weight: bold;">17</td>
     <td>5</td>
     <td style="color: #ff5c5c; font-weight: bold;">1</td>
     <td>-</td>
@@ -196,7 +207,8 @@
 </tr>
 <tr style="background-color: rgba(0, 232, 218, 0.15);">
     <td class="sticky-column"><strong>Brent</strong></td>
-    <td style="font-weight: bold;">22</td>
+    <td class="score-col-weekly-1" style="font-weight: bold;">22</td>
+    <td class="score-col-season-1" style="display:none; font-weight: bold;">22</td>
     <td>5</td>
     <td>-</td>
     <td>5, 6</td>
@@ -204,7 +216,8 @@
 <td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="medium" style="color: #FFA64D; font-weight: bold;">6</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="medium" style="color: #FFA64D; font-weight: bold;">5</td><td class="medium" style="color: #FFA64D; font-weight: bold;">5</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="medium" style="color: #FFA64D; font-weight: bold;">5</td></tr>
 <tr>
     <td class="sticky-column"><strong>Henry</strong></td>
-    <td style="font-weight: bold;">12</td>
+    <td class="score-col-weekly-1" style="font-weight: bold;">12</td>
+    <td class="score-col-season-1" style="display:none; font-weight: bold;">12</td>
     <td>3</td>
     <td>-</td>
     <td>-</td>
@@ -214,9 +227,44 @@
 <td>-</td>
 <td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td>-</td>
 </tr>
+</tbody>
+</table>
+</div>
+<p style="margin: 6px 0 0; font-size: 0.8em; color: #00E8DA; font-style: italic;">&#x2B07; Relegated Players: 1</p>
+</div>
+<div style="margin-bottom: 30px;">
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;">
+  <h3 style="color: #FFA64D; margin: 0;">DIVISION II</h3>
+  <select id="score-toggle-2" onchange="toggleScoreView(2)" style="background: #2a2a2c; color: #d7dadc; border: 1px solid #444; border-radius: 6px; padding: 4px 8px; font-size: 0.85em;">
+    <option value="weekly">Weekly Score</option>
+    <option value="season">Season Total</option>
+  </select>
+</div>
+<div class="table-container" style="overflow-x: auto;">
+<table id="div-table-2">
+<thead>
+<tr>
+    <th class="sticky-column">Player</th>
+    <th class="score-col-weekly-2">Weekly Score</th>
+    <th class="score-col-season-2" style="display:none;">Season Total</th>
+    <th>Used Scores</th>
+    <th>Failed</th>
+    <th>Thrown Out</th>
+    <th>Wks Missed</th>
+    <th>Mon</th>
+    <th>Tue</th>
+    <th>Wed</th>
+    <th>Thu</th>
+    <th>Fri</th>
+    <th>Sat</th>
+    <th>Sun</th>
+</tr>
+</thead>
+<tbody>
 <tr>
     <td class="sticky-column"><strong>Pete</strong></td>
-    <td style="font-weight: bold;">10</td>
+    <td class="score-col-weekly-2" style="font-weight: bold;">10</td>
+    <td class="score-col-season-2" style="display:none; font-weight: bold;">10</td>
     <td>2</td>
     <td>-</td>
     <td>-</td>
@@ -229,7 +277,8 @@
 </tr>
 <tr>
     <td class="sticky-column"><strong>Mikaila</strong></td>
-    <td style="font-weight: bold;">-</td>
+    <td class="score-col-weekly-2" style="font-weight: bold;">-</td>
+    <td class="score-col-season-2" style="display:none; font-weight: bold;">-</td>
     <td>0</td>
     <td>-</td>
     <td>-</td>
@@ -244,7 +293,8 @@
 </tr>
 <tr>
     <td class="sticky-column"><strong>Roy</strong></td>
-    <td style="font-weight: bold;">-</td>
+    <td class="score-col-weekly-2" style="font-weight: bold;">-</td>
+    <td class="score-col-season-2" style="display:none; font-weight: bold;">-</td>
     <td>0</td>
     <td>-</td>
     <td>-</td>
@@ -259,7 +309,8 @@
 </tr>
 <tr>
     <td class="sticky-column"><strong>Troy</strong></td>
-    <td style="font-weight: bold;">-</td>
+    <td class="score-col-weekly-2" style="font-weight: bold;">-</td>
+    <td class="score-col-season-2" style="display:none; font-weight: bold;">-</td>
     <td>0</td>
     <td>-</td>
     <td>-</td>
@@ -274,23 +325,78 @@
 </tr>
 </tbody>
 </table>
-<p class="note" style="font-style: italic; margin-top: 20px;">Failed attempts do not count towards your 'Used Scores'</p>
-<p class="note" style="font-style: italic; margin-top: 5px;">Weekly Score uses only your best 5 scores. Additional scores appear in 'Thrown Out'</p>
 </div>
+<p style="margin: 6px 0 0; font-size: 0.8em; color: #FFA64D; font-style: italic;">&#x2B06; Promoted Players: 1</p>
+</div>
+<p style="margin-top: 10px; font-size: 0.85em; color: #d7dadc; font-style: italic;">Failed attempts do not count towards your 'Used Scores'<br>Weekly score uses only your best 5 scores. Additional scores appear in 'Thrown Out'</p>
+<script>
+var originalOrder = {};
+function toggleScoreView(divNum) {
+    var sel = document.getElementById('score-toggle-' + divNum);
+    var mode = sel.value;
+    var weeklyCols = document.querySelectorAll('.score-col-weekly-' + divNum);
+    var seasonCols = document.querySelectorAll('.score-col-season-' + divNum);
+    var table = document.getElementById('div-table-' + divNum);
+    var tbody = table.querySelector('tbody');
+    var rows = Array.from(tbody.querySelectorAll('tr'));
+    
+    if (mode === 'season') {
+        weeklyCols.forEach(function(el) { el.style.display = 'none'; });
+        seasonCols.forEach(function(el) { el.style.display = ''; });
+        // Save original order if not saved
+        if (!originalOrder[divNum]) {
+            originalOrder[divNum] = rows.map(function(r) { return r; });
+        }
+        // Sort by season total: numeric ascending (lower=better), Immune/Relegated and - go to bottom
+        var statusLabels = ['Immune', 'Relegated'];
+        rows.sort(function(a, b) {
+            var aCell = a.querySelector('.score-col-season-' + divNum);
+            var bCell = b.querySelector('.score-col-season-' + divNum);
+            var aVal = aCell ? aCell.textContent.trim() : '-';
+            var bVal = bCell ? bCell.textContent.trim() : '-';
+            var aIsStatus = statusLabels.indexOf(aVal) >= 0;
+            var bIsStatus = statusLabels.indexOf(bVal) >= 0;
+            var aNum = (aIsStatus || aVal === '-' || aVal === '0') ? 99999 : parseInt(aVal);
+            var bNum = (bIsStatus || bVal === '-' || bVal === '0') ? 99999 : parseInt(bVal);
+            if (aIsStatus && !bIsStatus) return 1;
+            if (bIsStatus && !aIsStatus) return -1;
+            if (aVal === '-' && bVal !== '-') return 1;
+            if (bVal === '-' && aVal !== '-') return -1;
+            return aNum - bNum;
+        });
+        rows.forEach(function(r) { tbody.appendChild(r); });
+    } else {
+        weeklyCols.forEach(function(el) { el.style.display = ''; });
+        seasonCols.forEach(function(el) { el.style.display = 'none'; });
+        // Restore original order
+        if (originalOrder[divNum]) {
+            originalOrder[divNum].forEach(function(r) { tbody.appendChild(r); });
+        }
+    }
+}
+</script>
 
 </div>
 <div class="tab-content" id="stats">
 <div class="season-container" style="margin-bottom: 30px;">
-<h3 style="margin-bottom: 10px; color: #00E8DA;">Season 3</h3>
+<h3 style="margin-bottom: 10px; color: #00E8DA;">Division I - Season 3</h3>
 <table class="season-table">
 <thead><tr><th>Player</th><th>Weekly Wins</th><th>Wordle Week (Score)</th></tr></thead>
 <tbody>
 </tbody>
 </table>
-<p style="margin-top: 5px; font-size: 14px; font-style: italic;">If players are tied at the end of the week, then all players get a weekly win. First Player to get <strong style="color: #00E8DA;">4 weekly wins</strong> is the Season Champ!</p>
-<p class="season-winner-message" style="color: #00E8DA; font-weight: bold; margin-top: 10px; cursor: pointer; " onclick="document.getElementById('season-modal-2').style.display='flex'">Season 2 Winner: Jeremy <span style="font-size: 0.8em; opacity: 0.7;">&#9656;</span></p>
-<p class="season-winner-message" style="color: #00E8DA; font-weight: bold; margin-top: 10px; cursor: pointer; " onclick="document.getElementById('season-modal-1').style.display='flex'">Season 1 Winner: Meredith <span style="font-size: 0.8em; opacity: 0.7;">&#9656;</span></p>
 </div>
+<div class="season-container" style="margin-bottom: 30px;">
+<h3 style="margin-bottom: 10px; color: #FFA64D;">Division II - Season 3</h3>
+<table class="season-table">
+<thead><tr><th>Player</th><th>Weekly Wins</th><th>Wordle Week (Score)</th></tr></thead>
+<tbody>
+</tbody>
+</table>
+<p style="margin-top: 5px; font-size: 14px; font-style: italic;">If players are tied at the end of the week, all players get a weekly win. First Player to get <strong style="color: #00E8DA;">3 weekly wins</strong> is the Season Champ!</p>
+</div>
+<p class="season-winner-message" style="color: #00E8DA; font-weight: bold; margin-top: 12px; cursor: pointer;" onclick="document.getElementById('season-modal-2').style.display='flex'">Season 2 Winner: Jeremy <span style="font-size: 0.8em; opacity: 0.7;">&#9656;</span></p>
+<p class="season-winner-message" style="color: #00E8DA; font-weight: bold; margin-top: 12px; cursor: pointer;" onclick="document.getElementById('season-modal-1').style.display='flex'">Season 1 Winner: Meredith <span style="font-size: 0.8em; opacity: 0.7;">&#9656;</span></p>
 <div class="all-time-container">
 <h2 style="margin-top: 5px; margin-bottom: 10px;">All-Time Stats</h2>
 <table>

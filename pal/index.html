@@ -142,8 +142,8 @@
 </div>
 </div>
 <div class="tab-content" id="weekly">
-<p style="margin-top: 0; margin-bottom: 5px; font-style: italic;">Top <strong style="color: #00E8DA;">3 scores</strong> count toward weekly total (Monday-Sunday).</p>
-<p style="margin-top: 0; margin-bottom: 20px; font-size: 0.9em;">At least <strong style="color: #00E8DA;">3 scores</strong> needed to compete for the week!</p>
+<p style="margin-top: 0; margin-bottom: 5px; font-style: italic;">Top <strong style="color: #00E8DA;">4 scores</strong> count toward weekly total (Monday-Sunday).</p>
+<p style="margin-top: 0; margin-bottom: 20px; font-size: 0.9em;">At least <strong style="color: #00E8DA;">4 scores</strong> needed to compete for the week!</p>
 <div class="table-container" style="overflow-x: auto;">
 <table>
 <thead>
@@ -236,7 +236,7 @@
 </table>
 </div>
 <p class="note" style="font-style: italic; margin-top: 20px;">Failed attempts do not count towards your 'Used Scores'</p>
-<p class="note" style="font-style: italic; margin-top: 5px;">Weekly Score uses only your <strong style="color: #00E8DA;">best 3 scores</strong>. Additional scores appear in 'Thrown Out'</p>
+<p class="note" style="font-style: italic; margin-top: 5px;">Weekly Score uses only your <strong style="color: #00E8DA;">best 4 scores</strong>. Additional scores appear in 'Thrown Out'</p>
 
 </div>
 <div class="tab-content" id="stats">
@@ -320,15 +320,16 @@
         <h3 style="color:#FFA64D; margin:0;">Season Winners</h3>
         <span onclick="backToFullList();document.getElementById('season-full-list-modal').style.display='none'" style="color:#d7dadc; cursor:pointer; font-size:1.5rem; line-height:1; padding:4px 8px;">&times;</span>
       </div>
-      <div style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #333; cursor:pointer;" onclick="showSeasonDetail(8)"><span style="color:#d7dadc; font-weight:600; min-width:90px;">Season 8:</span><span style="color:#d7dadc; font-weight:bold; margin-left:12px;">Vox <span style="font-size:0.8em; opacity:0.7; color:#00E8DA;">&#9656;</span></span></div>
-<div style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #333; cursor:pointer;" onclick="showSeasonDetail(7)"><span style="color:#d7dadc; font-weight:600; min-width:90px;">Season 7:</span><span style="color:#d7dadc; font-weight:bold; margin-left:12px;">Fuzwuz <span style="font-size:0.8em; opacity:0.7; color:#00E8DA;">&#9656;</span></span></div>
-<div style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #333; cursor:pointer;" onclick="showSeasonDetail(6)"><span style="color:#d7dadc; font-weight:600; min-width:90px;">Season 6:</span><span style="color:#d7dadc; font-weight:bold; margin-left:12px;">Vox <span style="font-size:0.8em; opacity:0.7; color:#00E8DA;">&#9656;</span></span></div>
-<div style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #333; cursor:pointer;" onclick="showSeasonDetail(5)"><span style="color:#d7dadc; font-weight:600; min-width:90px;">Season 5:</span><span style="color:#d7dadc; font-weight:bold; margin-left:12px;">Vox <span style="font-size:0.8em; opacity:0.7; color:#00E8DA;">&#9656;</span></span></div>
-<div style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #333;"><span style="color:#d7dadc; font-weight:600; min-width:90px;">Season 4:</span><span style="color:#d7dadc; font-weight:bold; margin-left:12px;">Vox</span></div>
-<div style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #333;"><span style="color:#d7dadc; font-weight:600; min-width:90px;">Season 3:</span><span style="color:#d7dadc; font-weight:bold; margin-left:12px;">Vox</span></div>
-<div style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #333;"><span style="color:#d7dadc; font-weight:600; min-width:90px;">Season 2:</span><span style="color:#d7dadc; font-weight:bold; margin-left:12px;">Vox</span></div>
-<div style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #333;"><span style="color:#d7dadc; font-weight:600; min-width:90px;">Season 1:</span><span style="color:#d7dadc; font-weight:bold; margin-left:12px;">Vox</span></div>
+      <div class="fl-season-item" data-page="1" style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #333; cursor:pointer;" onclick="showSeasonDetail(8)"><span style="color:#d7dadc; font-weight:600; min-width:90px;">Season 8:</span><span style="color:#d7dadc; font-weight:bold; margin-left:12px;">Vox <span style="font-size:0.8em; opacity:0.7; color:#00E8DA;">&#9656;</span></span></div>
+<div class="fl-season-item" data-page="1" style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #333; cursor:pointer;" onclick="showSeasonDetail(7)"><span style="color:#d7dadc; font-weight:600; min-width:90px;">Season 7:</span><span style="color:#d7dadc; font-weight:bold; margin-left:12px;">Fuzwuz <span style="font-size:0.8em; opacity:0.7; color:#00E8DA;">&#9656;</span></span></div>
+<div class="fl-season-item" data-page="1" style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #333; cursor:pointer;" onclick="showSeasonDetail(6)"><span style="color:#d7dadc; font-weight:600; min-width:90px;">Season 6:</span><span style="color:#d7dadc; font-weight:bold; margin-left:12px;">Vox <span style="font-size:0.8em; opacity:0.7; color:#00E8DA;">&#9656;</span></span></div>
+<div class="fl-season-item" data-page="1" style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #333; cursor:pointer;" onclick="showSeasonDetail(5)"><span style="color:#d7dadc; font-weight:600; min-width:90px;">Season 5:</span><span style="color:#d7dadc; font-weight:bold; margin-left:12px;">Vox <span style="font-size:0.8em; opacity:0.7; color:#00E8DA;">&#9656;</span></span></div>
+<div class="fl-season-item" data-page="1" style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #333;"><span style="color:#d7dadc; font-weight:600; min-width:90px;">Season 4:</span><span style="color:#d7dadc; font-weight:bold; margin-left:12px;">Vox</span></div>
+<div class="fl-season-item" data-page="1" style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #333;"><span style="color:#d7dadc; font-weight:600; min-width:90px;">Season 3:</span><span style="color:#d7dadc; font-weight:bold; margin-left:12px;">Vox</span></div>
+<div class="fl-season-item" data-page="1" style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #333;"><span style="color:#d7dadc; font-weight:600; min-width:90px;">Season 2:</span><span style="color:#d7dadc; font-weight:bold; margin-left:12px;">Vox</span></div>
+<div class="fl-season-item" data-page="1" style="display:flex; align-items:center; padding:12px 0; border-bottom:1px solid #333;"><span style="color:#d7dadc; font-weight:600; min-width:90px;">Season 1:</span><span style="color:#d7dadc; font-weight:bold; margin-left:12px;">Vox</span></div>
 
+      
     </div>
     <div id="fl-detail-5" style="display:none; padding-top:4px;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
@@ -384,6 +385,22 @@
   </div>
 </div>
 <script>
+var flCurrentPage = 1;
+var flTotalPages = 1;
+function flShowPage(p) {
+  flCurrentPage = p;
+  var items = document.querySelectorAll('.fl-season-item');
+  for (var i = 0; i < items.length; i++) {
+    items[i].style.display = items[i].getAttribute('data-page') == String(p) ? 'flex' : 'none';
+  }
+  var label = document.getElementById('fl-page-label');
+  var prev = document.getElementById('fl-prev');
+  var next = document.getElementById('fl-next');
+  if (label) label.textContent = 'Page ' + p + ' of ' + flTotalPages;
+  if (prev) prev.style.display = p > 1 ? 'inline' : 'none';
+  if (next) next.style.display = p < flTotalPages ? 'inline' : 'none';
+}
+function flChangePage(dir) { flShowPage(flCurrentPage + dir); }
 function showSeasonDetail(sn) {
   document.getElementById('fl-list-view').style.display = 'none';
   var details = document.querySelectorAll('[id^="fl-detail-"]');
@@ -395,9 +412,11 @@ function backToFullList() {
   var details = document.querySelectorAll('[id^="fl-detail-"]');
   for (var i = 0; i < details.length; i++) details[i].style.display = 'none';
   document.getElementById('fl-list-view').style.display = 'block';
+  flShowPage(flCurrentPage);
 }
 function openFullList() {
   backToFullList();
+  flShowPage(1);
   document.getElementById('season-full-list-modal').style.display = 'flex';
 }
 </script>

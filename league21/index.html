@@ -151,7 +151,7 @@
 </div>
 </div>
 <div class="tab-content active" id="latest">
-<h2 style="margin-top: 5px; margin-bottom: 10px; font-size: 16px; color: #00E8DA; text-align: center;">Wordle #1800 - May 24, 2026</h2>
+<h2 style="margin-top: 5px; margin-bottom: 10px; font-size: 16px; color: #00E8DA; text-align: center;">Wordle #1801 - May 25, 2026</h2>
 <div class="score-card">
     <div class="player-info">
         <div class="player-name">Brent</div>
@@ -194,14 +194,20 @@
 </tr>
 </thead>
 <tbody>
-<tr class="highlight" style="background-color: rgba(0, 232, 218, 0.15);">
+<tr>
     <td class="sticky-column"><strong>Brent</strong></td>
-    <td style="font-weight: bold;">20</td>
-    <td>5</td>
-    <td style="color: #ff5c5c; font-weight: bold;">1</td>
+    <td style="font-weight: bold;">-</td>
+    <td>0</td>
     <td>-</td>
     <td>-</td>
-<td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="medium" style="color: #FFA64D; font-weight: bold;">5</td><td class="failed" style="color: #787c7e; font-weight: bold;">X</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td>-</td>
+    <td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
 </tr>
 <tr>
     <td class="sticky-column"><strong>VoxCurtis</strong></td>
@@ -209,7 +215,7 @@
     <td>0</td>
     <td>-</td>
     <td>-</td>
-    <td style="color: #ff5c5c; font-weight: bold;">3</td>
+    <td>-</td>
 <td>-</td>
 <td>-</td>
 <td>-</td>
@@ -224,7 +230,7 @@
     <td>0</td>
     <td>-</td>
     <td>-</td>
-    <td style="color: #ff5c5c; font-weight: bold;">3</td>
+    <td>-</td>
 <td>-</td>
 <td>-</td>
 <td>-</td>
@@ -241,17 +247,15 @@
 <div class="tab-content" id="stats">
 <p style="margin-top: 0; margin-bottom: 15px; font-style: italic;">First player(s) to <strong style="color: #00E8DA;">4 weekly wins</strong> is the Season Champion!</p>
 <div class="season-container" style="margin-bottom: 30px;">
-<h3 style="margin-bottom: 10px; color: #00E8DA;">Season 1</h3>
+<h3 style="margin-bottom: 10px; color: #00E8DA;">Season 2</h3>
 <table class="season-table">
 <thead><tr><th>Player</th><th>Weekly Wins</th><th>Wordle Week (Score)</th></tr></thead>
 <tbody>
-<tr>
-    <td><strong>Brent</strong></td>
-    <td>3</td>
-    <td style="white-space: nowrap;">Apr 27 (18)<br>May 04 (22)<br>May 11 (24)</td>
-</tr>
 </tbody>
 </table>
+</div>
+<div class="season-winners-container" style="margin-top: 24px; margin-bottom: 30px;">
+<p class="season-winner-message" style="color: #00E8DA; font-weight: bold; margin-top: 10px; cursor: pointer; " onclick="document.getElementById('season-modal-1').style.display='flex'">Season 1 Winner: Brent <span style="font-size: 0.8em; opacity: 0.7;">&#9656;</span></p>
 </div>
 <div class="all-time-container" style="margin-top: 36px;">
 <h2 style="margin-top: 30px; margin-bottom: 10px;">All-Time Stats</h2>
@@ -265,8 +269,8 @@
 </tr>
 <tr>
     <td><strong>Brent</strong></td>
-    <td>28</td>
-    <td>4.50</td>
+    <td>29</td>
+    <td>4.45</td>
 </tr>
 <tr>
     <td><strong>WPL</strong></td>
@@ -275,6 +279,19 @@
 </tr>
 </tbody>
 </table>
+</div>
+<div id="season-modal-1" class="season-modal-overlay" onclick="if(event.target===this)this.style.display='none'" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
+  <div style="background:#1a1a1b; border:1px solid #333; border-radius:10px; padding:20px; max-width:320px; width:90%; max-height:80vh; overflow-y:auto;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <h3 style="color:#00E8DA; margin:0;">Season 1 Breakdown</h3>
+      <span onclick="document.getElementById('season-modal-1').style.display='none'" style="color:#d7dadc; cursor:pointer; font-size:1.5rem; line-height:1; padding:4px 8px;">&times;</span>
+    </div>
+    <table class="season-table" style="width:100%;">
+      <thead><tr><th>Player</th><th>Wins</th></tr></thead>
+      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td><strong>Brent</strong></td><td style="text-align:center;">4</td></tr>
+</tbody>
+    </table>
+  </div>
 </div>
 
 </div>

@@ -2778,7 +2778,7 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
             {_removed_banner}
             
             <div class="card" style="position: relative;">
-                {f'<span id="linkStatusBadge" style="position: absolute; top: 16px; right: 16px; background: #2ECC71; color: #000; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600;">🔗 Linked</span>' if payment_required and linked_subscription else f'<span id="linkStatusBadge" style="position: absolute; top: 16px; right: 16px; background: {COLORS["accent_orange"]}; color: #000; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600;">⚠ Unlinked</span>' if payment_required and requires_payment else ''}
+                {f'<a href="/dashboard/membership" id="linkStatusBadge" title="View subscription" style="position: absolute; top: 16px; right: 16px; background: #2ECC71; color: #000; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600; text-decoration: none; cursor: pointer;" onmouseover="this.style.opacity=\'0.85\'" onmouseout="this.style.opacity=\'1\'">🔗 Linked</a>' if payment_required and linked_subscription else f'<span id="linkStatusBadge" style="position: absolute; top: 16px; right: 16px; background: {COLORS["accent_orange"]}; color: #000; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600;">⚠ Unlinked</span>' if payment_required and requires_payment else ''}
                 <h2>⚙️ {league['display_name']}</h2>
                 <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                     {f'<span style="color: {COLORS["text_muted"]};">Channel: #{league["channel_name"]}</span>' if league.get('channel_name') else ''}
@@ -6780,7 +6780,7 @@ def render_membership_page(user, subscriptions, message=None, error=None):
             if sub.get('leagues'):
                 for lg in sub['leagues']:
                     lg_name = lg["display_name"] or lg["name"]
-                    leagues_html += f'<div style="padding: 6px 12px; background: {COLORS["bg_dark"]}; border-radius: 6px; margin-top: 6px; font-size: 0.9em; color: {COLORS["text_muted"]}; display: flex; justify-content: space-between; align-items: center;">• {lg_name} <button type="button" onclick="confirmUnlink({lg["id"]}, \'{lg_name.replace(chr(39), chr(92)+chr(39))}\')" style="background: none; border: none; color: {COLORS["text_muted"]}; cursor: pointer; font-size: 0.85em; padding: 2px 6px; border-radius: 4px; opacity: 0.6;" onmouseover="this.style.opacity=1;this.style.color=\'{COLORS["error"]}\'" onmouseout="this.style.opacity=0.6;this.style.color=\'{COLORS["text_muted"]}\'">✕ Unlink</button></div>'
+                    leagues_html += f'<div style="padding: 6px 12px; background: {COLORS["bg_dark"]}; border-radius: 6px; margin-top: 6px; font-size: 0.9em; color: {COLORS["text_muted"]}; display: flex; justify-content: space-between; align-items: center;">• <a href="/dashboard/league/{lg["id"]}" style="color: {COLORS["text"]}; text-decoration: none; flex: 1;" onmouseover="this.style.textDecoration=\'underline\'" onmouseout="this.style.textDecoration=\'none\'">{lg_name}</a> <button type="button" onclick="confirmUnlink({lg["id"]}, \'{lg_name.replace(chr(39), chr(92)+chr(39))}\')" style="background: none; border: none; color: {COLORS["text_muted"]}; cursor: pointer; font-size: 0.85em; padding: 2px 6px; border-radius: 4px; opacity: 0.6;" onmouseover="this.style.opacity=1;this.style.color=\'{COLORS["error"]}\'" onmouseout="this.style.opacity=0.6;this.style.color=\'{COLORS["text_muted"]}\'">✕ Unlink</button></div>'
             else:
                 leagues_html = f'<div style="padding: 6px 12px; color: {COLORS["text_muted"]}; font-size: 0.85em; font-style: italic;">No league linked yet — link a league when you activate it</div>'
 
@@ -6805,40 +6805,42 @@ def render_membership_page(user, subscriptions, message=None, error=None):
             change_plan_html = ""
             if sub['status'] == 'active':
                 if sub['plan_type'] == 'sms':
-                    options = ""
+                    options = '<option value="" selected>Select a new plan…</option>'
                     sms_tiers = [('sms_4', '4 Players — $8/mo'), ('sms_5', '5 Players — $10/mo'), ('sms_6', '6 Players — $12/mo'), ('sms_7', '7 Players — $14/mo'), ('sms_8', '8 Players — $16/mo'), ('sms_9', '9 Players — $18/mo'), ('sms_9_ai', '9 + AI — $20/mo')]
                     for tier_val, tier_label in sms_tiers:
                         if tier_val == tier:
-                            options += f'<option value="{tier_val}" selected disabled>{tier_label}</option>'
+                            options += f'<option value="{tier_val}" disabled>{tier_label} — current plan</option>'
                         else:
                             options += f'<option value="{tier_val}">{tier_label}</option>'
                     change_plan_html = f"""
                     <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid {COLORS['border']};">
+                        <div style="font-size: 0.8em; color: {COLORS['text_muted']}; margin-bottom: 6px; font-weight: 600;">Change your plan</div>
                         <form method="POST" action="/billing/change-plan" style="display: flex; gap: 8px; align-items: center;">
                             <input type="hidden" name="subscription_id" value="{sub['id']}">
-                            <select name="new_tier" style="flex: 1; padding: 8px 12px; border-radius: 6px; background: {COLORS['bg_dark']}; border: 1px solid {COLORS['border']}; color: {COLORS['text']}; font-size: 0.85em;">
+                            <select name="new_tier" onchange="this.nextElementSibling.disabled = (this.value === '');" style="flex: 1; padding: 8px 12px; border-radius: 6px; background: {COLORS['bg_dark']}; border: 1px solid {COLORS['border']}; color: {COLORS['text']}; font-size: 0.85em; cursor: pointer;">
                                 {options}
                             </select>
-                            <button type="submit" class="btn btn-primary" style="font-size: 0.85em; white-space: nowrap;">Change Plan</button>
+                            <button type="submit" class="btn btn-primary" style="font-size: 0.85em; white-space: nowrap;" disabled>Change Plan</button>
                         </form>
                     </div>
                     """
                 elif sub['plan_type'] == 'slack':
-                    options = ""
+                    options = '<option value="" selected>Select a new plan…</option>'
                     slack_tiers = [('slack_1', '1 League — $5/mo'), ('slack_1_ai', '1 + AI — $7/mo'), ('slack_2', '2 + AI — $10/mo'), ('slack_5', '5 + AI — $20/mo')]
                     for tier_val, tier_label in slack_tiers:
                         if tier_val == tier:
-                            options += f'<option value="{tier_val}" selected disabled>{tier_label}</option>'
+                            options += f'<option value="{tier_val}" disabled>{tier_label} — current plan</option>'
                         else:
                             options += f'<option value="{tier_val}">{tier_label}</option>'
                     change_plan_html = f"""
                     <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid {COLORS['border']};">
+                        <div style="font-size: 0.8em; color: {COLORS['text_muted']}; margin-bottom: 6px; font-weight: 600;">Change your plan</div>
                         <form method="POST" action="/billing/change-plan" style="display: flex; gap: 8px; align-items: center;">
                             <input type="hidden" name="subscription_id" value="{sub['id']}">
-                            <select name="new_tier" style="flex: 1; padding: 8px 12px; border-radius: 6px; background: {COLORS['bg_dark']}; border: 1px solid {COLORS['border']}; color: {COLORS['text']}; font-size: 0.85em;">
+                            <select name="new_tier" onchange="this.nextElementSibling.disabled = (this.value === '');" style="flex: 1; padding: 8px 12px; border-radius: 6px; background: {COLORS['bg_dark']}; border: 1px solid {COLORS['border']}; color: {COLORS['text']}; font-size: 0.85em; cursor: pointer;">
                                 {options}
                             </select>
-                            <button type="submit" class="btn btn-primary" style="font-size: 0.85em; white-space: nowrap;">Change Plan</button>
+                            <button type="submit" class="btn btn-primary" style="font-size: 0.85em; white-space: nowrap;" disabled>Change Plan</button>
                         </form>
                     </div>
                     """

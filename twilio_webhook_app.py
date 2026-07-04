@@ -6375,7 +6375,7 @@ def billing_change_plan():
     new_tier = request.form.get('new_tier')
 
     if not subscription_id or not new_tier:
-        return redirect('/dashboard/membership?error=Missing plan selection')
+        return redirect('/dashboard/membership?error=Select a different plan from the dropdown to change your plan.')
 
     try:
         conn = get_db_connection()

@@ -50,6 +50,7 @@ pytest tests/ -v --lf --base-url https://staging.wordplayleague.com --test-email
 | `test_league_pages.py` | 16 | Public league pages, content structure, JS errors, 404 handling |
 | `test_league_settings.py` | 11 | Settings controls, AI toggles, delete flow, connect channel, navigation |
 | `test_player_management.py` | 20 | Slack + SMS player add/remove/edit, phone validation, modal flows, safe_js regression |
+| `test_onboarding_hints.py` | 3 | Onboarding "?" help chips: Inactive chip opens/closes info modal; Waiting OPT-IN chip lists the specific waiting players |
 
 ## How It Works
 

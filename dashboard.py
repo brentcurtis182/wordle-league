@@ -3119,6 +3119,17 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
             </div>
         </div>
         
+        <!-- Add Players First Modal (activation gate) -->
+        <div class="modal-overlay" id="needPlayersModal">
+            <div class="modal">
+                <h3>👥 Add Your Players First</h3>
+                <p>Before activating, add the players in your league. We match each player's phone number to your group text thread — activating with no players added will flag the thread as needing a re-link.</p>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-primary btn-small" onclick="closeNeedPlayersModal()">Got it</button>
+                </div>
+            </div>
+        </div>
+
         <!-- League Settings Confirmation Modal -->
         <div class="modal-overlay" id="renameModal">
             <div class="modal">
@@ -4073,6 +4084,13 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
             var playerLimit = {player_limit};
 
             function handleActivateClick() {{
+                // Gate: must add players before activating. Activating with no
+                // players links the group thread with nobody to match against,
+                // which triggers the "needs re-link" banner.
+                if (playerCount === 0) {{
+                    showNeedPlayersModal();
+                    return;
+                }}
                 if (!requiresPayment || leagueIsLinked) {{
                     // Check if over player limit for linked leagues
                     if (leagueIsLinked && playerCount > playerLimit) {{
@@ -4135,6 +4153,14 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                     btn.disabled = false;
                     btn.textContent = 'Link & Continue';
                 }});
+            }}
+
+            // Activation gate: "add players first" modal
+            function showNeedPlayersModal() {{
+                document.getElementById('needPlayersModal').classList.add('active');
+            }}
+            function closeNeedPlayersModal() {{
+                document.getElementById('needPlayersModal').classList.remove('active');
             }}
 
             // Activate League functions

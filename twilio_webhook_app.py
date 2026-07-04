@@ -5968,6 +5968,17 @@ def dashboard_generate_code(league_id):
         conn = get_db_connection()
         cursor = conn.cursor()
 
+        # Gate: require at least one player before activation. Activating an
+        # empty league links the group thread with nobody to match against,
+        # which surfaces the "needs re-link" banner. Enforce players-first here
+        # too (the dashboard also guards; this is defense-in-depth).
+        cursor.execute("SELECT COUNT(*) FROM players WHERE league_id = %s AND active = TRUE", (league_id,))
+        if cursor.fetchone()[0] == 0:
+            cursor.close()
+            conn.close()
+            return jsonify({'success': False, 'error': 'no_players',
+                            'message': 'Add at least one player before activating your league.'}), 400
+
         # Get existing active passphrases to avoid collisions
         cursor.execute("SELECT LOWER(verification_code) FROM leagues WHERE verification_code IS NOT NULL")
         existing_phrases = {r[0] for r in cursor.fetchall()}

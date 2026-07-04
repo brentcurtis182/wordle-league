@@ -2457,6 +2457,17 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
     _current_min_scores = int(league.get('min_weekly_scores', 5) or 5)
     _current_header_emoji = league.get('header_emoji') or ''
     _waiting_opt_in_count = len([p for p in players if p.get('sms_opt_in_status') == 'WAITING']) if channel_type == 'sms' else 0
+    _waiting_opt_in_names = [p['name'] for p in players if p.get('sms_opt_in_status') == 'WAITING'] if channel_type == 'sms' else []
+    _is_connected = bool(league.get('conversation_sid') if channel_type == 'sms' else league.get('slack_channel_id') if channel_type == 'slack' else league.get('discord_channel_id'))
+    # Onboarding help-tooltip copy (JSON-encoded so it embeds safely in JS,
+    # including player names that may contain quotes/apostrophes).
+    _hint_inactive_json = json.dumps("This league isn't active yet. Once your players are added (and a subscription is linked, if required), tap Activate and send the passphrase inside your SMS group thread. That connects the thread so scores start tracking.")
+    _hint_unlinked_json = json.dumps("This league needs an active subscription before it can be activated. Link a plan on the Membership page (or via the Activate button), then come back to finish activating.")
+    if _waiting_opt_in_names:
+        _optin_body = "These players still need to text “opt in” inside the group thread once it's Active, so their scores get tracked:\n\n• " + "\n• ".join(_waiting_opt_in_names)
+    else:
+        _optin_body = "Each waiting player needs to text “opt in” inside the group thread once it's Active, so their scores get tracked."
+    _hint_optin_json = json.dumps(_optin_body)
     _min_scores_labels = {
         3: 'Easy Mode',
         4: 'Casual',
@@ -2778,7 +2789,7 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
             {_removed_banner}
             
             <div class="card" style="position: relative;">
-                {f'<a href="/dashboard/membership" id="linkStatusBadge" title="View subscription" style="position: absolute; top: 16px; right: 16px; background: #2ECC71; color: #000; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600; text-decoration: none; cursor: pointer;" onmouseover="this.style.opacity=\'0.85\'" onmouseout="this.style.opacity=\'1\'">🔗 Linked</a>' if payment_required and linked_subscription else f'<span id="linkStatusBadge" style="position: absolute; top: 16px; right: 16px; background: {COLORS["accent_orange"]}; color: #000; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600;">⚠ Unlinked</span>' if payment_required and requires_payment else ''}
+                {f'<a href="/dashboard/membership" id="linkStatusBadge" title="View subscription" style="position: absolute; top: 16px; right: 16px; background: #2ECC71; color: #000; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600; text-decoration: none; cursor: pointer;" onmouseover="this.style.opacity=\'0.85\'" onmouseout="this.style.opacity=\'1\'">🔗 Linked</a>' if payment_required and linked_subscription else f'<span id="linkStatusBadge" onclick="showInfoModal(\'unlinked\')" title="What is this?" style="position: absolute; top: 16px; right: 16px; background: {COLORS["accent_orange"]}; color: #000; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600; cursor: pointer;">⚠ Unlinked <span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(0,0,0,0.22);color:#000;font-size:0.75em;font-weight:700;margin-left:2px;">?</span></span>' if payment_required and requires_payment else ''}
                 <h2>⚙️ {league['display_name']}</h2>
                 <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
                     {f'<span style="color: {COLORS["text_muted"]};">Channel: #{league["channel_name"]}</span>' if league.get('channel_name') else ''}
@@ -2788,11 +2799,12 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                     <span style="background: {'#2ECC71' if (league.get('conversation_sid') if channel_type == 'sms' else league.get('slack_channel_id') if channel_type == 'slack' else league.get('discord_channel_id')) else COLORS['accent_orange']}; color: #000; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600;">
                         {('✓ Active' if (league.get('conversation_sid') if channel_type == 'sms' else league.get('slack_channel_id') if channel_type == 'slack' else league.get('discord_channel_id')) else ('⚠ Inactive' if channel_type == 'sms' else '⚠ Setup Required'))}
                     </span>
+                    {'<span onclick="showInfoModal(\'inactive\')" title="What is this?" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,0.18);color:#fff;font-size:0.72em;font-weight:700;cursor:pointer;">?</span>' if channel_type == 'sms' and not _is_connected else ''}
                     {f'<span style="color: {COLORS["text_muted"]}; font-size: 0.8em;">via +1 {league_phone_display}</span>' if channel_type == 'sms' and league.get('conversation_sid') and league_phone_display else ''}
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 12px;">
                     {f'<button type="button" class="btn" style="background: {COLORS["accent"]}; color: #000; padding: 10px 24px; border-radius: 8px; font-size: 1em; font-weight: 700; cursor: pointer; border: none;" onclick="handleActivateClick()">🚀 {"Activate" if channel_type == "sms" else "Connect Channel"}</button>' if not (league.get('conversation_sid') if channel_type == 'sms' else league.get('slack_channel_id') if channel_type == 'slack' else league.get('discord_channel_id')) else ''}
-                    {f'<div style="background: {COLORS["accent_orange"]}; color: #000; padding: 8px 14px; border-radius: 8px; font-size: 0.8em; font-weight: 600; text-align: center; line-height: 1.4;"><div>{_waiting_opt_in_count} Waiting</div><div>OPT-IN</div></div>' if _waiting_opt_in_count > 0 else ''}
+                    {f'<div onclick="showInfoModal(\'optin\')" title="Who still needs to opt in?" style="background: {COLORS["accent_orange"]}; color: #000; padding: 8px 14px; border-radius: 8px; font-size: 0.8em; font-weight: 600; text-align: center; line-height: 1.4; cursor: pointer;"><div>{_waiting_opt_in_count} Waiting</div><div>OPT-IN ⓘ</div></div>' if _waiting_opt_in_count > 0 else ''}
                 </div>
                 {f'<div style="margin-top: 8px;"><a href="{APP_BASE_URL}/leagues/{league["slug"]}" target="_blank" style="color: {COLORS["accent"]}; font-size: 0.9em;">{os.environ.get("APP_DOMAIN", "app.wordplayleague.com")}/leagues/{league["slug"]}</a></div>' if league.get('slug') else ''}
                 {f"""
@@ -3126,6 +3138,17 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                 <p>Before activating, add the players in your league. We match each player's phone number to your group text thread — activating with no players added will flag the thread as needing a re-link.</p>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-primary btn-small" onclick="closeNeedPlayersModal()">Got it</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Onboarding help tooltip modal (shared by the state "?" chips) -->
+        <div class="modal-overlay" id="infoModal">
+            <div class="modal">
+                <h3 id="infoModalTitle"></h3>
+                <p id="infoModalBody" style="white-space: pre-wrap; line-height: 1.5;"></p>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-primary btn-small" onclick="closeInfoModal()">Got it</button>
                 </div>
             </div>
         </div>
@@ -4161,6 +4184,23 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
             }}
             function closeNeedPlayersModal() {{
                 document.getElementById('needPlayersModal').classList.remove('active');
+            }}
+
+            // Onboarding help tooltips: one shared modal, three state hints.
+            var INFO_HINTS = {{
+                inactive: {{ title: '🚀 Activate your league', body: {_hint_inactive_json} }},
+                unlinked: {{ title: '🔗 Link a subscription', body: {_hint_unlinked_json} }},
+                optin: {{ title: '✋ Players need to opt in', body: {_hint_optin_json} }}
+            }};
+            function showInfoModal(key) {{
+                var h = INFO_HINTS[key];
+                if (!h) return;
+                document.getElementById('infoModalTitle').textContent = h.title;
+                document.getElementById('infoModalBody').textContent = h.body;
+                document.getElementById('infoModal').classList.add('active');
+            }}
+            function closeInfoModal() {{
+                document.getElementById('infoModal').classList.remove('active');
             }}
 
             // Activate League functions

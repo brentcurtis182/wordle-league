@@ -6815,12 +6815,12 @@ def render_membership_page(user, subscriptions, message=None, error=None):
                     change_plan_html = f"""
                     <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid {COLORS['border']};">
                         <div style="font-size: 0.8em; color: {COLORS['text_muted']}; margin-bottom: 6px; font-weight: 600;">Change your plan</div>
-                        <form method="POST" action="/billing/change-plan" style="display: flex; gap: 8px; align-items: center;">
+                        <form method="POST" action="/billing/change-plan" onsubmit="return validateChangePlan(this);" style="display: flex; gap: 8px; align-items: center;">
                             <input type="hidden" name="subscription_id" value="{sub['id']}">
-                            <select name="new_tier" onchange="this.nextElementSibling.disabled = (this.value === '');" style="flex: 1; padding: 8px 12px; border-radius: 6px; background: {COLORS['bg_dark']}; border: 1px solid {COLORS['border']}; color: {COLORS['text']}; font-size: 0.85em; cursor: pointer;">
+                            <select name="new_tier" onchange="styleChangePlanBtn(this);" style="flex: 1; min-width: 0; padding: 8px 12px; border-radius: 6px; background: {COLORS['bg_dark']}; border: 1px solid {COLORS['border']}; color: {COLORS['text']}; font-size: 0.85em; cursor: pointer;">
                                 {options}
                             </select>
-                            <button type="submit" class="btn btn-primary" style="font-size: 0.85em; white-space: nowrap;" disabled>Change Plan</button>
+                            <button type="submit" class="btn btn-primary" style="font-size: 0.85em; white-space: nowrap; opacity: 0.5; cursor: not-allowed;">Change Plan</button>
                         </form>
                     </div>
                     """
@@ -6835,12 +6835,12 @@ def render_membership_page(user, subscriptions, message=None, error=None):
                     change_plan_html = f"""
                     <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid {COLORS['border']};">
                         <div style="font-size: 0.8em; color: {COLORS['text_muted']}; margin-bottom: 6px; font-weight: 600;">Change your plan</div>
-                        <form method="POST" action="/billing/change-plan" style="display: flex; gap: 8px; align-items: center;">
+                        <form method="POST" action="/billing/change-plan" onsubmit="return validateChangePlan(this);" style="display: flex; gap: 8px; align-items: center;">
                             <input type="hidden" name="subscription_id" value="{sub['id']}">
-                            <select name="new_tier" onchange="this.nextElementSibling.disabled = (this.value === '');" style="flex: 1; padding: 8px 12px; border-radius: 6px; background: {COLORS['bg_dark']}; border: 1px solid {COLORS['border']}; color: {COLORS['text']}; font-size: 0.85em; cursor: pointer;">
+                            <select name="new_tier" onchange="styleChangePlanBtn(this);" style="flex: 1; min-width: 0; padding: 8px 12px; border-radius: 6px; background: {COLORS['bg_dark']}; border: 1px solid {COLORS['border']}; color: {COLORS['text']}; font-size: 0.85em; cursor: pointer;">
                                 {options}
                             </select>
-                            <button type="submit" class="btn btn-primary" style="font-size: 0.85em; white-space: nowrap;" disabled>Change Plan</button>
+                            <button type="submit" class="btn btn-primary" style="font-size: 0.85em; white-space: nowrap; opacity: 0.5; cursor: not-allowed;">Change Plan</button>
                         </form>
                     </div>
                     """
@@ -7215,6 +7215,34 @@ def render_membership_page(user, subscriptions, message=None, error=None):
                     }}
                 }});
             }});
+            // Change Plan: button stays greyed until a *different* plan is
+            // picked, then brightens to signal it's actionable.
+            function styleChangePlanBtn(sel) {{
+                var btn = sel.nextElementSibling;
+                if (!btn) return;
+                if (sel.value === '') {{
+                    btn.style.opacity = '0.5';
+                    btn.style.cursor = 'not-allowed';
+                }} else {{
+                    btn.style.opacity = '1';
+                    btn.style.cursor = 'pointer';
+                }}
+            }}
+            // Clicking the greyed button (no plan selected) shows a clear message
+            // instead of silently doing nothing. Returning false prevents submit,
+            // which the spinner handler above respects (e.defaultPrevented).
+            function validateChangePlan(form) {{
+                var sel = form.querySelector('select[name="new_tier"]');
+                if (!sel || sel.value === '') {{
+                    var toast = document.createElement('div');
+                    toast.textContent = 'Select a different plan from the dropdown to change your plan.';
+                    toast.style.cssText = 'position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#E74C3C;color:#fff;padding:12px 24px;border-radius:8px;font-weight:600;z-index:2000;max-width:90%;text-align:center;';
+                    document.body.appendChild(toast);
+                    setTimeout(function() {{ toast.remove(); }}, 3500);
+                    return false;
+                }}
+                return true;
+            }}
             // Reload page when returning from Stripe Portal (bfcache) so
             // subscription status updates immediately (e.g. Active → Canceling)
             window.addEventListener('pageshow', function(e) {{

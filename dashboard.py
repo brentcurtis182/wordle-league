@@ -7199,7 +7199,12 @@ def render_membership_page(user, subscriptions, message=None, error=None):
             {get_user_menu_script()}
             // Loading spinner for all billing forms
             document.querySelectorAll('form[action^="/billing"]').forEach(function(form) {{
-                form.addEventListener('submit', function() {{
+                form.addEventListener('submit', function(e) {{
+                    // If an onsubmit confirm() was cancelled (e.g. "Remove AI
+                    // Messaging?" -> Cancel), the submit is prevented — bail so
+                    // the button doesn't get stuck on the Processing spinner
+                    // with no navigation to reset it.
+                    if (e.defaultPrevented) return;
                     var btn = form.querySelector('button[type="submit"]');
                     if (btn && !btn.disabled) {{
                         btn.disabled = true;

@@ -1579,8 +1579,10 @@ def webhook():
                 conn.close()
         
         # --- OPT IN / OPT OUT keyword handling (SMS consent) ---
-        stripped_upper = message_body.strip().upper()
-        if stripped_upper in ('OPT IN', 'OPT OUT'):
+        # Normalize case, hyphens, and internal whitespace so every variant is
+        # accepted: "Opt In", "opt in", "Opt-In", "opt-in", "OPT  IN", etc.
+        normalized_opt = re.sub(r'[\s\-]+', ' ', message_body.strip().upper())
+        if normalized_opt in ('OPT IN', 'OPT OUT'):
             conv_sid_opt = None
             if request.is_json:
                 conv_sid_opt = request.get_json().get('ConversationSid')
@@ -1613,31 +1615,38 @@ def webhook():
 
                         if player_row_opt:
                             player_id_opt, player_name_opt, current_status = player_row_opt
-                            new_status = 'IN' if stripped_upper == 'OPT IN' else 'OUT'
+                            new_status = 'IN' if normalized_opt == 'OPT IN' else 'OUT'
 
-                            cursor_opt.execute(
-                                "UPDATE players SET sms_opt_in_status = %s WHERE id = %s",
-                                (new_status, player_id_opt)
-                            )
-                            conn_opt.commit()
-                            logging.info(f"[OPT] {player_name_opt} (player {player_id_opt}) -> {new_status} in league {opt_league_id}")
-
-                            from message_router import send_league_message
-                            if new_status == 'IN':
-                                league_url = f"{APP_BASE_URL}/leagues/{opt_league_slug}"
-                                send_league_message(
-                                    opt_league_id,
-                                    f"Welcome to WordPlay League! You're opted in, {player_name_opt} — your Wordle scores will be tracked and posted here: {league_url}\n\n"
-                                    f"Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to opt out. "
-                                    f"Terms: https://www.wordplayleague.com/sms-terms Privacy: https://www.wordplayleague.com/privacy-policy",
-                                    db_connection=conn_opt
-                                )
+                            if current_status == new_status:
+                                # Already in this state — do nothing. Avoids
+                                # redundant confirmation messages (spam + wasted
+                                # SMS cost) when players re-send "opt in" while
+                                # already opted in.
+                                logging.info(f"[OPT] {player_name_opt} (player {player_id_opt}) already {new_status} in league {opt_league_id} — no-op, no message sent")
                             else:
-                                send_league_message(
-                                    opt_league_id,
-                                    f"{player_name_opt} has opted out of score tracking.",
-                                    db_connection=conn_opt
+                                cursor_opt.execute(
+                                    "UPDATE players SET sms_opt_in_status = %s WHERE id = %s",
+                                    (new_status, player_id_opt)
                                 )
+                                conn_opt.commit()
+                                logging.info(f"[OPT] {player_name_opt} (player {player_id_opt}) -> {new_status} in league {opt_league_id}")
+
+                                from message_router import send_league_message
+                                if new_status == 'IN':
+                                    league_url = f"{APP_BASE_URL}/leagues/{opt_league_slug}"
+                                    send_league_message(
+                                        opt_league_id,
+                                        f"Welcome to WordPlay League! You're opted in, {player_name_opt} — your Wordle scores will be tracked and posted here: {league_url}\n\n"
+                                        f"Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to opt out. "
+                                        f"Terms: https://www.wordplayleague.com/sms-terms Privacy: https://www.wordplayleague.com/privacy-policy",
+                                        db_connection=conn_opt
+                                    )
+                                else:
+                                    send_league_message(
+                                        opt_league_id,
+                                        f"{player_name_opt} has opted out of score tracking.",
+                                        db_connection=conn_opt
+                                    )
 
                     cursor_opt.close()
                     conn_opt.close()

@@ -2176,11 +2176,18 @@ def _render_division_players(league, players, is_chat_platform):
             style="background: none; border: none; color: {COLORS['text_muted']}; cursor: pointer; padding: 4px 8px; font-size: 1.1em;"
             title="Edit player">✏️</button>'''
         
-        # Drag handle (only visible in rearrange mode, hidden by default)
-        drag_handle = f'<span class="div-drag-handle" style="color: {COLORS["text_muted"]}; font-size: 0.9em; cursor: grab; display: none; padding: 0 4px;">&#x2630;</span>'
-        
-        return f'''<div class="division-player" data-player-id="{pid}"
-            style="background: {bg}; border: 1px solid {border}; border-radius: 8px; padding: 10px 14px; 
+        # Movable: freely draggable before the league locks; after lock, only
+        # newly-added (immune) players can still be moved between divisions.
+        movable = (not division_locked) or bool(immunity)
+
+        # Drag handle (only visible in rearrange mode, hidden by default;
+        # omitted for locked established players who can't be moved)
+        drag_handle = ''
+        if movable:
+            drag_handle = f'<span class="div-drag-handle" style="color: {COLORS["text_muted"]}; font-size: 0.9em; cursor: grab; display: none; padding: 0 4px;">&#x2630;</span>'
+
+        return f'''<div class="division-player" data-player-id="{pid}" data-movable="{'1' if movable else '0'}"
+            style="background: {bg}; border: 1px solid {border}; border-radius: 8px; padding: 10px 14px;
             margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;"
             ondragstart="dragStart(event)" ondragend="dragEnd(event)">
             <div style="flex: 1; min-width: 0; overflow: hidden;">
@@ -2207,7 +2214,7 @@ def _render_division_players(league, players, is_chat_platform):
     if division_locked:
         locked_msg = f'''<div style="background: {COLORS['bg_dark']}; padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; border-left: 3px solid {COLORS['accent_orange']};">
             <p style="margin: 0; color: {COLORS['text_muted']}; font-size: 0.85em;">
-                Divisions are locked. A week has been completed. Use <strong>Reset Season for Divisions</strong> to rearrange players (all weekly wins will be erased).
+                Divisions are locked &mdash; established players are set for the season. Newly added players (marked <strong>IMMUNE</strong>) can still be moved between divisions via <strong>Edit Divisions</strong> until the week ends. To rearrange everyone, use <strong>Reset Season for Divisions</strong> (erases all weekly wins for the current division season).
             </p>
         </div>'''
     
@@ -2223,9 +2230,12 @@ def _render_division_players(league, players, is_chat_platform):
     # Unified button bar for division management (same size, black text)
     btn_style = f'padding: 8px 16px; font-size: 0.85em; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; color: #000; min-width: 140px; text-align: center;'
     
+    # Newly-added (immune) players can still be moved even after the league
+    # locks, so surface Edit Divisions whenever any such players exist.
+    has_new_movable = any(p.get('division_immunity') and p.get('division') in (1, 2) for p in players)
     edit_divisions_btn = ""
-    if division_confirmed and not division_locked:
-        edit_divisions_btn = f'''<button type="button" id="editDivisionsBtn" 
+    if division_confirmed and (not division_locked or has_new_movable):
+        edit_divisions_btn = f'''<button type="button" id="editDivisionsBtn"
             style="background: {COLORS['accent']}; {btn_style}"
             onclick="showEditDivisionsModal()">Edit Divisions</button>'''
     
@@ -4827,8 +4837,10 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
             
             function enterDivisionEditMode(silent) {{
                 divisionEditMode = true;
-                // Show drag handles, make players draggable
-                document.querySelectorAll('.division-player').forEach(function(el) {{
+                // Show drag handles, make players draggable — but only for
+                // movable players (all before lock; only newly-added/immune
+                // players after the league locks).
+                document.querySelectorAll('.division-player[data-movable="1"]').forEach(function(el) {{
                     el.setAttribute('draggable', 'true');
                     el.style.cursor = 'grab';
                     var handle = el.querySelector('.div-drag-handle');
@@ -4878,9 +4890,9 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
             function showEditDivisionsModal() {{
                 const modal = document.getElementById('resetModal');
                 document.getElementById('resetModalTitle').textContent = 'Edit Division Assignments';
-                document.getElementById('resetModalText').textContent = 
-                    'You can rearrange players between divisions until a week completes with weekly winners recorded in both divisions. ' +
-                    'After that point, players will be locked in place unless you use "Reset Season for Divisions" (which erases all weekly wins for the current division season).';
+                document.getElementById('resetModalText').textContent =
+                    'Drag players between divisions to rearrange them. Before the season locks you can move anyone; once a week has completed, established players lock in place and only newly added players (marked IMMUNE) can still be moved. ' +
+                    'To rearrange everyone after locking, use "Reset Season for Divisions" (which erases all weekly wins for the current division season).';
                 const confirmBtn = document.getElementById('resetModalConfirmBtn');
                 confirmBtn.textContent = 'Edit Divisions';
                 confirmBtn.style.background = '{COLORS['accent']}';
@@ -5139,9 +5151,9 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
             function showFinalizeConfirmModal() {{
                 const modal = document.getElementById('resetModal');
                 document.getElementById('resetModalTitle').textContent = 'Publish Divisions?';
-                document.getElementById('resetModalText').textContent = 
+                document.getElementById('resetModalText').textContent =
                     'This will publish the division setup to your league page. Players will see the two divisions with their current assignments. ' +
-                    'After a week completes, divisions become locked and cannot be turned off without resetting the season.';
+                    'After a week completes, divisions lock: established players are set for the season, though newly added players arrive with immunity and can still be moved between divisions until the week ends. Divisions cannot be turned off without resetting the season.';
                 const confirmBtn = document.getElementById('resetModalConfirmBtn');
                 confirmBtn.textContent = 'Publish';
                 confirmBtn.style.background = '{COLORS['accent']}';

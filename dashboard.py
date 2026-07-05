@@ -4434,6 +4434,17 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                             const newForm = document.createElement('form');
                             newForm.method = 'POST';
                             newForm.action = action;
+                            // Stamp the CSRF token — dynamically created forms are
+                            // NOT touched by the page-load CSRF auto-injector, so
+                            // without this the POST is rejected (403 CSRF failed).
+                            var _m = document.cookie.match(/(?:^|; )csrf_token=([^;]+)/);
+                            if (_m) {{
+                                var _inp = document.createElement('input');
+                                _inp.type = 'hidden';
+                                _inp.name = 'csrf_token';
+                                _inp.value = decodeURIComponent(_m[1]);
+                                newForm.appendChild(_inp);
+                            }}
                             document.body.appendChild(newForm);
                             newForm.submit();
                         }}

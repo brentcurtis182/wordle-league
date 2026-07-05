@@ -5668,10 +5668,14 @@ def dashboard_add_player(league_id):
             cursor2.execute("SELECT id FROM players WHERE league_id = %s AND name = %s AND active = TRUE", (league_id, name))
             new_player = cursor2.fetchone()
             if new_player:
-                # Set immunity so new player is exempt from relegation for their first season
+                # Set immunity so new player is exempt from relegation for their
+                # first season, and mark them newly-movable so they can still be
+                # moved between divisions until their first week completes (this
+                # flag is separate from immunity — it clears at the next weekly
+                # lock, whereas immunity lasts the whole season).
                 current_week = get_todays_wordle_number()
                 cursor2.execute("""
-                    UPDATE players SET division = %s, division_immunity = TRUE, division_joined_week = %s
+                    UPDATE players SET division = %s, division_immunity = TRUE, division_joined_week = %s, division_new_movable = TRUE
                     WHERE id = %s
                 """, (target_div, current_week, new_player[0]))
                 conn.commit()

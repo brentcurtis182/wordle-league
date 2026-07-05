@@ -256,22 +256,24 @@ def assign_player_division(league_id, player_id, division):
     
     try:
         # Check if locked. Once a week completes the league locks so established
-        # players stay put for the season — but newly-added players arrive with
-        # division_immunity = TRUE and haven't earned any standings yet, so they
-        # can still be moved freely between divisions until the week ends (their
-        # immunity clears at the boundary and they lock in like normal).
+        # players stay put for the season — but a newly-added player carries
+        # division_new_movable = TRUE and hasn't been through a weekly lock yet,
+        # so they can still be moved between divisions until their first week
+        # completes (that flag clears at the next weekly lock; their season-long
+        # relegation immunity is a separate, untouched concern). This flag is set
+        # ONLY on add, so season-winners / relegated players never qualify.
         cursor.execute("SELECT division_locked FROM leagues WHERE id = %s", (league_id,))
         row = cursor.fetchone()
         if row and row[0]:
             cursor.execute(
-                "SELECT division_immunity FROM players WHERE id = %s AND league_id = %s AND active = TRUE",
+                "SELECT division_new_movable FROM players WHERE id = %s AND league_id = %s AND active = TRUE",
                 (player_id, league_id),
             )
             prow = cursor.fetchone()
             if not prow:
                 return {'success': False, 'error': 'Player not found or not active'}
             if not prow[0]:
-                return {'success': False, 'error': 'Divisions are locked. Only newly added players can be moved — Reset Season to rearrange established players.'}
+                return {'success': False, 'error': 'Divisions are locked. Only newly added players (before their first completed week) can be moved — Reset Season to rearrange established players.'}
 
         # Validate division
         if division not in (1, 2):

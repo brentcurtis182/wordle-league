@@ -368,7 +368,15 @@ def update_weekly_winners_from_db(league_id, week_start_wordle=None, week_end_wo
                 cursor.execute("""
                     UPDATE leagues SET division_locked = TRUE WHERE id = %s AND division_locked = FALSE
                 """, (league_id,))
-                
+
+                # A week has now completed — newly-added players lock into their
+                # division just like everyone else (clear the movable flag). Their
+                # season-long relegation immunity is untouched.
+                cursor.execute("""
+                    UPDATE players SET division_new_movable = FALSE
+                    WHERE league_id = %s AND division_new_movable = TRUE
+                """, (league_id,))
+
                 conn.commit()
             else:
                 # Normal mode: single winner across all players

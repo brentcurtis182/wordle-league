@@ -2177,8 +2177,10 @@ def _render_division_players(league, players, is_chat_platform):
             title="Edit player">✏️</button>'''
         
         # Movable: freely draggable before the league locks; after lock, only
-        # newly-added (immune) players can still be moved between divisions.
-        movable = (not division_locked) or bool(immunity)
+        # newly-added players (division_new_movable, i.e. not yet through a
+        # completed week) can still be moved. This is deliberately NOT immunity —
+        # season-winners / relegated players are immune but must stay put.
+        movable = (not division_locked) or bool(player.get('division_new_movable'))
 
         # Drag handle (only visible in rearrange mode, hidden by default;
         # omitted for locked established players who can't be moved)
@@ -2214,7 +2216,7 @@ def _render_division_players(league, players, is_chat_platform):
     if division_locked:
         locked_msg = f'''<div style="background: {COLORS['bg_dark']}; padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; border-left: 3px solid {COLORS['accent_orange']};">
             <p style="margin: 0; color: {COLORS['text_muted']}; font-size: 0.85em;">
-                Divisions are locked &mdash; established players are set for the season. Newly added players (marked <strong>IMMUNE</strong>) can still be moved between divisions via <strong>Edit Divisions</strong> until the week ends. To rearrange everyone, use <strong>Reset Season for Divisions</strong> (erases all weekly wins for the current division season).
+                Divisions are locked &mdash; established players are set for the season. Newly added players can still be moved between divisions via <strong>Edit Divisions</strong> until their first week completes, then they lock in like everyone else. To rearrange everyone, use <strong>Reset Season for Divisions</strong> (erases all weekly wins for the current division season).
             </p>
         </div>'''
     
@@ -2230,9 +2232,11 @@ def _render_division_players(league, players, is_chat_platform):
     # Unified button bar for division management (same size, black text)
     btn_style = f'padding: 8px 16px; font-size: 0.85em; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; color: #000; min-width: 140px; text-align: center;'
     
-    # Newly-added (immune) players can still be moved even after the league
-    # locks, so surface Edit Divisions whenever any such players exist.
-    has_new_movable = any(p.get('division_immunity') and p.get('division') in (1, 2) for p in players)
+    # Newly-added players (not yet through a completed week) can still be moved
+    # even after the league locks, so surface Edit Divisions when any exist.
+    # Keyed on division_new_movable, NOT immunity, so season-winners / relegated
+    # players don't trigger it.
+    has_new_movable = any(p.get('division_new_movable') and p.get('division') in (1, 2) for p in players)
     edit_divisions_btn = ""
     if division_confirmed and (not division_locked or has_new_movable):
         edit_divisions_btn = f'''<button type="button" id="editDivisionsBtn"
@@ -4891,7 +4895,7 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                 const modal = document.getElementById('resetModal');
                 document.getElementById('resetModalTitle').textContent = 'Edit Division Assignments';
                 document.getElementById('resetModalText').textContent =
-                    'Drag players between divisions to rearrange them. Before the season locks you can move anyone; once a week has completed, established players lock in place and only newly added players (marked IMMUNE) can still be moved. ' +
+                    'Drag players between divisions to rearrange them. Before the season locks you can move anyone; once a week has completed, established players lock in place and only newly added players can still be moved (until their own first week completes). ' +
                     'To rearrange everyone after locking, use "Reset Season for Divisions" (which erases all weekly wins for the current division season).';
                 const confirmBtn = document.getElementById('resetModalConfirmBtn');
                 confirmBtn.textContent = 'Edit Divisions';
@@ -5153,7 +5157,7 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                 document.getElementById('resetModalTitle').textContent = 'Publish Divisions?';
                 document.getElementById('resetModalText').textContent =
                     'This will publish the division setup to your league page. Players will see the two divisions with their current assignments. ' +
-                    'After a week completes, divisions lock: established players are set for the season, though newly added players arrive with immunity and can still be moved between divisions until the week ends. Divisions cannot be turned off without resetting the season.';
+                    'After a week completes, divisions lock: established players are set for the season, though a newly added player can still be moved between divisions until their own first week completes, then they lock in too. Divisions cannot be turned off without resetting the season.';
                 const confirmBtn = document.getElementById('resetModalConfirmBtn');
                 confirmBtn.textContent = 'Publish';
                 confirmBtn.style.background = '{COLORS['accent']}';
@@ -5232,7 +5236,8 @@ def get_league_players(league_id, conn=None):
             SELECT id, name, phone_number, COALESCE(pending_activation, FALSE),
                    slack_user_id, discord_user_id,
                    division, division_immunity, division_joined_week,
-                   COALESCE(sms_opt_in_status, 'IN')
+                   COALESCE(sms_opt_in_status, 'IN'),
+                   COALESCE(division_new_movable, FALSE)
             FROM players
             WHERE league_id = %s AND active = TRUE
             ORDER BY name
@@ -5250,7 +5255,8 @@ def get_league_players(league_id, conn=None):
                 'division': row[6],
                 'division_immunity': row[7] or False,
                 'division_joined_week': row[8],
-                'sms_opt_in_status': row[9]
+                'sms_opt_in_status': row[9],
+                'division_new_movable': row[10] or False
             })
         return players
     finally:

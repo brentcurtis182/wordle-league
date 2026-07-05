@@ -51,6 +51,7 @@ pytest tests/ -v --lf --base-url https://staging.wordplayleague.com --test-email
 | `test_league_settings.py` | 11 | Settings controls, AI toggles, delete flow, connect channel, navigation |
 | `test_player_management.py` | 20 | Slack + SMS player add/remove/edit, phone validation, modal flows, safe_js regression |
 | `test_onboarding_hints.py` | 3 | Onboarding "?" help chips: Inactive chip opens/closes info modal; Waiting OPT-IN chip lists the specific waiting players |
+| `test_division_mode.py` | 1 | Division Mode end-to-end: add 6 players, enable, and Confirm (guards the CSRF dynamic-form bug that blocked confirm) |
 
 ## How It Works
 

@@ -2969,6 +2969,12 @@ def dashboard_membership():
             return redirect('/auth/login')
 
         subscriptions = get_user_subscriptions(user['id'], conn=conn)
+        # Only surface active/trialing subscriptions on the membership page.
+        # Lapsed subs (canceled / past_due after a failed payment) are hidden so
+        # the manager sees a clean slate to re-subscribe — but their DB rows are
+        # preserved (audit + Stripe reconciliation). The lapse handlers already
+        # deactivate + unlink the league; this just removes the dead card.
+        subscriptions = [s for s in subscriptions if s.get('status') in ('active', 'trialing')]
         message = request.args.get('message')
         error = request.args.get('error')
 

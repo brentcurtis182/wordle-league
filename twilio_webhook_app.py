@@ -6413,7 +6413,7 @@ def billing_change_plan():
         if new_plan_type != plan_type:
             return redirect('/dashboard/membership?error=Cannot switch between SMS and Slack plans. Please cancel and create a new subscription.')
 
-        # Check if downgrading would exceed new plan's slot count
+        # Slack: block downgrade if it would exceed the new plan's LEAGUE-SLOT count
         if plan_type == 'slack':
             from billing import SLACK_TIERS
             new_slots = SLACK_TIERS.get(new_tier, {}).get('league_slots', 1)
@@ -6425,6 +6425,37 @@ def billing_change_plan():
             conn2.close()
             if linked_count > new_slots:
                 return redirect(f'/dashboard/membership?error=You have {linked_count} leagues linked. Please unlink {linked_count - new_slots} league{"s" if linked_count - new_slots > 1 else ""} before downgrading.')
+
+        # SMS: block downgrade if a linked league has more active players than the
+        # new tier supports (SMS tiers are player-count based). Mirrors the
+        # activation over-limit gate — stop it here with a clear next step rather
+        # than letting an active league run over its plan.
+        if plan_type == 'sms':
+            from billing import SMS_BUNDLES
+            if new_tier in SMS_BUNDLES:
+                new_max = SMS_BUNDLES[new_tier]['player_count']
+            else:
+                new_max = int(new_tier.replace('sms_', ''))
+            conn2 = get_db_connection()
+            cur2 = conn2.cursor()
+            cur2.execute("""
+                SELECT l.display_name, COUNT(p.id) AS pc
+                FROM subscription_leagues sl
+                JOIN leagues l ON l.id = sl.league_id
+                LEFT JOIN players p ON p.league_id = l.id AND p.active = TRUE
+                WHERE sl.subscription_id = %s
+                GROUP BY l.id, l.display_name
+                HAVING COUNT(p.id) > %s
+                ORDER BY pc DESC
+                LIMIT 1
+            """, (subscription_id, new_max))
+            over = cur2.fetchone()
+            cur2.close()
+            conn2.close()
+            if over:
+                lg_name, pc = over
+                need = pc - new_max
+                return redirect(f'/dashboard/membership?error={lg_name} has {pc} players. Please remove {need} player{"s" if need > 1 else ""} before downgrading to the {new_max}-player plan.')
 
         # Get the new price ID from admin_config
         new_price_id = get_config(f'stripe_price_{new_tier}')

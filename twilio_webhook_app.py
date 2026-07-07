@@ -5884,26 +5884,32 @@ def dashboard_delete_league(league_id):
         conn = get_db_connection()
         cursor = conn.cursor()
         
-        # Get league name and conversation SID for cleanup
-        cursor.execute("SELECT name, display_name, twilio_conversation_sid FROM leagues WHERE id = %s", (league_id,))
+        # Get league name, conversation SID, and slug for cleanup
+        cursor.execute("SELECT name, display_name, twilio_conversation_sid, slug FROM leagues WHERE id = %s", (league_id,))
         league_row = cursor.fetchone()
         if not league_row:
             cursor.close()
             conn.close()
             return jsonify({'success': False, 'error': 'League not found'}), 404
-        
+
         league_name = league_row[1] or league_row[0]
         conversation_sid = league_row[2]
-        
-        # Delete Twilio conversation if it exists
-        if conversation_sid:
+        league_slug = league_row[3]
+
+        # Delete the Twilio conversation. Prefer the SID, but fall back to the
+        # unique_name (league-<id>-<slug>) when the SID was already cleared — a
+        # subscription cancel/lapse NULLs twilio_conversation_sid before a delete,
+        # which used to orphan the thread. Twilio addresses conversations by SID
+        # or unique_name interchangeably, so the fallback cleans it up.
+        conv_target = conversation_sid or (f"league-{league_id}-{league_slug}" if league_slug else None)
+        if conv_target:
             try:
                 from twilio.rest import Client
                 twilio_client = Client(os.environ.get('TWILIO_ACCOUNT_SID'), os.environ.get('TWILIO_AUTH_TOKEN'))
-                twilio_client.conversations.v1.conversations(conversation_sid).delete()
-                logging.info(f"Deleted Twilio conversation {conversation_sid} for league {league_id}")
+                twilio_client.conversations.v1.conversations(conv_target).delete()
+                logging.info(f"Deleted Twilio conversation {conv_target} for league {league_id}")
             except Exception as e:
-                logging.error(f"Error deleting Twilio conversation {conversation_sid}: {e}")
+                logging.error(f"Error deleting Twilio conversation {conv_target} for league {league_id}: {e}")
                 # Continue with league deletion even if Twilio delete fails
         
         # Get player IDs for this league first (scores table uses player_id, not league_id)

@@ -822,7 +822,10 @@ def send_sunday_race_update(league_id, force_season_image=False):
         if not standings:
             logging.warning(f"No standings data for league {league_id}")
             return False
-        
+
+        # Pre-guard model output, captured at both AI sites for the archive
+        raw_ai_message = None
+
         # ============================================================
         # DIVISION MODE: separate analysis per division
         # ============================================================
@@ -959,6 +962,7 @@ ACCURACY RULES:
             
             race_message = response.choices[0].message.content.strip()
             logging.info(f"Generated division Sunday race update for league {league_id}: {race_message}")
+            raw_ai_message = race_message
             race_message = _apply_race_guard(race_message, scenario_text, openai_client, sunday_system_msg, prompt, league_id, 400)
         
         # ============================================================
@@ -1270,6 +1274,7 @@ ACCURACY RULES:
             
             race_message = response.choices[0].message.content.strip()
             logging.info(f"Generated Sunday race update for league {league_id}: {race_message}")
+            raw_ai_message = race_message
             race_message = _apply_race_guard(race_message, scenario_text, openai_client, sunday_system_msg, prompt, league_id, 200)
         
         # Get Chat Service SID for MCS uploads (only needed for SMS)
@@ -1373,6 +1378,19 @@ ACCURACY RULES:
             send_league_message(league_id, race_message_with_url)
         
         logging.info(f"Sent Sunday race update to league {league_id} via {channel_type}")
+
+        # Archive what was sent + the scenario text it was built from, for the
+        # Monday fact-checker. Fail-safe — never blocks the send path.
+        from ai_message_archive import archive_sent_ai_message
+        archive_sent_ai_message(
+            league_id=league_id,
+            message_type='sunday_race',
+            week_wordle_number=week_start_wordle,
+            scenario_text=scenario_text,
+            raw_ai_text=raw_ai_message,
+            sent_text=race_message,
+            model='gpt-4o',
+        )
         return True
         
     except Exception as e:

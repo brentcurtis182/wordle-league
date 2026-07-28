@@ -614,8 +614,12 @@ def build_division_scenario(div_standings, div_num, div_weekly_wins, div_current
         elif text and status == 'eliminated':
             eliminated.append(player['name'])
 
-    # Race is decided if no one can catch the leader — leader's ability to improve is irrelevant
-    race_is_decided = len(players_who_can_catch_up) == 0
+    # Race is decided if no one can catch the leader. A SINGLE leader's ability to
+    # improve is irrelevant — if no one can catch them, they've won. But when leaders
+    # are TIED, a tied leader who hasn't posted can still break the tie by improving,
+    # so the race is NOT over yet (PAL Kat/Vox, week 1857).
+    tie_can_still_break = len(leaders) > 1 and bool(leader_improve_scenarios)
+    race_is_decided = not players_who_can_catch_up and not tie_can_still_break
 
     # Compute clinch candidates BEFORE incrementing pending win.
     # potential_clinchers = "1 win away entering this week" — they clinch IF they win this week.
@@ -652,6 +656,9 @@ def build_division_scenario(div_standings, div_num, div_weekly_wins, div_current
     else:
         leader_text = f"{' and '.join(leader_names)} tied at {leader_total}"
         parts = [leader_text]
+        # A tied leader who hasn't posted can still break the tie — say so.
+        if leader_improve_scenarios:
+            parts.extend(leader_improve_scenarios)
         if catch_up_scenarios:
             parts.append(". ".join(catch_up_scenarios[:3]))
         if eliminated:
@@ -1106,9 +1113,13 @@ WEEKLY RACE ANALYSIS: {scenario}{season_clinch_text}"""
                     elif text and status == 'eliminated':
                         eliminated.append(player['name'])
                 
-                # Race is decided if no one who hasn't posted can catch up
-                # Leader's ability to improve is irrelevant — if no one can catch them, they've won
-                race_is_decided = len(players_who_can_catch_up) == 0
+                # Race is decided if no one who hasn't posted can catch up. A SINGLE
+                # leader's ability to improve is irrelevant — if no one can catch them,
+                # they've won. But when leaders are TIED, a tied leader who hasn't posted
+                # can still break the tie by improving, so the race is NOT over yet
+                # (PAL Kat/Vox, week 1857).
+                tie_can_still_break = len(leaders) > 1 and bool(leader_improve_scenarios)
+                race_is_decided = not players_who_can_catch_up and not tie_can_still_break
                 
                 if all_players_posted or race_is_decided:
                     # Race is over — the leader(s) will get this week's win.
@@ -1142,12 +1153,13 @@ WEEKLY RACE ANALYSIS: {scenario}{season_clinch_text}"""
                         leader_text = f"{' and '.join(leader_names)} tied at {leader_total}"
                     
                     scenario_parts = [leader_text]
-                    # Only mention leader improvement if others can still catch up (race is live)
-                    if leader_improve_scenarios and catch_up_scenarios:
+                    # Mention leader improvement if others can still catch up (race is
+                    # live), or if the leaders are TIED and one can still break it.
+                    if leader_improve_scenarios and (catch_up_scenarios or len(leaders) > 1):
                         scenario_parts.extend(leader_improve_scenarios)
                     if catch_up_scenarios:
                         scenario_parts.append(". ".join(catch_up_scenarios[:3]))
-                    elif not catch_up_scenarios and len(eligible) > 1:
+                    elif not catch_up_scenarios and len(eligible) > 1 and len(leaders) == 1:
                         other_eligible = [p for p in eligible if p['name'] not in leader_names]
                         if other_eligible and all(p['posted_today'] for p in other_eligible):
                             scenario_parts.append(f"No one else can catch up - {leader_names[0]} has this locked!")

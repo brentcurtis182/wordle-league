@@ -149,8 +149,26 @@ def verify_score_on_page(league_id, wordle_number):
     Only runs for the first score per league per day.
     Runs in a background thread after a delay for GitHub Pages propagation."""
 
-    pacific_tz = timezone(timedelta(hours=-8))
-    today = datetime.now(pacific_tz).date()
+    from league_data_adapter import pacific_now, calculate_wordle_number
+
+    now_pacific = pacific_now()
+    today = now_pacific.date()
+
+    # Boundary-buffer scores are accepted OUTSIDE the current Pacific day: an
+    # East Coast player posting at their local midnight is at 9pm Pacific and
+    # submits TOMORROW's number (and 12-3am Pacific accepts yesterday's). The
+    # public page renders the current Pacific day, so it won't show that number
+    # until the page rolls at Pacific midnight (3am ET). Verifying now would
+    # fire a false "score is NOT showing" alert. Skip it — and don't consume the
+    # day's verify slot, so the next in-day score is still checked.
+    todays_number = calculate_wordle_number(today)
+    if wordle_number != todays_number:
+        logging.info(
+            f'Monitoring: Skipping page verify for league {league_id} — Wordle '
+            f'#{wordle_number} is a boundary-buffer score (Pacific today is '
+            f'#{todays_number}); page will not show it until Pacific midnight'
+        )
+        return
 
     # Only verify first score of the day per league
     if _score_verified_today.get(league_id) == today:

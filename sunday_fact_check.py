@@ -28,7 +28,7 @@ import sys
 import json
 import logging
 import argparse
-from datetime import datetime
+from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -405,16 +405,19 @@ def _render_html(reports, week, headline):
 
         h.append('</div>')
 
-    h.append(f'<div style="color:#6a6a80;font-size:11px;margin-top:24px;">Generated {datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")} &middot; claims parsed by GPT-4o, every verdict decided by SQL against the league database.</div>')
+    h.append(f'<div style="color:#6a6a80;font-size:11px;margin-top:24px;">Generated {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M UTC")} &middot; claims parsed by GPT-4o, every verdict decided by SQL against the league database.</div>')
     h.append('</div>')
     return ''.join(h)
 
 
 def _send_report(headline, reports, week, message_count, dry_run):
     total_wrong = sum(len(r['wrong']) + len(r['omissions']) for r in reports)
-    subject = (f"[WordPlayLeague] Sunday Fact-Check — {total_wrong} issue(s), week {week}"
-               if total_wrong else
-               f"[WordPlayLeague] Sunday Fact-Check — all clear, week {week}")
+    if week is None:
+        subject = "[WordPlayLeague] Sunday Fact-Check — no messages archived yet"
+    elif total_wrong:
+        subject = f"[WordPlayLeague] Sunday Fact-Check — {total_wrong} issue(s), week {week}"
+    else:
+        subject = f"[WordPlayLeague] Sunday Fact-Check — all clear, week {week}"
 
     html = _render_html(reports, week, headline)
 

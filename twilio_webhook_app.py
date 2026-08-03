@@ -6402,7 +6402,7 @@ def billing_change_plan():
         # Get the Stripe subscription ID and verify ownership
         cursor.execute("""
             SELECT stripe_subscription_id, plan_tier, plan_type FROM subscriptions
-            WHERE id = %s AND user_id = %s AND status = 'active'
+            WHERE id = %s AND user_id = %s AND status IN ('active', 'trialing')
         """, (subscription_id, user['id']))
         row = cursor.fetchone()
         cursor.close()
@@ -6621,7 +6621,7 @@ def billing_add_ai_addon():
         # Get the Stripe subscription ID and verify ownership
         cursor.execute("""
             SELECT stripe_subscription_id FROM subscriptions
-            WHERE id = %s AND user_id = %s AND status = 'active'
+            WHERE id = %s AND user_id = %s AND status IN ('active', 'trialing')
         """, (subscription_id, user['id']))
         row = cursor.fetchone()
         cursor.close()
@@ -6689,7 +6689,7 @@ def billing_remove_ai_addon():
         # Get the Stripe subscription ID and verify ownership
         cursor.execute("""
             SELECT stripe_subscription_id FROM subscriptions
-            WHERE id = %s AND user_id = %s AND status = 'active'
+            WHERE id = %s AND user_id = %s AND status IN ('active', 'trialing')
         """, (subscription_id, user['id']))
         row = cursor.fetchone()
         cursor.close()

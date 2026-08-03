@@ -6404,7 +6404,7 @@ def billing_change_plan():
 
         # Get the Stripe subscription ID and verify ownership
         cursor.execute("""
-            SELECT stripe_subscription_id, plan_tier, plan_type FROM subscriptions
+            SELECT stripe_subscription_id, plan_tier, plan_type, status FROM subscriptions
             WHERE id = %s AND user_id = %s AND status IN ('active', 'trialing')
         """, (subscription_id, user['id']))
         row = cursor.fetchone()
@@ -6414,7 +6414,7 @@ def billing_change_plan():
         if not row:
             return redirect('/dashboard/membership?error=Subscription not found')
 
-        stripe_sub_id, current_tier, plan_type = row
+        stripe_sub_id, current_tier, plan_type, sub_status = row
 
         if new_tier == current_tier:
             return redirect('/dashboard/membership?error=Already on this plan')
@@ -6543,7 +6543,11 @@ def billing_change_plan():
         conn.close()
 
         logging.info(f"Plan changed: sub {subscription_id} from {current_tier} to {new_tier} for user {user['id']}")
-        return redirect('/dashboard/membership?message=Plan updated! Prorated charge applied.')
+        if sub_status == 'trialing':
+            msg = 'Plan updated! No charge - your free trial continues, and the new price applies when it ends.'
+        else:
+            msg = 'Plan updated! Prorated charge applied.'
+        return redirect(f'/dashboard/membership?message={msg}')
 
     except Exception as e:
         logging.error(f"Error changing plan: {e}")

@@ -6900,14 +6900,14 @@ def render_membership_page(user, subscriptions, message=None, error=None):
 
             # AI addon button for SMS plans that don't have AI
             ai_addon_html = ""
-            if sub['plan_type'] == 'sms' and not has_ai and sub['status'] == 'active':
+            if sub['plan_type'] == 'sms' and not has_ai and sub['status'] in ('active', 'trialing'):
                 ai_addon_html = f"""
                 <form method="POST" action="/billing/add-ai-addon" style="margin-top: 12px;">
                     <input type="hidden" name="subscription_id" value="{sub['id']}">
                     <button type="submit" class="btn btn-secondary" style="width: 100%; font-size: 0.85em;">+ Add AI Messaging ($3/mo)</button>
                 </form>
                 """
-            elif sub['plan_type'] == 'sms' and sub.get('ai_messaging_addon') and not tier.endswith('_ai') and sub['status'] == 'active':
+            elif sub['plan_type'] == 'sms' and sub.get('ai_messaging_addon') and not tier.endswith('_ai') and sub['status'] in ('active', 'trialing'):
                 ai_addon_html = f"""
                 <form method="POST" action="/billing/remove-ai-addon" style="margin-top: 12px;" onsubmit="return confirm('Remove AI Messaging? Your AI features will be disabled and a prorated credit will be applied.');">
                     <input type="hidden" name="subscription_id" value="{sub['id']}">

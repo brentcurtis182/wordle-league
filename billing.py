@@ -819,7 +819,10 @@ def link_league_to_subscription(subscription_id, league_id, player_count):
         if not row:
             return {'success': False, 'error': 'Subscription not found.'}
         plan_tier, plan_type, status = row
-        if status != 'active':
+        # 'trialing' is a paying-in-waiting subscription — card on file, converts
+        # automatically. Blocking it here would make a trial unusable: you could
+        # subscribe but never attach the league you subscribed for.
+        if status not in ('active', 'trialing'):
             return {'success': False, 'error': 'Subscription is not active.'}
 
         # Check if league is already linked

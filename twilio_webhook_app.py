@@ -3350,7 +3350,10 @@ def dashboard_league(league_id):
         error = request.args.get('error')
 
         # Billing context — single consolidated query replaces 4 separate calls
-        payment_config_key = 'payment_required_sms' if channel_type == 'sms' else 'payment_required_slack'
+        payment_config_key = {
+            'sms': 'payment_required_sms',
+            'discord': 'payment_required_discord',
+        }.get(channel_type, 'payment_required_slack')
         payment_required = get_config(payment_config_key, 'false', conn=conn) == 'true'
         billing_context = get_league_billing_context(league_id, league, channel_type, payment_required=payment_required, conn=conn)
         if payment_required and not billing_context['linked_subscription']:
@@ -6301,7 +6304,7 @@ def admin_config_update():
     key = data.get('key')
     value = data.get('value')
 
-    allowed_keys = ('discord_enabled', 'payment_required_sms', 'payment_required_slack')
+    allowed_keys = ('discord_enabled', 'payment_required_sms', 'payment_required_slack', 'payment_required_discord')
     if key not in allowed_keys:
         return jsonify({'success': False, 'error': f'Unknown config key: {key}'}), 400
 

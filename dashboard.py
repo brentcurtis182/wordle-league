@@ -51,7 +51,8 @@ def get_user_menu_html(user_name, user_email, show_dashboard_link=False, user_ro
     from auth import get_config
     dashboard_link = f'<a href="/dashboard">Dashboard</a>' if show_dashboard_link else ''
     admin_link = f'<a href="/admin/dashboard" style="color: {COLORS["accent_orange"]};">Admin</a>' if user_role == 'admin' else ''
-    payments_enabled = get_config('payment_required_sms', 'false') == 'true' or get_config('payment_required_slack', 'false') == 'true'
+    payments_enabled = any(get_config(k, 'false') == 'true' for k in (
+        'payment_required_sms', 'payment_required_slack', 'payment_required_discord'))
     membership_link = f'<a href="/dashboard/membership">League Membership</a>' if payments_enabled else ''
     return f'''
         <div class="user-menu">
@@ -6075,6 +6076,18 @@ def render_admin_dashboard(user, leagues, config=None):
                   <span style="position:absolute; top:2px; left:{'22px' if config.get('payment_required_slack', 'false') == 'true' else '2px'}; width:20px; height:20px; background:#fff; border-radius:50%; transition:0.3s;"></span>
                 </label>
               </div>
+
+              <div style="display:flex; justify-content:space-between; align-items:center; padding:12px; background:{COLORS['bg_dark']}; border-radius:8px; margin-bottom:10px;">
+                <div>
+                  <span style="color:{COLORS['text']}; font-weight:500;">🎮 Discord Leagues</span>
+                  <span style="color:{COLORS['text_muted']}; font-size:0.8em; margin-left:8px;">Require payment for Discord</span>
+                </div>
+                <label style="position:relative; display:inline-block; width:44px; height:24px; cursor:pointer;">
+                  <input type="checkbox" id="configPaymentDiscord" {'checked' if config.get('payment_required_discord', 'false') == 'true' else ''} onchange="confirmConfigChange('payment_required_discord', this)" style="opacity:0; width:0; height:0;">
+                  <span style="position:absolute; top:0; left:0; right:0; bottom:0; background:{'#2ECC71' if config.get('payment_required_discord', 'false') == 'true' else '#555'}; border-radius:24px; transition:0.3s;"></span>
+                  <span style="position:absolute; top:2px; left:{'22px' if config.get('payment_required_discord', 'false') == 'true' else '2px'}; width:20px; height:20px; background:#fff; border-radius:50%; transition:0.3s;"></span>
+                </label>
+              </div>
             </div>
 
             <div style="border-top:1px solid {COLORS['border']}; padding-top:16px; margin-top:16px;">
@@ -6120,6 +6133,10 @@ def render_admin_dashboard(user, leagues, config=None):
                 'payment_required_slack': {{
                     on: ['Require Payment for Slack?', 'New Slack league activations will require a subscription. Existing active Slack leagues are not affected.'],
                     off: ['Disable Slack Payment?', 'New Slack leagues can be activated without a subscription.']
+                }},
+                'payment_required_discord': {{
+                    on: ['Require Payment for Discord?', 'New Discord league activations will require a subscription (with the 14-day free trial). Existing active Discord leagues are not affected.'],
+                    off: ['Disable Discord Payment?', 'New Discord leagues can be activated without a subscription.']
                 }}
             }};
             var label = labels[key] || {{}};

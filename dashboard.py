@@ -2480,8 +2480,8 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
         _hint_inactive_json = json.dumps(
             "Our bot isn't connected to a channel right now — that's why scores aren't tracking. "
             "This also happens if the bot was removed from your server. "
-            "Tap Connect Channel to add it back, then run the /wordle-link command with your code "
-            "in whichever channel you want scores posted."
+            "Tap Connect Channel to add it back, then post your code phrase directly "
+            "in whichever channel you want scores tracked."
         )
     elif channel_type == 'slack':
         _hint_inactive_title_json = json.dumps('💬 Connect your Slack channel')
@@ -2858,7 +2858,7 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                 <div style="margin-top: 16px; padding: 16px; background: {COLORS['accent_orange']}15; border: 1px solid {COLORS['accent_orange']}50; border-radius: 8px;">
                     <p style="margin: 0 0 12px 0; color: {COLORS['text']}; font-weight: 600;">📋 Setup Steps to Connect Your Discord Channel</p>
                     <p style="margin: 0 0 8px 0; color: {COLORS['text_muted']}; font-size: 0.9em;"><strong>1.</strong> Click <strong>Connect Channel</strong> above to add the WordPlay League bot to your Discord server.</p>
-                    <p style="margin: 0 0 8px 0; color: {COLORS['text_muted']}; font-size: 0.9em;"><strong>2.</strong> In your Discord channel, use <code style="background: {COLORS['bg_card']}; padding: 2px 6px; border-radius: 4px;">/wordle-link</code> followed by the code phrase to activate.</p>
+                    <p style="margin: 0 0 8px 0; color: {COLORS['text_muted']}; font-size: 0.9em;"><strong>2.</strong> Post the code phrase in your Discord channel to activate.</p>
                     <p style="margin: 0; color: {COLORS['text_muted']}; font-size: 0.85em; font-style: italic;">💡 Lost your code phrase? Click <strong>Connect Channel</strong> again to generate a new one.</p>
                 </div>
                 """ if channel_type == 'discord' and not league.get('discord_channel_id') else ''}
@@ -3340,10 +3340,10 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                     
                     <div style="background: {COLORS['bg_dark']}; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
                         <h4 style="margin: 0 0 12px 0; color: {COLORS['text']};">Step 2: Link your channel</h4>
-                        <p style="color: {COLORS['text_muted']}; margin-bottom: 8px;">In your Discord channel, use the slash command with this code:</p>
+                        <p style="color: {COLORS['text_muted']}; margin-bottom: 8px;">Post this code phrase in the Discord channel you want scores tracked in:</p>
                         <div style="display: flex; align-items: center; gap: 10px; justify-content: center;">
                             <div id="verificationCode" style="background: {COLORS['bg_card']}; padding: 16px; border-radius: 6px; font-size: 1.1em; text-align: center; color: {COLORS['accent']}; font-weight: 600; flex: 1;">
-                                /wordle-link {league.get('verification_code') or 'Loading...'}
+                                {league.get('verification_code') or 'Loading...'}
                             </div>
                             <button type="button" onclick="copyToClipboard(document.getElementById('verificationCode').textContent.trim(), this)" style="background: {COLORS['bg_card']}; border: 1px solid {COLORS['border']}; color: {COLORS['text']}; border-radius: 6px; padding: 8px 12px; cursor: pointer; font-size: 0.85em; white-space: nowrap;">📋 Copy</button>
                         </div>
@@ -4305,10 +4305,10 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                     if (data.success) {{
                         const codeEl = document.getElementById('verificationCode');
                         if (codeEl) {{
-                            // For Discord, keep the /wordle-link prefix
+                            // Discord posts the bare code phrase, same as Slack
                             const channelType = '{channel_type}';
                             if (channelType === 'discord') {{
-                                codeEl.textContent = '/wordle-link ' + data.code;
+                                codeEl.textContent = data.code;
                             }} else {{
                                 codeEl.textContent = data.code;
                             }}

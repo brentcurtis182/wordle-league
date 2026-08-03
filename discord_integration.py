@@ -485,7 +485,48 @@ def handle_discord_message(message_data: dict, db_connection) -> dict:
     # Ignore bot messages
     if author.get("bot"):
         return {"status": "ignored", "reason": "bot_message"}
-    
+
+    # First, check if this is a verification passphrase linking a channel.
+    # Mirrors the Slack flow: now that the gateway reads channel messages, a
+    # manager just posts the passphrase — no slash command needed.
+    text = (content or "").strip()
+    if text:
+        cursor = db_connection.cursor()
+        try:
+            cursor.execute("""
+                SELECT id, display_name, verification_code, slug
+                FROM leagues
+                WHERE channel_type = 'discord'
+                AND discord_channel_id IS NULL
+                AND verification_code IS NOT NULL
+            """)
+            for league_id_p, league_name_p, code_p, slug_p in cursor.fetchall():
+                if code_p and text.upper() == code_p.upper():
+                    cursor.execute("""
+                        UPDATE leagues
+                        SET discord_channel_id = %s, discord_guild_id = %s
+                        WHERE id = %s
+                    """, (channel_id, guild_id, league_id_p))
+                    db_connection.commit()
+                    logging.info(f"League {league_id_p} linked to Discord guild {guild_id} channel {channel_id}")
+
+                    domain = os.environ.get('APP_DOMAIN', 'app.wordplayleague.com')
+                    public_url = (f"https://{domain}/leagues/{slug_p}" if slug_p
+                                  else f"https://{domain}/league-{league_id_p}")
+                    try:
+                        send_discord_message(
+                            channel_id,
+                            f"🎉 Success! This channel is now connected to **{league_name_p}**. "
+                            f"Players can start posting their Wordle scores!\n\n"
+                            f"View your league page: {public_url}"
+                        )
+                    except Exception as e:
+                        logging.error(f"Failed to send Discord link confirmation: {e}")
+
+                    return {"status": "channel_linked", "league_id": league_id_p}
+        finally:
+            cursor.close()
+
     # Try to parse as Wordle score
     wordle_number, score, is_hard_mode, emoji_pattern = parse_discord_wordle_score(content)
     

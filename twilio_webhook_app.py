@@ -2626,8 +2626,10 @@ def discord_install():
     client_id = os.environ.get('DISCORD_CLIENT_ID')
     redirect_uri = f"{APP_BASE_URL}/discord/oauth/callback"
     
-    # Permissions needed: Send Messages, Read Message History, Embed Links, Attach Files
-    permissions = 117760  # Calculated from Discord permissions calculator
+    # View Channel (1024) + Send Messages (2048) + Embed Links (16384)
+    # + Attach Files (32768) + Read Message History (65536) + Add Reactions (64)
+    # Add Reactions is required for the gateway's ✅ score confirmation.
+    permissions = 117824
     
     # State parameter to track which league this is for
     state = league_id or ""

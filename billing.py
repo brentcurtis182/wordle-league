@@ -24,6 +24,12 @@ SMS_BUNDLES = {
     'sms_9_ai': {'price_cents': 2000, 'player_count': 9, 'ai_included': True},
 }
 
+# Free trial length, Slack/Discord only. Those channels cost us nothing per
+# message, so a trial is just compute. SMS is deliberately excluded: every
+# message on a trial SMS league is a real Twilio charge we would eat, which
+# adds up fast and is trivially abusable.
+TRIAL_DAYS = 14
+
 # Slack tiers
 SLACK_TIERS = {
     'slack_1': {'price_cents': 500, 'league_slots': 1, 'ai_included': False},
@@ -208,6 +214,35 @@ def get_or_create_stripe_customer(user_id, email, name=None):
 # Checkout & Portal Sessions
 # ---------------------------------------------------------------------------
 
+def _user_has_prior_subscription(user_id):
+    """True if this user has ever had a subscription.
+
+    Gates the free trial to genuinely new customers. Stripe's trial_period_days
+    has no once-per-customer rule of its own, so without this a user could
+    cancel and re-subscribe for an unlimited run of free trials.
+
+    Fails CLOSED (assumes prior on error) so a DB hiccup can never hand out
+    free trials.
+    """
+    from auth import get_db_connection
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT 1 FROM subscriptions WHERE user_id = %s LIMIT 1", (user_id,))
+        found = cursor.fetchone() is not None
+        cursor.close()
+        conn.close()
+        return found
+    except Exception as e:
+        logging.error(f"Trial eligibility check failed for user {user_id}: {e}")
+        return True
+
+
+def is_trial_eligible(user_id, plan_type):
+    """Whether this checkout should include a free trial (Slack/Discord, first sub)."""
+    return bool(TRIAL_DAYS) and plan_type == 'slack' and not _user_has_prior_subscription(user_id)
+
+
 def create_checkout_session(user_id, email, plan_type, plan_tier, league_id=None,
                             success_url=None, cancel_url=None):
     """
@@ -244,6 +279,12 @@ def create_checkout_session(user_id, email, plan_type, plan_tier, league_id=None
     if league_id:
         metadata['league_id'] = str(league_id)
 
+    subscription_data = {'metadata': metadata}
+
+    if is_trial_eligible(user_id, plan_type):
+        subscription_data['trial_period_days'] = TRIAL_DAYS
+        logging.info(f"Applying {TRIAL_DAYS}-day trial for user {user_id} on {plan_tier}")
+
     session = stripe.checkout.Session.create(
         customer=customer_id,
         mode='subscription',
@@ -251,7 +292,10 @@ def create_checkout_session(user_id, email, plan_type, plan_tier, league_id=None
         success_url=success_url,
         cancel_url=cancel_url,
         metadata=metadata,
-        subscription_data={'metadata': metadata},
+        subscription_data=subscription_data,
+        # Card is collected and verified up front even during a trial, so the
+        # subscription converts automatically on day 15 with no action needed.
+        payment_method_collection='always',
     )
 
     logging.info(f"Created checkout session {session.id} for user {user_id}, plan {plan_tier}")
@@ -376,7 +420,7 @@ def get_available_slots(user_id, plan_type):
         cursor.execute("""
             SELECT s.id, s.plan_tier, s.status
             FROM subscriptions s
-            WHERE s.user_id = %s AND s.plan_type = %s AND s.status = 'active'
+            WHERE s.user_id = %s AND s.plan_type = %s AND s.status IN ('active', 'trialing')
         """, (user_id, plan_type))
 
         total_slots = 0
@@ -392,7 +436,7 @@ def get_available_slots(user_id, plan_type):
             SELECT COUNT(*)
             FROM subscription_leagues sl
             JOIN subscriptions s ON s.id = sl.subscription_id
-            WHERE s.user_id = %s AND s.plan_type = %s AND s.status = 'active'
+            WHERE s.user_id = %s AND s.plan_type = %s AND s.status IN ('active', 'trialing')
         """, (user_id, plan_type))
 
         used_slots = cursor.fetchone()[0]
@@ -418,7 +462,7 @@ def assign_league_to_slot(user_id, league_id, plan_type):
         cursor.execute("""
             SELECT s.id, s.plan_tier
             FROM subscriptions s
-            WHERE s.user_id = %s AND s.plan_type = %s AND s.status = 'active'
+            WHERE s.user_id = %s AND s.plan_type = %s AND s.status IN ('active', 'trialing')
             ORDER BY s.created_at ASC
         """, (user_id, plan_type))
 
@@ -477,7 +521,7 @@ def check_ai_messaging_enabled(league_id, payment_required=False):
             SELECT s.plan_tier, s.ai_messaging_addon
             FROM subscription_leagues sl
             JOIN subscriptions s ON s.id = sl.subscription_id
-            WHERE sl.league_id = %s AND s.status = 'active'
+            WHERE sl.league_id = %s AND s.status IN ('active', 'trialing')
             LIMIT 1
         """, (league_id,))
 
@@ -571,7 +615,7 @@ def get_league_billing_context(league_id, league, channel_type, payment_required
         # One query: subscription info + league max_players
         cursor.execute("""
             SELECT s.id, s.plan_tier, s.plan_type, s.status, s.ai_messaging_addon,
-                   l.max_players
+                   l.max_players, s.current_period_end
             FROM leagues l
             LEFT JOIN subscription_leagues sl ON sl.league_id = l.id
             LEFT JOIN subscriptions s ON s.id = sl.subscription_id
@@ -588,12 +632,23 @@ def get_league_billing_context(league_id, league, channel_type, payment_required
         max_players_override = row[5] if row else None
 
         if row and row[0] is not None:
+            # Days left in a free trial, for the league card badge. Stripe sets
+            # current_period_end to the trial end date while status='trialing'.
+            trial_days_left = None
+            if row[3] == 'trialing' and row[6]:
+                from datetime import datetime as _dt
+                _end = row[6]
+                _now = _dt.now(_end.tzinfo) if getattr(_end, 'tzinfo', None) else _dt.now()
+                trial_days_left = max(0, (_end - _now).days)
+
             linked_sub = {
                 'subscription_id': row[0],
                 'plan_tier': row[1],
                 'plan_type': row[2],
                 'status': row[3],
                 'ai_messaging_addon': row[4],
+                'current_period_end': row[6],
+                'trial_days_left': trial_days_left,
             }
             status = row[3]
 
@@ -690,7 +745,7 @@ def get_user_subscriptions_for_linking(user_id, channel_type, conn=None):
         cursor.execute("""
             SELECT s.id, s.plan_tier
             FROM subscriptions s
-            WHERE s.user_id = %s AND s.plan_type = %s AND s.status = 'active'
+            WHERE s.user_id = %s AND s.plan_type = %s AND s.status IN ('active', 'trialing')
             ORDER BY s.created_at ASC
         """, (user_id, plan_type))
 

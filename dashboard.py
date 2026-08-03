@@ -1975,13 +1975,14 @@ def render_create_league(user, error=None, config=None):
                                 <div class="name">SMS Text</div>
                                 <div class="desc">iMessage or group text</div>
                             </label>
-                            <label class="platform-option" onclick="selectPlatform(this, 'slack')">
+                            <label class="platform-option" onclick="selectPlatform(this, 'slack')" style="position: relative;">
                                 <input type="radio" name="channel_type" value="slack">
+                                <div style="position: absolute; top: -8px; right: -6px; background: {COLORS['accent']}; color: #000; font-size: 0.6em; font-weight: 800; padding: 2px 6px; border-radius: 8px; letter-spacing: .03em;">2 WEEKS FREE</div>
                                 <div class="icon">💬</div>
                                 <div class="name">Slack</div>
                                 <div class="desc">Slack workspace channel</div>
                             </label>
-                            {'<label class="platform-option" onclick="selectPlatform(this, \'discord\')"><input type="radio" name="channel_type" value="discord"><div class="icon">🎮</div><div class="name">Discord</div><div class="desc">Discord server channel</div></label>' if discord_enabled else ''}
+                            {'<label class="platform-option" onclick="selectPlatform(this, \'discord\')" style="position: relative;"><input type="radio" name="channel_type" value="discord"><div style="position: absolute; top: -8px; right: -6px; background: ' + COLORS["accent"] + '; color: #000; font-size: 0.6em; font-weight: 800; padding: 2px 6px; border-radius: 8px; letter-spacing: .03em;">2 WEEKS FREE</div><div class="icon">🎮</div><div class="name">Discord</div><div class="desc">Discord server channel</div></label>' if discord_enabled else ''}
                         </div>
                     </div>
                     
@@ -2029,8 +2030,8 @@ def render_create_league(user, error=None, config=None):
                 // Update hint text
                 const hints = {{
                     'sms': "After creating your league, you'll receive a phone number to add to your group chat.",
-                    'slack': "After creating your league, you'll connect your Slack workspace and select a channel.",
-                    'discord': "After creating your league, you'll add our bot to your Discord server and select a channel."
+                    'slack': "Starts with a 14-day free trial - card required, nothing charged until it ends. After creating your league, you'll connect your Slack workspace and select a channel.",
+                    'discord': "Starts with a 14-day free trial - card required, nothing charged until it ends. After creating your league, you'll add our bot to your Discord server and select a channel."
                 }};
                 document.getElementById('platform-hint').textContent = hints[platform];
             }}
@@ -2472,6 +2473,27 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
     _current_header_emoji = league.get('header_emoji') or ''
     _waiting_opt_in_count = len([p for p in players if p.get('sms_opt_in_status') == 'WAITING']) if channel_type == 'sms' else 0
     _waiting_opt_in_names = [p['name'] for p in players if p.get('sms_opt_in_status') == 'WAITING'] if channel_type == 'sms' else []
+    # Free-trial badge for the league card. Shown beside the Active chip so the
+    # manager can see at a glance that billing hasn't started yet.
+    _trial_days_left = (linked_subscription or {}).get('trial_days_left')
+    _is_trialing = (linked_subscription or {}).get('status') == 'trialing'
+    if _is_trialing:
+        if _trial_days_left is None:
+            _trial_text = '🎁 Free Trial'
+        elif _trial_days_left == 0:
+            _trial_text = '🎁 Trial ends today'
+        elif _trial_days_left == 1:
+            _trial_text = '🎁 Trial — 1 day left'
+        else:
+            _trial_text = f'🎁 Trial — {_trial_days_left} days left'
+        _trial_badge = (
+            f'<a href="/dashboard/membership" title="Your card is on file; the first charge happens when the trial ends." '
+            f'style="background: {COLORS["accent"]}; color: #000; padding: 4px 10px; border-radius: 12px; '
+            f'font-size: 0.8em; font-weight: 700; text-decoration: none;">{_trial_text}</a>'
+        )
+    else:
+        _trial_badge = ''
+
     _is_connected = bool(league.get('conversation_sid') if channel_type == 'sms' else league.get('slack_channel_id') if channel_type == 'slack' else league.get('discord_channel_id'))
     # Onboarding help-tooltip copy (JSON-encoded so it embeds safely in JS,
     # including player names that may contain quotes/apostrophes).
@@ -2831,6 +2853,7 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                     <span style="background: {'#2ECC71' if (league.get('conversation_sid') if channel_type == 'sms' else league.get('slack_channel_id') if channel_type == 'slack' else league.get('discord_channel_id')) else COLORS['accent_orange']}; color: #000; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600;">
                         {('✓ Active' if (league.get('conversation_sid') if channel_type == 'sms' else league.get('slack_channel_id') if channel_type == 'slack' else league.get('discord_channel_id')) else ('⚠ Inactive' if channel_type == 'sms' else '⚠ Setup Required'))}
                     </span>
+                    {_trial_badge}
                     {'<span onclick="showInfoModal(\'inactive\')" title="What is this?" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,0.18);color:#fff;font-size:0.72em;font-weight:700;cursor:pointer;">?</span>' if not _is_connected else ''}
                     {f'<span style="color: {COLORS["text_muted"]}; font-size: 0.8em;">via +1 {league_phone_display}</span>' if channel_type == 'sms' and league.get('conversation_sid') and league_phone_display else ''}
                 </div>
@@ -6826,10 +6849,14 @@ def render_membership_page(user, subscriptions, message=None, error=None):
         subs_html = ""
         for sub in subscriptions:
             is_canceling = sub.get('cancel_at_period_end') or sub['status'] == 'canceled'
+            is_trialing = sub['status'] == 'trialing'
             status_color = COLORS['error'] if sub['status'] == 'canceled' else COLORS['accent_orange'] if is_canceling or sub['status'] == 'past_due' else COLORS['success']
-            status_label = 'Canceling' if is_canceling and sub['status'] == 'active' else sub['status'].replace('_', ' ').title()
+            if is_trialing and not is_canceling:
+                status_label = 'Free Trial'
+            else:
+                status_label = 'Canceling' if is_canceling and sub['status'] in ('active', 'trialing') else sub['status'].replace('_', ' ').title()
             period_end = sub['current_period_end'].strftime('%b %d, %Y') if sub.get('current_period_end') else '—'
-            period_label = 'Ends' if is_canceling else 'Renews'
+            period_label = 'Ends' if is_canceling else ('First charge' if is_trialing else 'Renews')
             cancel_note = ''
 
             # Plan display name
@@ -6890,7 +6917,7 @@ def render_membership_page(user, subscriptions, message=None, error=None):
 
             # Change Plan selector
             change_plan_html = ""
-            if sub['status'] == 'active':
+            if sub['status'] in ('active', 'trialing'):
                 if sub['plan_type'] == 'sms':
                     options = '<option value="" selected>Select a new plan…</option>'
                     sms_tiers = [('sms_4', '4 Players — $8/mo'), ('sms_5', '5 Players — $10/mo'), ('sms_6', '6 Players — $12/mo'), ('sms_7', '7 Players — $14/mo'), ('sms_8', '8 Players — $16/mo'), ('sms_9', '9 Players — $18/mo'), ('sms_9_ai', '9 + AI — $20/mo')]
@@ -7224,14 +7251,14 @@ def render_membership_page(user, subscriptions, message=None, error=None):
 
             <!-- Slack Plans -->
             <div class="plan-section">
-                <h3 class="plan-section-toggle" onclick="this.parentElement.classList.toggle('expanded')">💬 Slack &amp; Discord League Plans <span class="toggle-arrow">&#9654;</span></h3>
+                <h3 class="plan-section-toggle" onclick="this.parentElement.classList.toggle('expanded')">💬 Slack &amp; Discord League Plans — 14-day free trial <span class="toggle-arrow">&#9654;</span></h3>
                 <div class="plan-section-content">
                 <p style="color: {COLORS['text_muted']}; margin-bottom: 16px; font-size: 0.9em;">Up to 14 players per league, no limit on player count.</p>
                 <div class="plan-grid">
                     <div class="plan-card">
                         <div style="color: {COLORS['text_muted']}; font-size: 0.85em;">1 League</div>
                         <div class="plan-price">$5<span>/mo</span></div>
-                        <div class="plan-features">1 Slack or Discord league<br>Sunday Race Update included<br>AI messaging not included</div>
+                        <div class="plan-features">1 Slack or Discord league<br>14-day free trial<br>Sunday Race Update included<br>AI messaging not included</div>
                         <form method="POST" action="/billing/checkout">
                             <input type="hidden" name="plan_type" value="slack">
                             <input type="hidden" name="plan_tier" value="slack_1">
@@ -7241,7 +7268,7 @@ def render_membership_page(user, subscriptions, message=None, error=None):
                     <div class="plan-card">
                         <div style="color: {COLORS['text_muted']}; font-size: 0.85em;">1 League + AI</div>
                         <div class="plan-price">$7<span>/mo</span></div>
-                        <div class="plan-features">1 Slack or Discord league<br>All AI messaging included<br>Sunday Race Update included</div>
+                        <div class="plan-features">1 Slack or Discord league<br>14-day free trial<br>All AI messaging included<br>Sunday Race Update included</div>
                         <form method="POST" action="/billing/checkout">
                             <input type="hidden" name="plan_type" value="slack">
                             <input type="hidden" name="plan_tier" value="slack_1_ai">
@@ -7251,7 +7278,7 @@ def render_membership_page(user, subscriptions, message=None, error=None):
                     <div class="plan-card featured">
                         <div style="color: {COLORS['accent']}; font-size: 0.85em; font-weight: 600;">2 Leagues + AI</div>
                         <div class="plan-price">$10<span>/mo</span></div>
-                        <div class="plan-features">2 Slack or Discord leagues<br>All AI messaging included<br>Sunday Race Update included</div>
+                        <div class="plan-features">2 Slack or Discord leagues<br>14-day free trial<br>All AI messaging included<br>Sunday Race Update included</div>
                         <form method="POST" action="/billing/checkout">
                             <input type="hidden" name="plan_type" value="slack">
                             <input type="hidden" name="plan_tier" value="slack_2">
@@ -7261,7 +7288,7 @@ def render_membership_page(user, subscriptions, message=None, error=None):
                     <div class="plan-card">
                         <div style="color: {COLORS['text_muted']}; font-size: 0.85em;">5 Leagues + AI</div>
                         <div class="plan-price">$20<span>/mo</span></div>
-                        <div class="plan-features">5 Slack or Discord leagues<br>All AI messaging included<br>Sunday Race Update included</div>
+                        <div class="plan-features">5 Slack or Discord leagues<br>14-day free trial<br>All AI messaging included<br>Sunday Race Update included</div>
                         <form method="POST" action="/billing/checkout">
                             <input type="hidden" name="plan_type" value="slack">
                             <input type="hidden" name="plan_tier" value="slack_5">

@@ -7251,14 +7251,14 @@ def render_membership_page(user, subscriptions, message=None, error=None):
 
             <!-- Slack Plans -->
             <div class="plan-section">
-                <h3 class="plan-section-toggle" onclick="this.parentElement.classList.toggle('expanded')">💬 Slack &amp; Discord League Plans — 14-day free trial <span class="toggle-arrow">&#9654;</span></h3>
+                <h3 class="plan-section-toggle" onclick="this.parentElement.classList.toggle('expanded')">💬 Slack &amp; Discord League Plans <span style="background: {COLORS['accent_orange']}; color: #000; font-size: 0.62em; font-weight: 800; padding: 3px 9px; border-radius: 10px; letter-spacing: .03em; vertical-align: middle; margin-left: 6px;">14-DAY FREE TRIAL</span> <span class="toggle-arrow">&#9654;</span></h3>
                 <div class="plan-section-content">
                 <p style="color: {COLORS['text_muted']}; margin-bottom: 16px; font-size: 0.9em;">Up to 14 players per league, no limit on player count.</p>
                 <div class="plan-grid">
                     <div class="plan-card">
                         <div style="color: {COLORS['text_muted']}; font-size: 0.85em;">1 League</div>
                         <div class="plan-price">$5<span>/mo</span></div>
-                        <div class="plan-features">1 Slack or Discord league<br>14-day free trial<br>Sunday Race Update included<br>AI messaging not included</div>
+                        <div class="plan-features">1 Slack or Discord league<br><span style="color: {COLORS['accent_orange']}; font-weight: 700;">✨ 14-day free trial</span><br>Sunday Race Update included<br>AI messaging not included</div>
                         <form method="POST" action="/billing/checkout">
                             <input type="hidden" name="plan_type" value="slack">
                             <input type="hidden" name="plan_tier" value="slack_1">
@@ -7268,7 +7268,7 @@ def render_membership_page(user, subscriptions, message=None, error=None):
                     <div class="plan-card">
                         <div style="color: {COLORS['text_muted']}; font-size: 0.85em;">1 League + AI</div>
                         <div class="plan-price">$7<span>/mo</span></div>
-                        <div class="plan-features">1 Slack or Discord league<br>14-day free trial<br>All AI messaging included<br>Sunday Race Update included</div>
+                        <div class="plan-features">1 Slack or Discord league<br><span style="color: {COLORS['accent_orange']}; font-weight: 700;">✨ 14-day free trial</span><br>All AI messaging included<br>Sunday Race Update included</div>
                         <form method="POST" action="/billing/checkout">
                             <input type="hidden" name="plan_type" value="slack">
                             <input type="hidden" name="plan_tier" value="slack_1_ai">
@@ -7278,7 +7278,7 @@ def render_membership_page(user, subscriptions, message=None, error=None):
                     <div class="plan-card featured">
                         <div style="color: {COLORS['accent']}; font-size: 0.85em; font-weight: 600;">2 Leagues + AI</div>
                         <div class="plan-price">$10<span>/mo</span></div>
-                        <div class="plan-features">2 Slack or Discord leagues<br>14-day free trial<br>All AI messaging included<br>Sunday Race Update included</div>
+                        <div class="plan-features">2 Slack or Discord leagues<br><span style="color: {COLORS['accent_orange']}; font-weight: 700;">✨ 14-day free trial</span><br>All AI messaging included<br>Sunday Race Update included</div>
                         <form method="POST" action="/billing/checkout">
                             <input type="hidden" name="plan_type" value="slack">
                             <input type="hidden" name="plan_tier" value="slack_2">
@@ -7288,7 +7288,7 @@ def render_membership_page(user, subscriptions, message=None, error=None):
                     <div class="plan-card">
                         <div style="color: {COLORS['text_muted']}; font-size: 0.85em;">5 Leagues + AI</div>
                         <div class="plan-price">$20<span>/mo</span></div>
-                        <div class="plan-features">5 Slack or Discord leagues<br>14-day free trial<br>All AI messaging included<br>Sunday Race Update included</div>
+                        <div class="plan-features">5 Slack or Discord leagues<br><span style="color: {COLORS['accent_orange']}; font-weight: 700;">✨ 14-day free trial</span><br>All AI messaging included<br>Sunday Race Update included</div>
                         <form method="POST" action="/billing/checkout">
                             <input type="hidden" name="plan_type" value="slack">
                             <input type="hidden" name="plan_tier" value="slack_5">

@@ -776,10 +776,10 @@ def get_user_subscriptions_for_linking(user_id, channel_type, conn=None):
                 max_slots = tier_info.get('league_slots', 1)
                 max_players = 14
                 tier_labels = {
-                    'slack_1': 'Slack 1 League — $5/mo',
-                    'slack_1_ai': 'Slack 1 League + AI — $7/mo',
-                    'slack_2': 'Slack 2 Leagues + AI — $10/mo',
-                    'slack_5': 'Slack 5 Leagues + AI — $20/mo',
+                    'slack_1': 'Slack/Discord 1 League — $5/mo',
+                    'slack_1_ai': 'Slack/Discord 1 League + AI — $7/mo',
+                    'slack_2': 'Slack/Discord 2 Leagues + AI — $10/mo',
+                    'slack_5': 'Slack/Discord 5 Leagues + AI — $20/mo',
                 }
                 display = tier_labels.get(plan_tier, plan_tier)
 

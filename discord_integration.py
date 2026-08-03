@@ -515,8 +515,8 @@ def handle_discord_message(message_data: dict, db_connection) -> dict:
     
     # Look up or create player by Discord user ID
     cursor.execute("""
-        SELECT id, name FROM players 
-        WHERE league_id = %s AND discord_user_id = %s AND is_active = TRUE
+        SELECT id, name FROM players
+        WHERE league_id = %s AND discord_user_id = %s AND active = TRUE
     """, (league_id, user_id))
     
     player_row = cursor.fetchone()
@@ -524,8 +524,8 @@ def handle_discord_message(message_data: dict, db_connection) -> dict:
     if not player_row:
         # Check if player exists by name (might not have discord_user_id set yet)
         cursor.execute("""
-            SELECT id, name FROM players 
-            WHERE league_id = %s AND name = %s AND is_active = TRUE
+            SELECT id, name FROM players
+            WHERE league_id = %s AND name = %s AND active = TRUE
         """, (league_id, username))
         
         player_row = cursor.fetchone()

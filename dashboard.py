@@ -6840,13 +6840,13 @@ def render_membership_page(user, subscriptions, message=None, error=None):
                 count = tier.replace('sms_', '')
                 plan_display = f"SMS {count}-Player League"
             elif tier == 'slack_1':
-                plan_display = "Slack — 1 League"
+                plan_display = "Slack/Discord — 1 League"
             elif tier == 'slack_1_ai':
-                plan_display = "Slack — 1 League + AI"
+                plan_display = "Slack/Discord — 1 League + AI"
             elif tier == 'slack_2':
-                plan_display = "Slack — 2 Leagues + AI"
+                plan_display = "Slack/Discord — 2 Leagues + AI"
             elif tier == 'slack_5':
-                plan_display = "Slack — 5 Leagues + AI"
+                plan_display = "Slack/Discord — 5 Leagues + AI"
             else:
                 plan_display = tier
 
@@ -7224,14 +7224,14 @@ def render_membership_page(user, subscriptions, message=None, error=None):
 
             <!-- Slack Plans -->
             <div class="plan-section">
-                <h3 class="plan-section-toggle" onclick="this.parentElement.classList.toggle('expanded')">💬 Slack League Plans <span class="toggle-arrow">&#9654;</span></h3>
+                <h3 class="plan-section-toggle" onclick="this.parentElement.classList.toggle('expanded')">💬 Slack &amp; Discord League Plans <span class="toggle-arrow">&#9654;</span></h3>
                 <div class="plan-section-content">
                 <p style="color: {COLORS['text_muted']}; margin-bottom: 16px; font-size: 0.9em;">Up to 14 players per league, no limit on player count.</p>
                 <div class="plan-grid">
                     <div class="plan-card">
                         <div style="color: {COLORS['text_muted']}; font-size: 0.85em;">1 League</div>
                         <div class="plan-price">$5<span>/mo</span></div>
-                        <div class="plan-features">1 Slack league<br>Sunday Race Update included<br>AI messaging not included</div>
+                        <div class="plan-features">1 Slack or Discord league<br>Sunday Race Update included<br>AI messaging not included</div>
                         <form method="POST" action="/billing/checkout">
                             <input type="hidden" name="plan_type" value="slack">
                             <input type="hidden" name="plan_tier" value="slack_1">
@@ -7241,7 +7241,7 @@ def render_membership_page(user, subscriptions, message=None, error=None):
                     <div class="plan-card">
                         <div style="color: {COLORS['text_muted']}; font-size: 0.85em;">1 League + AI</div>
                         <div class="plan-price">$7<span>/mo</span></div>
-                        <div class="plan-features">1 Slack league<br>All AI messaging included<br>Sunday Race Update included</div>
+                        <div class="plan-features">1 Slack or Discord league<br>All AI messaging included<br>Sunday Race Update included</div>
                         <form method="POST" action="/billing/checkout">
                             <input type="hidden" name="plan_type" value="slack">
                             <input type="hidden" name="plan_tier" value="slack_1_ai">
@@ -7251,7 +7251,7 @@ def render_membership_page(user, subscriptions, message=None, error=None):
                     <div class="plan-card featured">
                         <div style="color: {COLORS['accent']}; font-size: 0.85em; font-weight: 600;">2 Leagues + AI</div>
                         <div class="plan-price">$10<span>/mo</span></div>
-                        <div class="plan-features">2 Slack leagues<br>All AI messaging included<br>Sunday Race Update included</div>
+                        <div class="plan-features">2 Slack or Discord leagues<br>All AI messaging included<br>Sunday Race Update included</div>
                         <form method="POST" action="/billing/checkout">
                             <input type="hidden" name="plan_type" value="slack">
                             <input type="hidden" name="plan_tier" value="slack_2">
@@ -7261,7 +7261,7 @@ def render_membership_page(user, subscriptions, message=None, error=None):
                     <div class="plan-card">
                         <div style="color: {COLORS['text_muted']}; font-size: 0.85em;">5 Leagues + AI</div>
                         <div class="plan-price">$20<span>/mo</span></div>
-                        <div class="plan-features">5 Slack leagues<br>All AI messaging included<br>Sunday Race Update included</div>
+                        <div class="plan-features">5 Slack or Discord leagues<br>All AI messaging included<br>Sunday Race Update included</div>
                         <form method="POST" action="/billing/checkout">
                             <input type="hidden" name="plan_type" value="slack">
                             <input type="hidden" name="plan_tier" value="slack_5">

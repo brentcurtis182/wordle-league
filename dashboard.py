@@ -3308,15 +3308,16 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
         
         <!-- Link League to Subscription Modal -->
         <div class="modal-overlay" id="linkModal">
-            <div class="modal" style="max-width: 440px;">
+            <div class="modal" style="max-width: 620px;">
                 <h3 style="color: {COLORS['accent']};">🔗 Link League to Subscription</h3>
                 <p style="color: {COLORS['text_muted']}; margin-bottom: 16px; font-size: 0.9em;">Select a subscription to link this league to before activating.</p>
                 <div id="linkError" style="display: none; background: {COLORS['error']}20; border: 1px solid {COLORS['error']}; color: {COLORS['text']}; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 0.9em;"></div>
                 <div class="form-group" style="margin-bottom: 16px;">
                     <label>Subscription</label>
-                    <select id="linkSubscriptionSelect" style="width: 100%; padding: 10px 12px; border-radius: 6px; background: {COLORS['bg_dark']}; border: 1px solid {COLORS['border']}; color: {COLORS['text']}; font-size: 0.9em;">
-                        {''.join(f'<option value="{s["subscription_id"]}" data-max-players="{s["max_players"]}">{s["display"]} ({s["slots_used"]}/{s["slots_total"]} slots used)</option>' for s in available_subscriptions) if available_subscriptions else '<option disabled>No subscriptions available</option>'}
+                    <select id="linkSubscriptionSelect" onchange="updateLinkSlotHint()" style="width: 100%; padding: 10px 12px; border-radius: 6px; background: {COLORS['bg_dark']}; border: 1px solid {COLORS['border']}; color: {COLORS['text']}; font-size: 0.9em;">
+                        {''.join(f'<option value="{s["subscription_id"]}" data-max-players="{s["max_players"]}" data-slots-used="{s["slots_used"]}" data-slots-total="{s["slots_total"]}" data-plan="{s["display"]}">{s["display"]} ({s["slots_used"]}/{s["slots_total"]} slots used)</option>' for s in available_subscriptions) if available_subscriptions else '<option disabled>No subscriptions available</option>'}
                     </select>
+                    <div id="linkSlotHint" style="margin-top: 10px; padding: 10px 12px; background: {COLORS['bg_dark']}; border-radius: 6px; color: {COLORS['text_muted']}; font-size: 0.85em; line-height: 1.5;"></div>
                 </div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeLinkModal()">Cancel</button>
@@ -4207,10 +4208,29 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                 // Show link modal
                 document.getElementById('linkModal').classList.add('active');
                 document.getElementById('linkError').style.display = 'none';
+                updateLinkSlotHint();
             }}
 
             function closeLinkModal() {{
                 document.getElementById('linkModal').classList.remove('active');
+            }}
+
+            function updateLinkSlotHint() {{
+                var select = document.getElementById('linkSubscriptionSelect');
+                var hint = document.getElementById('linkSlotHint');
+                if (!select || !hint) return;
+                var opt = select.options[select.selectedIndex];
+                if (!opt || !opt.getAttribute('data-slots-total')) {{ hint.textContent = ''; return; }}
+                var used = parseInt(opt.getAttribute('data-slots-used'), 10);
+                var total = parseInt(opt.getAttribute('data-slots-total'), 10);
+                var players = opt.getAttribute('data-max-players');
+                var left = total - used;
+                hint.innerHTML =
+                    '<strong style="color: {COLORS['text']};">' + opt.getAttribute('data-plan') + '</strong><br>' +
+                    used + ' of ' + total + ' league slot' + (total === 1 ? '' : 's') + ' used &mdash; ' +
+                    '<span style="color: ' + (left > 0 ? '{COLORS['accent']}' : '{COLORS['accent_orange']}') + ';">' +
+                    left + ' available</span><br>' +
+                    'Up to ' + players + ' players per league';
             }}
 
             function linkLeague() {{

@@ -7120,19 +7120,39 @@ def render_membership_page(user, subscriptions, message=None, error=None):
             .addon-note strong {{
                 color: {COLORS['accent']};
             }}
-            .plan-section-toggle {{
+            .plan-section h3.plan-section-toggle {{
                 cursor: pointer;
                 user-select: none;
                 display: flex;
                 align-items: center;
-                gap: 8px;
-                font-size: 1.4em;
+                gap: 10px;
+                font-size: 1.15em;
+                margin: 0;
+                padding: 16px 20px;
+                background: {COLORS['bg_card']};
+                border: 1px solid {COLORS['border']};
+                border-radius: 12px;
+                box-shadow: 0 2px 10px rgba(0, 0, 0, 0.25);
+                transition: border-color 0.18s, background 0.18s, transform 0.12s;
             }}
-            .plan-section-toggle:hover {{
+            .plan-section h3.plan-section-toggle:hover {{
                 color: {COLORS['accent']};
+                border-color: {COLORS['accent']};
+                background: rgba(0, 232, 218, 0.07);
+                transform: translateY(-1px);
+            }}
+            .plan-section h3.plan-section-toggle:active {{
+                transform: translateY(0);
+            }}
+            .plan-section.expanded h3.plan-section-toggle {{
+                border-color: {COLORS['accent']};
+                border-bottom-left-radius: 0;
+                border-bottom-right-radius: 0;
             }}
             .toggle-arrow {{
-                font-size: 0.7em;
+                margin-left: auto;
+                font-size: 0.8em;
+                color: {COLORS['accent']};
                 transition: transform 0.2s;
             }}
             .plan-section.expanded .toggle-arrow {{
@@ -7140,6 +7160,11 @@ def render_membership_page(user, subscriptions, message=None, error=None):
             }}
             .plan-section-content {{
                 display: none;
+                border: 1px solid {COLORS['accent']};
+                border-top: none;
+                border-radius: 0 0 12px 12px;
+                padding: 20px;
+                background: rgba(20, 20, 42, 0.5);
             }}
             .plan-section.expanded .plan-section-content {{
                 display: block;

@@ -270,8 +270,53 @@ def verify_claim(claim, truth, week=None):
     return 'unverifiable', f'unknown claim type: {ctype}'
 
 
-def find_omissions(claims, truth):
-    """Material facts the message should have stated but didn't."""
+# Phrases the scenario builder uses when a race IS settled at send time.
+_DECIDED_MARKERS = ('RACE OVER', 'HAS THIS WEEK LOCKED', 'IS THE CLEAR WINNER')
+
+
+def _decided_sections(scenario_text, division_mode):
+    """Which divisions had the race already DECIDED in the scenario the AI was given.
+
+    The Sunday message goes out at 10am, mid-day. A live race ("Joanna leads at
+    16") legitimately names no winner — the winner does not exist yet — so a
+    missing winner is only an omission where the race was already settled.
+    Returns a set of division keys (None for non-division leagues).
+    """
+    if not scenario_text:
+        return set()
+    upper = scenario_text.upper()
+
+    def _settled(chunk):
+        return any(m in chunk.upper() for m in _DECIDED_MARKERS)
+
+    if not division_mode:
+        return {None} if _settled(scenario_text) else set()
+
+    i1 = scenario_text.find('Division I:')
+    i2 = scenario_text.find('Division II:')
+    if i1 == -1 and i2 == -1:
+        # Can't attribute to a division — only treat as decided if the whole
+        # scenario is settled, so we never invent an omission.
+        return {1, 2} if _settled(scenario_text) else set()
+
+    sec1 = scenario_text[i1:i2] if (i1 != -1 and i2 != -1 and i2 > i1) else (scenario_text[i1:] if i1 != -1 else '')
+    sec2 = scenario_text[i2:] if i2 != -1 else ''
+
+    out = set()
+    if sec1 and _settled(sec1):
+        out.add(1)
+    if sec2 and _settled(sec2):
+        out.add(2)
+    return out
+
+
+def find_omissions(claims, truth, scenario_text=None):
+    """Material facts the message should have stated but didn't.
+
+    Only reports a missing winner for a division whose race was already decided
+    when the message was written — otherwise every live race would be flagged
+    for not naming a winner that had not been determined yet.
+    """
     omissions = []
     mentioned = set()
     for c in claims:
@@ -280,13 +325,21 @@ def find_omissions(claims, truth):
         for p in (c.get('players') or []):
             mentioned.add(p)
 
+    decided = _decided_sections(scenario_text, truth['division_mode'])
+
     for w in truth['winners']:
+        div_key = w['division'] if truth['division_mode'] else None
+        if div_key not in decided:
+            continue  # race was still live — no winner to name yet
         if w['name'] not in mentioned:
             label = f" (Division {w['division']})" if w['division'] else ""
             omissions.append(f"{w['name']} won the week{label} with {w['score']} — never mentioned in the message")
 
     claimed_clinch = {c.get('player') for c in claims if c.get('type') == 'clinch'}
     for (div, name), cnt in truth['win_totals'].items():
+        div_key = div if truth['division_mode'] else None
+        if div_key not in decided:
+            continue
         if cnt >= truth['wins_needed'] and name not in claimed_clinch and name in [w['name'] for w in truth['winners']]:
             label = f" (Division {div})" if div else ""
             omissions.append(f"{name}{label} reached {cnt} wins — season threshold is {truth['wins_needed']}, no clinch mentioned")
@@ -333,7 +386,7 @@ def check_week(week=None, dry_run=False):
 
         claims = extract_claims(sent_text)
         results = [(c, *verify_claim(c, truth, week)) for c in claims]
-        omissions = find_omissions(claims, truth)
+        omissions = find_omissions(claims, truth, scenario_text)
 
         reports.append({
             'league_id': league_id,

@@ -159,6 +159,11 @@ def get_league_truth(cursor, league_id, week):
         for name, cnt in cursor.fetchall():
             win_totals[(div, name)] = cnt
 
+    cursor.execute("""
+        SELECT name FROM players WHERE league_id = %s AND active = TRUE
+    """, (league_id,))
+    roster = [r[0] for r in cursor.fetchall()]
+
     return {
         'league_name': league_name,
         'division_mode': division_mode,
@@ -166,6 +171,7 @@ def get_league_truth(cursor, league_id, week):
         'winners': winners,
         'season_starts': season_starts,
         'win_totals': win_totals,
+        'roster': roster,
     }
 
 
@@ -310,6 +316,52 @@ def _decided_sections(scenario_text, division_mode):
     return out
 
 
+def check_faithfulness(sent_text, scenario_text, roster):
+    """Compare the sent message against the scenario text it was built from.
+
+    The projections ("Evan needs a 2 to win, replacing a 5") are computed
+    deterministically by compute_player_scenario and handed to the AI. Re-deriving
+    that math here would just re-run the same code and agree with itself, proving
+    nothing. What IS worth checking, and is not circular, is whether the AI
+    faithfully relayed what it was given: every number and every player it names
+    should trace back to the scenario. A figure or a name that appears in the
+    message but not the scenario was introduced by the model.
+    """
+    issues = []
+    if not sent_text or not scenario_text:
+        return issues
+
+    import re
+
+    scen_nums = set(re.findall(r'\d+', scenario_text))
+    msg_nums = set(re.findall(r'\d+', sent_text))
+
+    # "needs a 3 to tie" legitimately becomes "RACE OVER if they post a 4 or higher" —
+    # the complement of a threshold, correctly derived rather than invented. Allow a
+    # number ONLY where the message frames it that way and it is exactly one worse
+    # than a scenario number, so a genuinely distorted figure is still caught.
+    for n in re.findall(r'\b(\d+)\s+or\s+(?:higher|more|worse|above)\b', sent_text, re.IGNORECASE):
+        if str(int(n) - 1) in scen_nums:
+            msg_nums.discard(n)
+
+    invented_nums = sorted(msg_nums - scen_nums, key=lambda x: int(x))
+    if invented_nums:
+        issues.append(f"number(s) not in the scenario: {', '.join(invented_nums)} "
+                      f"— the AI introduced a figure it wasn't given")
+
+    # Players named in the message but absent from the scenario. Roster-based so
+    # ordinary words are never mistaken for names.
+    def _named(text, name):
+        return re.search(rf'\b{re.escape(name)}\b', text, re.IGNORECASE) is not None
+
+    invented_players = [p for p in roster if _named(sent_text, p) and not _named(scenario_text, p)]
+    if invented_players:
+        issues.append(f"player(s) discussed but not in the scenario: {', '.join(invented_players)} "
+                      f"— commentary the AI invented")
+
+    return issues
+
+
 def find_omissions(claims, truth, scenario_text=None):
     """Material facts the message should have stated but didn't.
 
@@ -387,6 +439,7 @@ def check_week(week=None, dry_run=False):
         claims = extract_claims(sent_text)
         results = [(c, *verify_claim(c, truth, week)) for c in claims]
         omissions = find_omissions(claims, truth, scenario_text)
+        faithfulness = check_faithfulness(sent_text, scenario_text, truth['roster'])
 
         reports.append({
             'league_id': league_id,
@@ -396,6 +449,7 @@ def check_week(week=None, dry_run=False):
             'guard_intervened': bool(raw_ai_text) and raw_ai_text != sent_text,
             'results': results,
             'omissions': omissions,
+            'faithfulness': faithfulness,
             'wrong': [r for r in results if r[1] == 'wrong'],
         })
 
@@ -421,7 +475,7 @@ def _render_html(reports, week, headline):
         h.append(f'<p style="color:#f39c12;">{headline}</p>')
 
     for r in reports:
-        has_problem = bool(r['wrong'] or r['omissions'])
+        has_problem = bool(r['wrong'] or r['omissions'] or r.get('faithfulness'))
         border = bad_color if has_problem else ok_color
         status = 'ISSUES FOUND' if has_problem else 'ACCURATE'
         h.append(f'<div style="border-left:4px solid {border};background:#1b1b28;border-radius:6px;padding:16px;margin-bottom:16px;">')
@@ -449,6 +503,12 @@ def _render_html(reports, week, headline):
                 h.append(f'<li style="color:{bad_color};">{o}</li>')
             h.append('</ul>')
 
+        if r.get('faithfulness'):
+            h.append('<div style="font-size:12px;color:#9a9ab0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Message vs. scenario</div><ul style="margin:0 0 12px;padding-left:18px;font-size:13px;line-height:1.7;">')
+            for f in r['faithfulness']:
+                h.append(f'<li style="color:{bad_color};">{f}</li>')
+            h.append('</ul>')
+
         if has_problem:
             h.append('<details style="margin-top:8px;"><summary style="cursor:pointer;color:#9a9ab0;font-size:12px;">Scenario text the AI was given (shows whether the bug is in the code or the AI)</summary>')
             h.append(f'<div style="background:#0f0f18;border-radius:5px;padding:12px;font-size:12px;white-space:pre-wrap;color:#a8a8bc;margin-top:8px;">{(r["scenario_text"] or "(none)").replace("<", "&lt;")}</div></details>')
@@ -464,7 +524,7 @@ def _render_html(reports, week, headline):
 
 
 def _send_report(headline, reports, week, message_count, dry_run):
-    total_wrong = sum(len(r['wrong']) + len(r['omissions']) for r in reports)
+    total_wrong = sum(len(r['wrong']) + len(r['omissions']) + len(r.get('faithfulness', [])) for r in reports)
     if week is None:
         subject = "[WordPlayLeague] Sunday Fact-Check — no messages archived yet"
     elif total_wrong:
@@ -477,12 +537,14 @@ def _send_report(headline, reports, week, message_count, dry_run):
     if dry_run:
         print(f"\nSUBJECT: {subject}\n")
         for r in reports:
-            state = 'ISSUES' if (r['wrong'] or r['omissions']) else 'ACCURATE'
+            state = 'ISSUES' if (r['wrong'] or r['omissions'] or r.get('faithfulness')) else 'ACCURATE'
             print(f"--- {r['league_name']} (league {r['league_id']}): {state}")
             for claim, verdict, detail in r['results']:
                 print(f"    [{verdict}] {detail}")
             for o in r['omissions']:
                 print(f"    [omission] {o}")
+            for f in r.get('faithfulness', []):
+                print(f"    [faithfulness] {f}")
         print(f"\n(dry run — no email sent)")
         return
 

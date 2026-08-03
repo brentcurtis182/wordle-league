@@ -487,7 +487,7 @@ def handle_discord_message(message_data: dict, db_connection) -> dict:
         return {"status": "ignored", "reason": "bot_message"}
     
     # Try to parse as Wordle score
-    wordle_number, score, is_hard_mode = parse_discord_wordle_score(content)
+    wordle_number, score, is_hard_mode, emoji_pattern = parse_discord_wordle_score(content)
     
     if wordle_number is None:
         return {"status": "ignored", "reason": "not_wordle_score"}
@@ -555,10 +555,11 @@ def handle_discord_message(message_data: dict, db_connection) -> dict:
         player_name=player_name,
         wordle_number=wordle_number,
         score=score,
+        emoji_pattern=emoji_pattern,
         is_hard_mode=is_hard_mode,
         channel_type='discord'
     )
-    
+
     return {"status": "processed", "result": result}
 
 

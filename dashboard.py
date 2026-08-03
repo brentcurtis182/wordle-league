@@ -2475,7 +2475,25 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
     _is_connected = bool(league.get('conversation_sid') if channel_type == 'sms' else league.get('slack_channel_id') if channel_type == 'slack' else league.get('discord_channel_id'))
     # Onboarding help-tooltip copy (JSON-encoded so it embeds safely in JS,
     # including player names that may contain quotes/apostrophes).
-    _hint_inactive_json = json.dumps("This league isn't active yet. Once your players are added (and a subscription is linked, if required), tap Activate and send the passphrase inside your SMS group thread. That connects the thread so scores start tracking.")
+    if channel_type == 'discord':
+        _hint_inactive_title_json = json.dumps('🎮 Connect your Discord channel')
+        _hint_inactive_json = json.dumps(
+            "Our bot isn't connected to a channel right now — that's why scores aren't tracking. "
+            "This also happens if the bot was removed from your server. "
+            "Tap Connect Channel to add it back, then run the /wordle-link command with your code "
+            "in whichever channel you want scores posted."
+        )
+    elif channel_type == 'slack':
+        _hint_inactive_title_json = json.dumps('💬 Connect your Slack channel')
+        _hint_inactive_json = json.dumps(
+            "Our bot isn't connected to a channel right now — that's why scores aren't tracking. "
+            "This also happens if the bot was removed from your workspace or channel. "
+            "Tap Connect Channel to add it back, invite it with /invite @WordPlayLeague, "
+            "then send your verification code in the channel."
+        )
+    else:
+        _hint_inactive_title_json = json.dumps('🚀 Activate your league')
+        _hint_inactive_json = json.dumps("This league isn't active yet. Once your players are added (and a subscription is linked, if required), tap Activate and send the passphrase inside your SMS group thread. That connects the thread so scores start tracking.")
     _hint_unlinked_json = json.dumps("This league needs an active subscription before it can be activated. Link a plan on the Membership page (or via the Activate button), then come back to finish activating.")
     if _waiting_opt_in_names:
         _optin_body = "These players still need to text “opt in” inside the group thread once it's Active, so their scores get tracked:\n\n• " + "\n• ".join(_waiting_opt_in_names)
@@ -2806,14 +2824,14 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                 {f'<a href="/dashboard/membership" id="linkStatusBadge" title="View subscription" style="position: absolute; top: 16px; right: 16px; background: #2ECC71; color: #000; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600; text-decoration: none; cursor: pointer;" onmouseover="this.style.opacity=\'0.85\'" onmouseout="this.style.opacity=\'1\'">🔗 Linked</a>' if payment_required and linked_subscription else f'<span id="linkStatusBadge" onclick="showInfoModal(\'unlinked\')" title="What is this?" style="position: absolute; top: 16px; right: 16px; background: {COLORS["accent_orange"]}; color: #000; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600; cursor: pointer;">⚠ Unlinked <span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(0,0,0,0.22);color:#000;font-size:0.75em;font-weight:700;margin-left:2px;">?</span></span>' if payment_required and requires_payment else ''}
                 <h2>⚙️ {league['display_name']}</h2>
                 <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                    {f'<span style="color: {COLORS["text_muted"]};">Channel: #{league["channel_name"]}</span>' if league.get('channel_name') else ''}
+                    {f'<span onclick="handleActivateClick()" title="Change or reconnect this channel" style="color: {COLORS["text_muted"]}; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px;" onmouseover="this.style.color=\'{COLORS["accent"]}\'" onmouseout="this.style.color=\'{COLORS["text_muted"]}\'">Channel: #{league["channel_name"]} ✎</span>' if league.get('channel_name') and channel_type in ('slack', 'discord') else (f'<span style="color: {COLORS["text_muted"]};">Channel: #{league["channel_name"]}</span>' if league.get('channel_name') else '')}
                     <span style="background: {COLORS['bg_dark']}; color: {COLORS['text']}; padding: 4px 10px; border-radius: 12px; font-size: 0.8em;">
                         {'📱 SMS' if channel_type == 'sms' else '💬 Slack' if channel_type == 'slack' else '🎮 Discord'}
                     </span>
                     <span style="background: {'#2ECC71' if (league.get('conversation_sid') if channel_type == 'sms' else league.get('slack_channel_id') if channel_type == 'slack' else league.get('discord_channel_id')) else COLORS['accent_orange']}; color: #000; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600;">
                         {('✓ Active' if (league.get('conversation_sid') if channel_type == 'sms' else league.get('slack_channel_id') if channel_type == 'slack' else league.get('discord_channel_id')) else ('⚠ Inactive' if channel_type == 'sms' else '⚠ Setup Required'))}
                     </span>
-                    {'<span onclick="showInfoModal(\'inactive\')" title="What is this?" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,0.18);color:#fff;font-size:0.72em;font-weight:700;cursor:pointer;">?</span>' if channel_type == 'sms' and not _is_connected else ''}
+                    {'<span onclick="showInfoModal(\'inactive\')" title="What is this?" style="display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:50%;background:rgba(255,255,255,0.18);color:#fff;font-size:0.72em;font-weight:700;cursor:pointer;">?</span>' if not _is_connected else ''}
                     {f'<span style="color: {COLORS["text_muted"]}; font-size: 0.8em;">via +1 {league_phone_display}</span>' if channel_type == 'sms' and league.get('conversation_sid') and league_phone_display else ''}
                 </div>
                 <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-top: 12px;">
@@ -4202,7 +4220,7 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
 
             // Onboarding help tooltips: one shared modal, three state hints.
             var INFO_HINTS = {{
-                inactive: {{ title: '🚀 Activate your league', body: {_hint_inactive_json} }},
+                inactive: {{ title: {_hint_inactive_title_json}, body: {_hint_inactive_json} }},
                 unlinked: {{ title: '🔗 Link a subscription', body: {_hint_unlinked_json} }},
                 optin: {{ title: '✋ Players need to opt in', body: {_hint_optin_json} }}
             }};

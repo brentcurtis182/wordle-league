@@ -61,6 +61,51 @@ class ScoreListener(discord.Client):
             logging.error("MESSAGE CONTENT intent is OFF — message text will be empty and no "
                           "score can ever be parsed. Enable it in the Discord developer portal.")
 
+    async def on_guild_remove(self, guild):
+        """Bot was kicked from (or the server deleted) a guild we were serving.
+
+        Nothing else ever un-sets a connection, so without this a kicked bot
+        leaves the league reading "Active" forever with no way back through the
+        UI — the Connect Channel button only renders when discord_channel_id is
+        NULL. Clearing it here flips the league to "Setup Required" so the normal
+        setup flow reappears on its own.
+
+        This only fires on actual removal, so a healthy league can never be
+        falsely marked disconnected.
+        """
+        def _disconnect():
+            from league_data_adapter import get_db_connection
+            conn = get_db_connection()
+            try:
+                cur = conn.cursor()
+                cur.execute("""
+                    UPDATE leagues
+                    SET discord_guild_id = NULL, discord_channel_id = NULL
+                    WHERE channel_type = 'discord' AND discord_guild_id = %s
+                    RETURNING id, name
+                """, (str(guild.id),))
+                rows = cur.fetchall()
+                conn.commit()
+                cur.close()
+                return rows
+            finally:
+                try:
+                    conn.close()
+                except Exception:
+                    pass
+
+        try:
+            rows = await asyncio.to_thread(_disconnect)
+        except Exception as e:
+            logging.error(f"Failed to clear Discord connection for guild {guild.id}: {e}")
+            return
+
+        if rows:
+            names = ", ".join(f"{r[1]} (id {r[0]})" for r in rows)
+            logging.warning(f"Removed from guild {guild.id} — marked disconnected: {names}")
+        else:
+            logging.info(f"Removed from guild {guild.id} — no leagues were linked to it")
+
     async def on_message(self, message):
         # Never react to ourselves or other bots.
         if message.author.bot or message.author.id == (self.user.id if self.user else None):

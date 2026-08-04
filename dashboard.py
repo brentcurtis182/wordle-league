@@ -1278,7 +1278,7 @@ def render_profile_page(user, user_details, leagues, active_sessions, message=No
                         </div>
                         <div class="form-group">
                             <label>Discord User ID</label>
-                            <input type="text" name="discord_user_id" value="{user_details.get('discord_user_id', '')}" placeholder="196409934609383424">
+                            <input type="text" name="discord_user_id" value="{user_details.get('discord_user_id', '')}" placeholder="e.g. 123456789012345678">
                             <p style="color: {COLORS['text_muted']}; font-size: 0.78em; margin: 4px 0 0 0;">Add your Discord User ID to view any Discord leagues you're a player in. <a href="#" onclick="document.getElementById('discordIdHelp').style.display=document.getElementById('discordIdHelp').style.display==='none'?'block':'none'; return false;" style="color: {COLORS['accent']}; text-decoration: underline;">How do I find this?</a></p>
                             <div id="discordIdHelp" style="display: none; background: {COLORS['bg_dark']}; border: 1px solid {COLORS['border']}; border-radius: 8px; padding: 12px; margin: 4px 0 0 0; font-size: 0.82em; color: {COLORS['text_muted']}; line-height: 1.6;">
                                 <strong style="color: {COLORS['text']};">To find your Discord User ID:</strong><br>
@@ -1286,7 +1286,7 @@ def render_profile_page(user, user_details, leagues, active_sessions, message=No
                                 2. Go to <strong>Advanced</strong> and turn on <strong>Developer Mode</strong><br>
                                 3. Close settings, then <strong>right-click your own name</strong> in any channel or the member list<br>
                                 4. Click <strong>"Copy User ID"</strong><br>
-                                <span style="color: {COLORS['accent']}; margin-top: 6px; display: inline-block;">It's a long number, like: <code style="background: {COLORS['bg_card']}; padding: 2px 6px; border-radius: 4px;">196409934609383424</code></span>
+                                <span style="color: {COLORS['accent']}; margin-top: 6px; display: inline-block;">It's a long number, like: <code style="background: {COLORS['bg_card']}; padding: 2px 6px; border-radius: 4px;">123456789012345678</code></span>
                             </div>
                         </div>
                         <div style="display: flex; gap: 12px; margin-top: 8px;">

@@ -1746,6 +1746,13 @@ def generate_full_html(league_data, league_name="League 6 Beta"):
 </div>
 </div>
 </div>
+<style>
+.wpl-cta{margin:18px auto 4px;padding:18px 20px;max-width:460px;border:1px solid rgba(0,232,218,0.35);border-radius:14px;background:rgba(0,232,218,0.06);text-align:center;}
+.wpl-cta-line{margin:0 0 10px;font-size:15px;font-weight:600;color:#e8e8f0;}
+.wpl-cta-btn{display:inline-block;padding:10px 22px;border-radius:10px;background:linear-gradient(145deg,#00E8DA,#00c4b8);color:#06060e;font-weight:800;font-size:14px;text-decoration:none;}
+.wpl-cta-btn:hover{opacity:.88;}
+.wpl-cta-sub{margin:10px 0 0;font-size:12px;color:#9a9ab0;}
+</style>
 <footer class="wpl-footer">
 <div class="container">
 <div class="footer-tiles">
@@ -1756,6 +1763,11 @@ def generate_full_html(league_data, league_name="League 6 Beta"):
 <div class="footer-tile"></div>
 </div>
 <p>{league_name} · <a href="https://www.wordplayleague.com">WordPlayLeague</a></p>
+<div class="wpl-cta">
+<p class="wpl-cta-line">Want this for your own group?</p>
+<a class="wpl-cta-btn" href="https://{os.environ.get('APP_DOMAIN', 'app.wordplayleague.com')}/auth/register">Start your own league &rarr;</a>
+<p class="wpl-cta-sub">Works in your group text, Slack or Discord. Free trial on Slack &amp; Discord.</p>
+</div>
 </div>
 </footer>
 <script>

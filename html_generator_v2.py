@@ -1747,11 +1747,11 @@ def generate_full_html(league_data, league_name="League 6 Beta"):
 </div>
 </div>
 <style>
-.wpl-cta{{margin:18px auto 4px;padding:18px 20px;max-width:460px;border:1px solid rgba(0,232,218,0.35);border-radius:14px;background:rgba(0,232,218,0.06);text-align:center;}}
-.wpl-cta-line{{margin:0 0 10px;font-size:15px;font-weight:600;color:#e8e8f0;}}
-.wpl-cta-btn{{display:inline-block;padding:10px 22px;border-radius:10px;background:linear-gradient(145deg,#00E8DA,#00c4b8);color:#06060e;font-weight:800;font-size:14px;text-decoration:none;}}
-.wpl-cta-btn:hover{{opacity:.88;}}
-.wpl-cta-sub{{margin:10px 0 0;font-size:12px;color:#9a9ab0;}}
+.wpl-cta{{margin:22px auto 6px;padding:22px 20px;max-width:460px;border:1px solid rgba(0,232,218,0.35);border-radius:14px;background:rgba(0,232,218,0.06);text-align:center;}}
+.wpl-cta .wpl-cta-line{{margin:0 0 16px;font-size:15px;font-weight:600;color:#e8e8f0;line-height:1.4;}}
+.wpl-footer a.wpl-cta-btn{{display:inline-block;margin:4px 0;padding:12px 26px;border-radius:10px;background:linear-gradient(145deg,#00E8DA,#00c4b8);color:#06060e;font-weight:800;font-size:14px;line-height:1.2;text-decoration:none;}}
+.wpl-footer a.wpl-cta-btn:hover{{opacity:.88;color:#06060e;}}
+.wpl-cta .wpl-cta-sub{{margin:16px 0 0;font-size:12px;color:#9a9ab0;line-height:1.5;}}
 </style>
 <footer class="wpl-footer">
 <div class="container">

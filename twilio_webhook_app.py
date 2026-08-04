@@ -6490,7 +6490,8 @@ def billing_change_plan():
             return redirect('/dashboard/membership?error=Could not find current plan item')
 
         # If subscription was set to cancel, revoke cancellation since user is reaffirming
-        if current_sub.get('cancel_at_period_end'):
+        cancellation_revoked = bool(current_sub.get('cancel_at_period_end'))
+        if cancellation_revoked:
             stripe_mod.Subscription.modify(
                 current_sub['id'],
                 cancel_at_period_end=False,
@@ -6547,6 +6548,8 @@ def billing_change_plan():
             msg = 'Plan updated! No charge - your free trial continues, and the new price applies when it ends.'
         else:
             msg = 'Plan updated! Prorated charge applied.'
+        if cancellation_revoked:
+            msg += ' Your cancellation has been undone - this subscription will continue.'
         return redirect(f'/dashboard/membership?message={msg}')
 
     except Exception as e:

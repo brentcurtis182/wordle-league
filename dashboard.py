@@ -2903,7 +2903,7 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                 {f"""
                 <div style="margin-top: 16px; padding: 12px; background: {COLORS['bg_dark']}; border-radius: 8px; border-left: 3px solid {COLORS['accent']};">
                     <p style="margin: 0 0 8px 0; color: {COLORS['text']}; font-weight: 600;">📋 How to Submit Scores</p>
-                    <p style="margin: 0; color: {COLORS['text_muted']}; font-size: 0.9em;">Players type <code style="background: {COLORS['bg_card']}; padding: 2px 6px; border-radius: 4px;">/wordplay</code> and paste their full Wordle share (with emoji pattern).</p>
+                    <p style="margin: 0; color: {COLORS['text_muted']}; font-size: 0.9em;">Players just paste their Wordle result into the channel &mdash; no command needed. The bot reads it automatically and adds a &#10003; when it&rsquo;s recorded.</p>
                 </div>
                 """ if channel_type == 'discord' and league.get('discord_channel_id') else ''}
                 {f"""
@@ -3413,8 +3413,8 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                     
                     <div style="background: {COLORS['bg_dark']}; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
                         <h4 style="margin: 0 0 12px 0; color: {COLORS['text']};">Step 3: Submit scores</h4>
-                        <p style="color: {COLORS['text_muted']}; margin-bottom: 8px;">Players submit their daily Wordle scores by typing <code style="background: {COLORS['bg_card']}; padding: 2px 6px; border-radius: 4px;">/wordplay</code> and pasting their full Wordle share:</p>
-                        <code style="display: block; background: {COLORS['bg_card']}; padding: 12px; border-radius: 6px; font-size: 0.95em; white-space: pre-wrap;">/wordplay Wordle 1,689 3/6\n⬛⬛🟨⬛⬛\n🟨⬛⬛🟩⬛\n🟩🟩🟩🟩🟩</code>
+                        <p style="color: {COLORS['text_muted']}; margin-bottom: 8px;">Players just paste their Wordle result straight into the channel &mdash; no command needed. The bot reads it and adds a &#10003; once it&rsquo;s recorded:</p>
+                        <code style="display: block; background: {COLORS['bg_card']}; padding: 12px; border-radius: 6px; font-size: 0.95em; white-space: pre-wrap;">Wordle 1,689 3/6\n⬛⬛🟨⬛⬛\n🟨⬛⬛🟩⬛\n🟩🟩🟩🟩🟩</code>
                     </div>
                     """ if channel_type == 'discord' else f"""
                     <div style="background: {COLORS['bg_dark']}; padding: 16px; border-radius: 8px; margin-bottom: 16px;">

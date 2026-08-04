@@ -10513,6 +10513,35 @@ def dashboard_division_reset(league_id):
 # Admin Twilio Usage API (Async)
 # ============================================================
 
+@app.route('/api/funnel', methods=['GET'])
+def api_funnel():
+    """Growth funnel metrics as JSON, for the Jarvis dashboard.
+
+    Token-protected rather than session-protected so an external dashboard can
+    poll it server-side. Returns 404 rather than 401 when the token is unset, so
+    the endpoint is invisible until deliberately enabled.
+    """
+    expected = os.environ.get('FUNNEL_API_TOKEN')
+    if not expected:
+        return jsonify({'error': 'Not found'}), 404
+
+    supplied = (request.args.get('token')
+                or request.headers.get('X-API-Key')
+                or (request.headers.get('Authorization', '').replace('Bearer ', '').strip()))
+    # Constant-time compare so the token can't be guessed byte by byte.
+    import hmac
+    if not supplied or not hmac.compare_digest(str(supplied), str(expected)):
+        return jsonify({'error': 'Unauthorized'}), 401
+
+    try:
+        days = max(1, min(int(request.args.get('days', 30)), 365))
+    except (TypeError, ValueError):
+        days = 30
+
+    from funnel_report import build_funnel
+    return jsonify(build_funnel(days=days))
+
+
 @app.route('/api/forward-score', methods=['POST'])
 def receive_forwarded_score():
     """Receive a score forwarded from production (used by staging).

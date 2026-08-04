@@ -5237,10 +5237,45 @@ def embed_message_board_toggle_like():
         return jsonify({'success': False, 'error': 'An error occurred'}), 500
 
 
+# Rendered public pages, keyed by league id. Every visit used to rebuild ~80KB
+# of HTML from a full DB read (~0.6s); the Wix embeds point here, so that was
+# happening on every view of every league. The cache is per gunicorn worker,
+# which is fine -- worst case each worker builds it once.
+_public_page_cache = {}
+_PUBLIC_PAGE_TTL = 300  # seconds; a ceiling for changes the marker can't see
+
+
+def _league_content_marker(league_id):
+    """Cheap fingerprint of a league's score data.
+
+    One indexed query (~1ms) instead of a full rebuild (~600ms). Changes the
+    moment a score is added, edited or removed, so a new score invalidates the
+    page immediately rather than waiting out the TTL. Things the marker cannot
+    see -- weekly winners, player edits, settings -- are caught by the TTL.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT COALESCE(MAX(s.id), 0), COUNT(s.id)
+            FROM scores s JOIN players p ON p.id = s.player_id
+            WHERE p.league_id = %s
+        """, (league_id,))
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        return (row[0], row[1]) if row else None
+    except Exception as e:
+        logging.warning(f"Content marker failed for league {league_id}: {e}")
+        return None  # unknown -> treated as a miss, so we rebuild rather than serve stale
+
+
 @app.route('/leagues/<slug>')
 def public_league_page(slug):
     """Public league page - serves the leaderboard HTML (e.g., /leagues/warriorz)"""
     try:
+        # Look up the league AND its content marker on one connection: the
+        # cache-hit path should cost a single round trip, not two.
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("""
@@ -5249,6 +5284,17 @@ def public_league_page(slug):
             WHERE slug = %s
         """, (slug,))
         league = cursor.fetchone()
+
+        marker = None
+        if league:
+            cursor.execute("""
+                SELECT COALESCE(MAX(s.id), 0), COUNT(s.id)
+                FROM scores s JOIN players p ON p.id = s.player_id
+                WHERE p.league_id = %s
+            """, (league[0],))
+            row = cursor.fetchone()
+            marker = (row[0], row[1]) if row else None
+
         cursor.close()
         conn.close()
         
@@ -5258,6 +5304,14 @@ def public_league_page(slug):
         league_id = league[0]
         display_name = league[2] or league[1]
         
+        # Serve the cached render when the league's scores haven't moved.
+        import time as _time
+        cached = _public_page_cache.get(league_id)
+        if cached and marker is not None:
+            c_marker, c_html, c_at = cached
+            if c_marker == marker and (_time.time() - c_at) < _PUBLIC_PAGE_TTL:
+                return c_html
+
         # Generate the leaderboard HTML using existing pipeline
         from update_pipeline import generate_league_html
         html_content = generate_league_html(league_id)
@@ -5288,6 +5342,8 @@ def public_league_page(slug):
                 f'<script>{tabs_js}</script>'
             )
             
+            if marker is not None:
+                _public_page_cache[league_id] = (marker, html_content, _time.time())
             return html_content
         else:
             return f"<h1>{display_name}</h1><p>No data available yet.</p>", 200

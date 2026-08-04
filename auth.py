@@ -130,6 +130,12 @@ def create_auth_tables():
         except:
             pass
 
+        # Add Discord user ID column for shared leagues matching
+        try:
+            cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS discord_user_id VARCHAR(50)")
+        except:
+            pass
+
         # Add role column for super_admin support
         try:
             cursor.execute("ALTER TABLE users ADD COLUMN IF NOT EXISTS role VARCHAR(50) DEFAULT 'user'")
@@ -480,16 +486,17 @@ def get_shared_leagues(user_id, conn=None):
     cursor = conn.cursor()
 
     try:
-        # Get user's phone number and Slack user ID
+        # Get user's phone number, Slack user ID and Discord user ID
         try:
-            cursor.execute("SELECT phone, slack_user_id FROM users WHERE id = %s", (user_id,))
+            cursor.execute("SELECT phone, slack_user_id, discord_user_id FROM users WHERE id = %s", (user_id,))
             result = cursor.fetchone()
             if not result:
                 return []  # finally block will close conn
             user_phone = result[0] or ''
             user_slack_id = result[1] or ''
+            user_discord_id = result[2] or ''
         except Exception:
-            # slack_user_id column may not exist yet (migration pending restart)
+            # slack_user_id / discord_user_id column may not exist yet (migration pending restart)
             conn.rollback()
             cursor.execute("SELECT phone FROM users WHERE id = %s", (user_id,))
             result = cursor.fetchone()
@@ -497,8 +504,9 @@ def get_shared_leagues(user_id, conn=None):
                 return []  # finally block will close conn
             user_phone = result[0] or ''
             user_slack_id = ''
+            user_discord_id = ''
 
-        if not user_phone and not user_slack_id:
+        if not user_phone and not user_slack_id and not user_discord_id:
             return []  # finally block will close conn
 
         leagues = []
@@ -559,7 +567,27 @@ def get_shared_leagues(user_id, conn=None):
                         'slug': row[3], 'channel_type': row[4] or 'sms', 'player_name': row[5]
                     })
 
-        logging.info(f"Found {len(leagues)} shared leagues for user {user_id} (phone: {'...' + user_phone[-4:] if user_phone else 'none'}, slack: {user_slack_id or 'none'})")
+        # Match by Discord user ID (Discord leagues)
+        if user_discord_id:
+            cursor.execute("""
+                SELECT DISTINCT l.id, l.name, l.display_name, l.slug, l.channel_type,
+                       p.name as player_name
+                FROM players p
+                JOIN leagues l ON p.league_id = l.id
+                WHERE p.discord_user_id = %s
+                  AND p.active = TRUE
+                ORDER BY l.display_name
+            """, (user_discord_id,))
+
+            for row in cursor.fetchall():
+                if row[0] not in managed_league_ids and row[0] not in seen_league_ids:
+                    seen_league_ids.add(row[0])
+                    leagues.append({
+                        'id': row[0], 'name': row[1], 'display_name': row[2],
+                        'slug': row[3], 'channel_type': row[4] or 'sms', 'player_name': row[5]
+                    })
+
+        logging.info(f"Found {len(leagues)} shared leagues for user {user_id} (phone: {'...' + user_phone[-4:] if user_phone else 'none'}, slack: {user_slack_id or 'none'}, discord: {user_discord_id or 'none'})")
         return leagues
         
     except Exception as e:
@@ -656,7 +684,7 @@ def get_user_details(user_id, conn=None):
     try:
         try:
             cursor.execute("""
-                SELECT id, email, first_name, last_name, phone, sms_consent, created_at, last_login, password_hash, google_id, slack_user_id, nickname
+                SELECT id, email, first_name, last_name, phone, sms_consent, created_at, last_login, password_hash, google_id, slack_user_id, nickname, discord_user_id
                 FROM users WHERE id = %s
             """, (user_id,))
             result = cursor.fetchone()
@@ -685,7 +713,8 @@ def get_user_details(user_id, conn=None):
             'has_password': bool(result[8]) if has_extra_cols else True,
             'has_google': bool(result[9]) if has_extra_cols else False,
             'slack_user_id': (result[10] or '') if has_extra_cols and len(result) > 10 else '',
-            'nickname': (result[11] or '') if has_extra_cols and len(result) > 11 else ''
+            'nickname': (result[11] or '') if has_extra_cols and len(result) > 11 else '',
+            'discord_user_id': (result[12] or '') if has_extra_cols and len(result) > 12 else ''
         }
         return details
     except Exception as e:
@@ -730,7 +759,7 @@ def change_password(user_id, current_password, new_password):
         cursor.close()
         conn.close()
 
-def update_profile(user_id, first_name=None, last_name=None, email=None, phone=None, slack_user_id=None, nickname=None):
+def update_profile(user_id, first_name=None, last_name=None, email=None, phone=None, slack_user_id=None, nickname=None, discord_user_id=None):
     """Update user profile fields"""
     conn = get_db_connection()
     cursor = conn.cursor()
@@ -763,6 +792,13 @@ def update_profile(user_id, first_name=None, last_name=None, email=None, phone=N
             slack_user_id = slack_user_id.strip().upper() if slack_user_id else ''
             updates.append("slack_user_id = %s")
             params.append(slack_user_id or None)
+        if discord_user_id is not None:
+            # Discord IDs are numeric snowflakes — strip anything else so a
+            # pasted "<@1234>" mention or stray spaces still resolve.
+            import re as _re
+            discord_user_id = _re.sub(r'\D', '', discord_user_id) if discord_user_id else ''
+            updates.append("discord_user_id = %s")
+            params.append(discord_user_id or None)
         if nickname is not None:
             nickname = nickname.strip()[:50] if nickname else None
             updates.append("nickname = %s")

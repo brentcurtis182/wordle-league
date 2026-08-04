@@ -1227,6 +1227,10 @@ def render_profile_page(user, user_details, leagues, active_sessions, message=No
                         <span class="info-value">{user_details.get('slack_user_id') or 'Not set'}</span>
                     </div>
                     <div class="info-row">
+                        <span class="info-label">Discord User ID</span>
+                        <span class="info-value">{user_details.get('discord_user_id') or 'Not set'}</span>
+                    </div>
+                    <div class="info-row">
                         <span class="info-label">Member Since</span>
                         <span class="info-value">{created_str}</span>
                     </div>
@@ -1270,6 +1274,19 @@ def render_profile_page(user, user_details, leagues, active_sessions, message=No
                                 3. Click the <strong>&#8942;</strong> (three dots) menu<br>
                                 4. Click <strong>"Copy member ID"</strong><br>
                                 <span style="color: {COLORS['accent']}; margin-top: 6px; display: inline-block;">It will look something like: <code style="background: {COLORS['bg_card']}; padding: 2px 6px; border-radius: 4px;">U0AC23PA58F</code></span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Discord User ID</label>
+                            <input type="text" name="discord_user_id" value="{user_details.get('discord_user_id', '')}" placeholder="196409934609383424">
+                            <p style="color: {COLORS['text_muted']}; font-size: 0.78em; margin: 4px 0 0 0;">Add your Discord User ID to view any Discord leagues you're a player in. <a href="#" onclick="document.getElementById('discordIdHelp').style.display=document.getElementById('discordIdHelp').style.display==='none'?'block':'none'; return false;" style="color: {COLORS['accent']}; text-decoration: underline;">How do I find this?</a></p>
+                            <div id="discordIdHelp" style="display: none; background: {COLORS['bg_dark']}; border: 1px solid {COLORS['border']}; border-radius: 8px; padding: 12px; margin: 4px 0 0 0; font-size: 0.82em; color: {COLORS['text_muted']}; line-height: 1.6;">
+                                <strong style="color: {COLORS['text']};">To find your Discord User ID:</strong><br>
+                                1. Open Discord and go to <strong>Settings</strong> (gear icon, bottom-left)<br>
+                                2. Go to <strong>Advanced</strong> and turn on <strong>Developer Mode</strong><br>
+                                3. Close settings, then <strong>right-click your own name</strong> in any channel or the member list<br>
+                                4. Click <strong>"Copy User ID"</strong><br>
+                                <span style="color: {COLORS['accent']}; margin-top: 6px; display: inline-block;">It's a long number, like: <code style="background: {COLORS['bg_card']}; padding: 2px 6px; border-radius: 4px;">196409934609383424</code></span>
                             </div>
                         </div>
                         <div style="display: flex; gap: 12px; margin-top: 8px;">
@@ -1413,7 +1430,8 @@ def render_profile_page(user, user_details, leagues, active_sessions, message=No
                 nickname: '{user_details.get('nickname', '')}',
                 email: '{user_details['email']}',
                 phone: '{user_details['phone']}',
-                slack_user_id: '{user_details.get('slack_user_id', '')}'
+                slack_user_id: '{user_details.get('slack_user_id', '')}',
+                discord_user_id: '{user_details.get('discord_user_id', '')}'
             }};
             let pendingProfileData = null;
             
@@ -1425,7 +1443,8 @@ def render_profile_page(user, user_details, leagues, active_sessions, message=No
                     nickname: form.querySelector('[name="nickname"]').value.trim(),
                     email: form.querySelector('[name="email"]').value.trim(),
                     phone: form.querySelector('[name="phone"]').value.trim(),
-                    slack_user_id: form.querySelector('[name="slack_user_id"]').value.trim()
+                    slack_user_id: form.querySelector('[name="slack_user_id"]').value.trim(),
+                    discord_user_id: form.querySelector('[name="discord_user_id"]').value.trim()
                 }};
                 
                 if (!data.first_name || !data.last_name || !data.email) {{
@@ -1441,6 +1460,7 @@ def render_profile_page(user, user_details, leagues, active_sessions, message=No
                 if (data.email !== originalProfile.email) changes.push('Email: ' + originalProfile.email + ' → ' + data.email);
                 if (data.phone !== originalProfile.phone) changes.push('Phone: ' + (originalProfile.phone || 'Not set') + ' → ' + (data.phone || 'Not set'));
                 if (data.slack_user_id !== originalProfile.slack_user_id) changes.push('Slack Member ID: ' + (originalProfile.slack_user_id || 'Not set') + ' → ' + (data.slack_user_id || 'Not set'));
+                if (data.discord_user_id !== originalProfile.discord_user_id) changes.push('Discord User ID: ' + (originalProfile.discord_user_id || 'Not set') + ' → ' + (data.discord_user_id || 'Not set'));
 
                 if (changes.length === 0) {{
                     showToast('No changes to save', true);
@@ -1778,7 +1798,7 @@ def render_dashboard(user, leagues, shared_leagues=None, message=None, error=Non
             <div class="card">
                 <h2>👋 Welcome, {user['name'] or user['email']}!</h2>
                 <p style="color: {COLORS['text_muted']};">Manage your Wordle leagues from here.</p>
-                <p style="color: {COLORS['text_muted']}; font-size: 0.82em; margin-top: 6px;">Add your phone number or Slack Member ID in <a href="/dashboard/profile" style="color: {COLORS['accent']}; text-decoration: underline;">Profile</a> to see your <strong>Shared Leagues</strong>.</p>
+                <p style="color: {COLORS['text_muted']}; font-size: 0.82em; margin-top: 6px;">Add your phone number, Slack Member ID or Discord User ID in <a href="/dashboard/profile" style="color: {COLORS['accent']}; text-decoration: underline;">Profile</a> to see your <strong>Shared Leagues</strong>.</p>
             </div>
             
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
@@ -1794,7 +1814,7 @@ def render_dashboard(user, leagues, shared_leagues=None, message=None, error=Non
             </div>
             <div class="platform-section">
                 <h3 class="platform-title">🤝 Leagues You're Playing In</h3>
-                <p style="color: {COLORS['text_muted']}; font-size: 0.85em; margin-bottom: 16px;">These leagues matched your phone number or Slack Member ID on file. You're a player in these leagues.</p>
+                <p style="color: {COLORS['text_muted']}; font-size: 0.85em; margin-bottom: 16px;">These leagues matched your phone number, Slack Member ID or Discord User ID on file. You're a player in these leagues.</p>
                 <div class="league-grid">
                     {"".join([f"""
                     <div class="league-card">

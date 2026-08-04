@@ -3039,6 +3039,7 @@ def dashboard_profile_update():
             email=data.get('email'),
             phone=data.get('phone'),
             slack_user_id=data.get('slack_user_id'),
+            discord_user_id=data.get('discord_user_id'),
             nickname=data.get('nickname')
         )
         return jsonify(result)

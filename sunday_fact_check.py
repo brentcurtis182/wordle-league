@@ -316,7 +316,7 @@ def _decided_sections(scenario_text, division_mode):
     return out
 
 
-def check_faithfulness(sent_text, scenario_text, roster):
+def check_faithfulness(sent_text, scenario_text, roster, claims=None):
     """Compare the sent message against the scenario text it was built from.
 
     The projections ("Evan needs a 2 to win, replacing a 5") are computed
@@ -326,10 +326,19 @@ def check_faithfulness(sent_text, scenario_text, roster):
     faithfully relayed what it was given: every number and every player it names
     should trace back to the scenario. A figure or a name that appears in the
     message but not the scenario was introduced by the model.
+
+    Severity matters here. scenario_text is only the RACE ANALYSIS block; the AI is
+    ALSO handed a standings block and a season-win block that name every player in
+    the league. So a roster player missing from the scenario was still given to the
+    model — mentioning them is off-brief (the prompt says to discuss only players in
+    the race analysis), not fabrication. A name that is not on the roster at all is
+    the genuinely serious case.
+
+    Returns (issues, notes): issues are real accuracy problems, notes are advisory.
     """
-    issues = []
+    issues, notes = [], []
     if not sent_text or not scenario_text:
-        return issues
+        return issues, notes
 
     import re
 
@@ -354,12 +363,26 @@ def check_faithfulness(sent_text, scenario_text, roster):
     def _named(text, name):
         return re.search(rf'\b{re.escape(name)}\b', text, re.IGNORECASE) is not None
 
-    invented_players = [p for p in roster if _named(sent_text, p) and not _named(scenario_text, p)]
-    if invented_players:
-        issues.append(f"player(s) discussed but not in the scenario: {', '.join(invented_players)} "
-                      f"— commentary the AI invented")
+    off_brief = [p for p in roster if _named(sent_text, p) and not _named(scenario_text, p)]
+    if off_brief:
+        notes.append(f"discussed outside the race analysis: {', '.join(off_brief)} "
+                     f"— real player(s) from the standings block the AI also receives, so this is "
+                     f"off-brief commentary rather than invention")
 
-    return issues
+    # A claim about someone who is not on the roster at all is a fabricated person —
+    # the roster loop above can never catch this, since it only iterates real players.
+    if claims:
+        named = []
+        for c in claims:
+            for p in ([c.get('player')] if c.get('player') else []) + (c.get('players') or []):
+                if p and p not in named:
+                    named.append(p)
+        unknown = [p for p in named if not any(p.lower() == r.lower() for r in roster)]
+        if unknown:
+            issues.append(f"name(s) not on this league's roster: {', '.join(unknown)} "
+                          f"— the AI referred to someone who does not play in this league")
+
+    return issues, notes
 
 
 def find_omissions(claims, truth, scenario_text=None):
@@ -439,7 +462,8 @@ def check_week(week=None, dry_run=False):
         claims = extract_claims(sent_text)
         results = [(c, *verify_claim(c, truth, week)) for c in claims]
         omissions = find_omissions(claims, truth, scenario_text)
-        faithfulness = check_faithfulness(sent_text, scenario_text, truth['roster'])
+        faithfulness, faithfulness_notes = check_faithfulness(
+            sent_text, scenario_text, truth['roster'], claims)
 
         reports.append({
             'league_id': league_id,
@@ -450,6 +474,7 @@ def check_week(week=None, dry_run=False):
             'results': results,
             'omissions': omissions,
             'faithfulness': faithfulness,
+            'faithfulness_notes': faithfulness_notes,
             'wrong': [r for r in results if r[1] == 'wrong'],
         })
 
@@ -507,6 +532,12 @@ def _render_html(reports, week, headline):
             h.append('<div style="font-size:12px;color:#9a9ab0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Message vs. scenario</div><ul style="margin:0 0 12px;padding-left:18px;font-size:13px;line-height:1.7;">')
             for f in r['faithfulness']:
                 h.append(f'<li style="color:{bad_color};">{f}</li>')
+            h.append('</ul>')
+
+        if r.get('faithfulness_notes'):
+            h.append('<div style="font-size:12px;color:#9a9ab0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">Notes (not errors)</div><ul style="margin:0 0 12px;padding-left:18px;font-size:13px;line-height:1.7;">')
+            for f in r['faithfulness_notes']:
+                h.append(f'<li style="color:#9a9ab0;">{f}</li>')
             h.append('</ul>')
 
         if has_problem:

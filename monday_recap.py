@@ -29,6 +29,20 @@ logging.basicConfig(
 )
 
 
+def _possessive(name):
+    """Tony -> Tony's, Tiny Legs -> Tiny Legs'"""
+    return f"{name}'" if name.endswith(('s', 'S')) else f"{name}'s"
+
+
+def _ordinal(n):
+    """1 -> 1st, 2 -> 2nd, 3 -> 3rd, 4 -> 4th..."""
+    if 10 <= (n % 100) <= 20:
+        suffix = 'th'
+    else:
+        suffix = {1: 'st', 2: 'nd', 3: 'rd'}.get(n % 10, 'th')
+    return f"{n}{suffix}"
+
+
 def is_monday_recap_enabled(league_id):
     """Check if Monday recap is enabled for a league (requires AI billing eligibility)"""
     try:
@@ -207,15 +221,28 @@ def get_last_week_results(league_id):
                         clinch_info['promoted'] = True
                     division_season_clinched.append(clinch_info)
         
-        # Get current season info and weekly wins (standard mode / fallback)
+        # Get current season info and weekly wins (standard mode / fallback).
+        # The seasons table is the source of truth (matches get_current_season and the
+        # transition logic). league_seasons can be stale — reading it here made
+        # season_wins count ALL-TIME wins, which is how "their 24th win this season"
+        # style claims got into the scenario.
         cursor.execute("""
-            SELECT current_season, season_start_week
-            FROM league_seasons
+            SELECT season_number, start_week
+            FROM seasons
             WHERE league_id = %s
+            ORDER BY season_number DESC
+            LIMIT 1
         """, (league_id,))
         season_row = cursor.fetchone()
+        if not season_row or season_row[1] is None:
+            cursor.execute("""
+                SELECT current_season, season_start_week
+                FROM league_seasons
+                WHERE league_id = %s
+            """, (league_id,))
+            season_row = cursor.fetchone()
         current_season = season_row[0] if season_row else 1
-        season_start_week = season_row[1] if season_row else last_week_start_wordle
+        season_start_week = season_row[1] if season_row and season_row[1] is not None else last_week_start_wordle
         
         # Get weekly wins in current season (standard mode)
         cursor.execute("""
@@ -318,6 +345,76 @@ def get_last_week_results(league_id):
         # Per-league configurable minimum scores per week
         min_scores = get_league_min_scores(league_id, conn=conn)
 
+        # Career (all-time) win counts for this week's winners, so we can tell a
+        # genuine first-ever win apart from a first win of the current season.
+        career_wins = {}
+        for wname in winner_names:
+            cursor.execute("""
+                SELECT COUNT(*) FROM weekly_winners
+                WHERE league_id = %s AND player_name = %s
+            """, (league_id, wname))
+            career_wins[wname] = cursor.fetchone()[0]
+
+        # weekly_winners does not necessarily reach back to a league's very first week,
+        # so "first ever win" is only claimed for players whose own history is fully
+        # covered by the table (they started playing at/after the first recorded week).
+        cursor.execute("""
+            SELECT MIN(week_wordle_number) FROM weekly_winners WHERE league_id = %s
+        """, (league_id,))
+        earliest_win_week_row = cursor.fetchone()
+        earliest_win_week = earliest_win_week_row[0] if earliest_win_week_row else None
+
+        first_ever_win = []
+        for wname in winner_names:
+            if career_wins.get(wname) != 1 or earliest_win_week is None:
+                continue
+            cursor.execute("""
+                SELECT MIN(s.wordle_number)
+                FROM scores s JOIN players p ON s.player_id = p.id
+                WHERE p.league_id = %s AND p.name = %s
+            """, (league_id, wname))
+            fs_row = cursor.fetchone()
+            first_score = fs_row[0] if fs_row else None
+            if first_score is not None and first_score >= earliest_win_week:
+                first_ever_win.append(wname)
+
+        # Wins needed to take the season (per-league, 2-6)
+        try:
+            from league_data_adapter import get_league_season_wins
+            wins_needed = get_league_season_wins(league_id, division_mode=bool(is_division_mode), conn=conn)
+        except Exception as e:
+            logging.warning(f"Could not resolve season wins for league {league_id}: {e}")
+            wins_needed = None
+
+        # Rebuild last week's best-N standings to find the runner-up and the margin.
+        # Mirrors get_weekly_stats: failed attempts (7) are excluded, best N of the
+        # remainder, and a player must have at least min_scores valid scores.
+        runner_up = None
+        week_standings = []
+        for name, stats in player_stats.items():
+            valid = sorted([s for s in stats['scores'] if s != 7])
+            if len(valid) >= min_scores:
+                week_standings.append((sum(valid[:min_scores]), name))
+        week_standings.sort()
+
+        # Only trust the standings if our recomputed top total agrees with the
+        # authoritative weekly_winners score. If it disagrees (e.g. min_scores changed
+        # mid-week), skip the runner-up rather than publish a wrong margin.
+        if week_standings and week_standings[0][0] == winner_score:
+            behind = [(total, name) for total, name in week_standings
+                      if name not in winner_names and total > winner_score]
+            if behind:
+                runner_up = {
+                    'name': behind[0][1],
+                    'score': behind[0][0],
+                    'margin': behind[0][0] - winner_score,
+                }
+        elif week_standings:
+            logging.warning(
+                f"League {league_id}: recomputed top total {week_standings[0][0]} != "
+                f"weekly_winners score {winner_score}; skipping runner-up stat"
+            )
+
         # Get league display name and division settings
         cursor.execute("SELECT display_name, slug, COALESCE(promoted_count, 1), COALESCE(relegated_count, 1) FROM leagues WHERE id = %s", (league_id,))
         league_info = cursor.fetchone()
@@ -362,6 +459,10 @@ def get_last_week_results(league_id):
             'back_to_back': back_to_back,
             'streak_info': streak_info,
             'first_win_of_season': first_win_of_season,
+            'career_wins': career_wins,
+            'first_ever_win': first_ever_win,
+            'wins_needed': wins_needed,
+            'runner_up': runner_up,
             'perfect_scores': perfect_scores,
             'total_players': total_players,
             'participating_players': participating_players,
@@ -456,6 +557,8 @@ def send_monday_recap(league_id):
                         div_parts.append(f"🔥 {wname} is on a {streak}-week WIN STREAK!")
                     elif wname in results['back_to_back']:
                         div_parts.append(f"{wname} won BACK-TO-BACK weeks!")
+                    elif wname in results.get('first_ever_win', []):
+                        div_parts.append(f"MILESTONE: This is {_possessive(wname)} FIRST EVER weekly win in this league!")
                     elif wname in results.get('first_win_of_season', []):
                         div_parts.append(f"{wname} got their FIRST win of the division season!")
 
@@ -518,20 +621,38 @@ def send_monday_recap(league_id):
         # Shared stats (both modes — division mode handles streaks/first-wins inline above)
         # ============================================================
         if not is_div:
-            # Back-to-back wins
-            if results['back_to_back']:
-                for name in results['back_to_back']:
-                    streak = results['streak_info'].get(name, 2)
-                    if streak >= 3:
-                        scenario_parts.append(f"🔥 {name} is on a {streak}-week WIN STREAK!")
-                    else:
-                        scenario_parts.append(f"{name} won BACK-TO-BACK weeks!")
+            # One milestone per winner, strongest first, so the message never stacks
+            # "first ever win" on top of "2nd win of the season" for the same player.
+            for name in results['winner_names']:
+                streak = results['streak_info'].get(name, 0)
+                season_n = results['season_wins'].get(name, 0)
+                wins_needed = results.get('wins_needed')
 
-            # First win of the season
-            if results['first_win_of_season']:
-                for name in results['first_win_of_season']:
-                    if name not in results['back_to_back']:
-                        scenario_parts.append(f"{name} got their FIRST win of Season {results['current_season']}!")
+                if streak >= 3:
+                    scenario_parts.append(f"🔥 {name} is on a {streak}-week WIN STREAK!")
+                elif name in results['back_to_back']:
+                    scenario_parts.append(f"{name} won BACK-TO-BACK weeks!")
+                elif name in results.get('first_ever_win', []):
+                    scenario_parts.append(
+                        f"MILESTONE: This is {_possessive(name)} FIRST EVER weekly win in this league!"
+                    )
+                elif name in results['first_win_of_season']:
+                    scenario_parts.append(f"{name} got their FIRST win of Season {results['current_season']}!")
+                elif wins_needed and 2 <= season_n < wins_needed:
+                    # Only ever a small, bounded number: the season resets on clinch.
+                    scenario_parts.append(
+                        f"That is {_possessive(name)} {_ordinal(season_n)} win of Season {results['current_season']} "
+                        f"({wins_needed} wins takes the season)."
+                    )
+
+            # Close finish — who pushed the winner
+            runner_up = results.get('runner_up')
+            if runner_up and runner_up['margin'] <= 2:
+                stroke_word = "stroke" if runner_up['margin'] == 1 else "strokes"
+                scenario_parts.append(
+                    f"CLOSE ONE: {runner_up['name']} finished 2nd at {runner_up['score']}, "
+                    f"just {runner_up['margin']} {stroke_word} back."
+                )
 
         # Perfect scores (both modes)
         if results['perfect_scores']:
@@ -576,15 +697,26 @@ RULES:
 5. Mention streaks or first wins only if provided."""
         
         else:
-            prompt = f"Monday recap: {scenario_text} Keep it concise — under 200 characters. Just state what happened."
-            
+            has_extras = any(
+                p.startswith(('MILESTONE:', 'CLOSE ONE:')) or 'win of Season' in p or 'WIN STREAK' in p
+                or 'BACK-TO-BACK' in p or 'FIRST win' in p
+                for p in scenario_parts[1:]
+            )
+            char_limit = 300 if has_extras else 200
+            prompt = (f"Monday recap: {scenario_text} Keep it concise — under {char_limit} characters. "
+                      f"State what happened.")
+
             system_msg = """You are a concise sports announcer for a Wordle league. Lower scores are better.
 
 RULES:
 1. Announce the weekly winner. If a tie, celebrate both equally.
-2. Use a few emojis. Keep it short — 1-2 sentences.
+2. Use a few emojis. Keep it short — 1-3 sentences.
 3. ONLY state facts from the scenario. NEVER invent stats, win counts, or standings.
-4. Mention streaks or first wins only if provided."""
+4. If the scenario contains a MILESTONE line, a CLOSE ONE line, a streak, a back-to-back,
+   or a win-of-the-season count, you MUST include it — these are the interesting part.
+   A FIRST EVER win is a big deal; give it real enthusiasm.
+5. Never state a win count, ordinal, or total that is not written in the scenario.
+   Do not add up, extrapolate, or guess how many wins anyone has."""
         
         response = openai_client.chat.completions.create(
             model="gpt-4o",

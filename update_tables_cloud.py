@@ -661,10 +661,15 @@ def run_full_update_for_league(league_id):
                 new_season_start = check_division_season_transition(league_id, div_num)
                 if new_season_start:
                     transitioned_divisions[div_num] = new_season_start
-                    # Clear immunity for anyone who joined before the new season starts
-                    # (they've had their protected season; newly promoted/relegated players
-                    # get joined_week = new_season_start, so they keep immunity)
-                    clear_immunity(league_id, div_num, season_start_week=new_season_start)
+
+                    # Relegation MUST run before immunity is cleared. It judges the
+                    # season that just ended, so it needs the immunity state from that
+                    # season. Clearing first made the `if is_immune: continue` guard in
+                    # check_division1_relegation dead code — no one could ever be
+                    # protected, and mid-season joiners were the worst hit, since weeks
+                    # before they joined count as missed weeks and missed weeks are
+                    # ranked first. (Div II promotion was never affected: it runs inside
+                    # check_division_season_transition, i.e. before this point.)
                     if div_num == 1:
                         # Division I season ended - relegate worst Season Total player
                         try:
@@ -676,6 +681,13 @@ def run_full_update_for_league(league_id):
                             import traceback
                             logging.error(f"RELEGATION EXCEPTION for league {league_id}: {rel_err}")
                             logging.error(traceback.format_exc())
+
+                    # Now clear immunity for the new season: anyone who joined before it
+                    # starts has had their protected season. Players just promoted or
+                    # relegated get joined_week = the new season start, so they keep it.
+                    # The player relegated above has already moved to the other division,
+                    # so this div_num-scoped clear does not touch their fresh immunity.
+                    clear_immunity(league_id, div_num, season_start_week=new_season_start)
 
             # If both divisions finished simultaneously, the promoted player
             # doesn't need immunity — everyone starts the new season together

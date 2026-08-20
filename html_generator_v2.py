@@ -1575,17 +1575,50 @@ def generate_full_html(league_data, league_name="League 6 Beta"):
     else:
         weekly_html = generate_weekly_totals_html(league_data)
         stats_html = generate_season_stats_html(league_data)
-    
+
+    # --- Share / search metadata -------------------------------------------
+    # League links get pasted into group chats, Slack and iMessage constantly.
+    # Without og: tags those all render as a bare link with no preview.
+    import html as _html_esc
+
+    _player_count = len(league_data.get('all_time_stats') or [])
+    if _player_count:
+        _players_word = 'player' if _player_count == 1 else 'players'
+        _meta_desc = (f"Live Wordle standings for {league_name} - {_player_count} {_players_word} "
+                      f"chasing weekly wins and the season title. Scores update automatically.")
+    else:
+        _meta_desc = (f"Live Wordle standings for {league_name} - weekly winners, the season "
+                      f"race and all-time averages, updated automatically.")
+
+    _og_title = _html_esc.escape(f"{league_name} - Wordle League Standings", quote=True)
+    _og_desc = _html_esc.escape(_meta_desc, quote=True)
+    # Staging gets the STAGING-banner icon; prod gets the normal one
+    # (same rule as dashboard.py).
+    _icon_dir = 'staging_env' if (os.environ.get('FLASK_ENV') == 'staging'
+                                  or 'staging' in (os.environ.get('GITHUB_REPO_NAME') or '')) else 'prod'
+    # Absolute, because a preview scraper resolves it outside any page context.
+    _og_image = f"https://app.wordplayleague.com/app-icons/{_icon_dir}/icon-512.png"
+
     html = f'''<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes"/>
 <title>{league_name} - Wordle League</title>
-<link rel="apple-touch-icon" href="../apple-touch-icon.png"/>
-<link rel="icon" type="image/png" sizes="32x32" href="../favicon-32.png"/>
-<link rel="icon" type="image/png" sizes="192x192" href="../icon-192.png"/>
-<link rel="icon" type="image/png" sizes="512x512" href="../icon-512.png"/>
+<meta name="description" content="{_og_desc}"/>
+<meta property="og:type" content="website"/>
+<meta property="og:site_name" content="WordPlayLeague"/>
+<meta property="og:title" content="{_og_title}"/>
+<meta property="og:description" content="{_og_desc}"/>
+<meta property="og:image" content="{_og_image}"/>
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="{_og_title}"/>
+<meta name="twitter:description" content="{_og_desc}"/>
+<meta name="twitter:image" content="{_og_image}"/>
+<link rel="apple-touch-icon" href="/app-icons/{_icon_dir}/apple-touch-icon.png"/>
+<link rel="icon" type="image/png" sizes="32x32" href="/app-icons/{_icon_dir}/favicon-32.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="/app-icons/{_icon_dir}/icon-192.png"/>
+<link rel="icon" type="image/png" sizes="512x512" href="/app-icons/{_icon_dir}/icon-512.png"/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>

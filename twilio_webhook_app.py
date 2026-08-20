@@ -3419,6 +3419,16 @@ def _embed_starry_background():
 .wpl-orb-2{width:500px;height:500px;background:radial-gradient(circle,rgba(168,85,247,0.06),transparent 70%);top:40%;right:-10%;animation-delay:-7s;}
 .wpl-orb-3{width:400px;height:400px;background:radial-gradient(circle,rgba(255,215,0,0.05),transparent 70%);bottom:10%;left:20%;animation-delay:-14s;}
 @keyframes wpl-orb-float{0%,100%{transform:translate(0,0) scale(1);}25%{transform:translate(30px,-40px) scale(1.05);}50%{transform:translate(-20px,20px) scale(0.95);}75%{transform:translate(15px,30px) scale(1.02);}}
+/* Phones: keep the drift, drop the scale. Scaling a 120px-blurred layer forces
+   the browser to re-render the blur every frame; translating it does not. Three
+   of these embeds can share one page, so the saving is x3. */
+@media (max-width:767px){
+.wpl-orb{will-change:transform;animation-name:wpl-orb-float-lite;}
+@keyframes wpl-orb-float-lite{0%,100%{transform:translate(0,0);}25%{transform:translate(30px,-40px);}50%{transform:translate(-20px,20px);}75%{transform:translate(15px,30px);}}
+}
+@media (prefers-reduced-motion:reduce){
+.wpl-orb{animation:none;}
+}
 '''
     body_prefix = '''<canvas id="wpl-particles"></canvas>
 <div class="wpl-orb wpl-orb-1"></div>
@@ -3427,7 +3437,12 @@ def _embed_starry_background():
     body_suffix = '''<script>
 (function(){
     var canvas=document.getElementById('wpl-particles');if(!canvas)return;
-    var ctx=canvas.getContext('2d'),particles=[],w,h;
+    // A page can embed several of these at once (/leagues has three), so each
+    // frame's cost is multiplied. Phones skip the particle-linking pass, which
+    // is O(n^2) -- 60 particles means ~1,770 distance checks per frame each.
+    var lite=window.matchMedia('(max-width:767px)').matches;
+    if(window.matchMedia('(prefers-reduced-motion:reduce)').matches){canvas.style.display='none';return;}
+    var ctx=canvas.getContext('2d'),particles=[],w,h,running=true;
     function resize(){w=canvas.width=window.innerWidth;h=canvas.height=window.innerHeight;}
     function create(){
         particles=[];var count=Math.min(60,Math.floor(w*h/20000));
@@ -3438,10 +3453,15 @@ def _embed_starry_background():
         ctx.clearRect(0,0,w,h);
         particles.forEach(function(p){p.x+=p.vx;p.y+=p.vy;if(p.x<0)p.x=w;if(p.x>w)p.x=0;if(p.y<0)p.y=h;if(p.y>h)p.y=0;ctx.beginPath();ctx.arc(p.x,p.y,p.size,0,Math.PI*2);ctx.fillStyle=p.color;ctx.globalAlpha=p.opacity;ctx.fill();});
         ctx.globalAlpha=1;
-        for(var i=0;i<particles.length;i++){for(var j=i+1;j<particles.length;j++){var dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y,dist=Math.sqrt(dx*dx+dy*dy);if(dist<100){ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);ctx.lineTo(particles[j].x,particles[j].y);ctx.strokeStyle='rgba(255,255,255,'+(0.06*(1-dist/100))+')';ctx.lineWidth=0.5;ctx.stroke();}}}
-        requestAnimationFrame(draw);
+        if(!lite){for(var i=0;i<particles.length;i++){for(var j=i+1;j<particles.length;j++){var dx=particles[i].x-particles[j].x,dy=particles[i].y-particles[j].y,dist=Math.sqrt(dx*dx+dy*dy);if(dist<100){ctx.beginPath();ctx.moveTo(particles[i].x,particles[i].y);ctx.lineTo(particles[j].x,particles[j].y);ctx.strokeStyle='rgba(255,255,255,'+(0.06*(1-dist/100))+')';ctx.lineWidth=0.5;ctx.stroke();}}}}
+        if(running)requestAnimationFrame(draw);
     }
     resize();create();draw();window.addEventListener('resize',function(){resize();create();});
+    // Nothing to animate for a page nobody is looking at.
+    document.addEventListener('visibilitychange',function(){
+        if(document.hidden){running=false;}
+        else if(!running){running=true;requestAnimationFrame(draw);}
+    });
 })();
 </script>'''
     return css, body_prefix, body_suffix

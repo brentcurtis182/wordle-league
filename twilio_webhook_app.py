@@ -4680,12 +4680,13 @@ body{{
     <div class="post-card" id="postEditForm" style="display:none;border-color:rgba(0,232,218,0.3);">
         <div class="form-group" style="margin-bottom:12px;">
             <label style="color:#d7dadc;font-weight:600;font-size:0.9em;margin-bottom:4px;display:block;">Subject</label>
-            <input type="text" id="editPostSubject" value="{_html.escape(subject)}" maxlength="200" style="width:100%;padding:10px 12px;background:#0a0a1a;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#d7dadc;font-family:inherit;font-size:0.95em;outline:none;">
+            <textarea id="editPostSubject" maxlength="200" rows="1" onkeydown="if(event.key==='Enter'){{event.preventDefault();}}" style="width:100%;padding:10px 12px;background:#0a0a1a;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#d7dadc;font-family:inherit;font-size:16px;line-height:1.4;resize:none;overflow:hidden;outline:none;">{_html.escape(subject)}</textarea>
         </div>
         <div class="form-group" style="margin-bottom:12px;">
             <label style="color:#d7dadc;font-weight:600;font-size:0.9em;margin-bottom:4px;display:block;">Details</label>
             <textarea id="editPostBody" maxlength="5000" rows="6" style="width:100%;padding:10px 12px;background:#0a0a1a;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#d7dadc;font-family:inherit;font-size:0.95em;resize:vertical;outline:none;">{_html.escape(body)}</textarea>
         </div>
+        <div id="editPostError" style="display:none;color:#f44336;font-size:0.85em;margin-bottom:10px;"></div>
         <div style="display:flex;gap:12px;">
             <button onclick="saveEditPost({p_id})" style="background:#00E8DA;color:#0a0a1a;border:none;padding:10px 24px;border-radius:8px;font-weight:600;cursor:pointer;font-family:inherit;font-size:0.9em;">Save</button>
             <button onclick="cancelEditPost()" style="background:transparent;color:#8a8aa5;border:1px solid rgba(255,255,255,0.1);padding:10px 24px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.9em;">Cancel</button>
@@ -4797,8 +4798,22 @@ document.addEventListener('DOMContentLoaded', function() {{
 function showEditPost() {{
     document.getElementById('postView').style.display = 'none';
     document.getElementById('postEditForm').style.display = 'block';
-    var ta = document.getElementById('editPostBody');
-    if (ta) autoExpand(ta);
+    // Both fields are textareas, and neither can be measured while hidden --
+    // size them once the form is actually on screen.
+    ['editPostSubject', 'editPostBody'].forEach(function(id) {{
+        var ta = document.getElementById(id);
+        if (ta) autoExpand(ta);
+    }});
+}}
+
+// Validation errors go inline: this page is embedded in an iframe that is as
+// tall as its content, so a position:fixed toast lands off-screen and the
+// button just looks dead.
+function showEditPostError(msg) {{
+    var el = document.getElementById('editPostError');
+    if (!el) {{ showToast(msg, true); return; }}
+    el.textContent = msg || '';
+    el.style.display = msg ? 'block' : 'none';
 }}
 
 function cancelEditPost() {{
@@ -4807,10 +4822,13 @@ function cancelEditPost() {{
 }}
 
 function saveEditPost(postId) {{
-    var subject = document.getElementById('editPostSubject').value.trim();
+    // The subject field wraps like a textarea but is stored as one line.
+    var subject = document.getElementById('editPostSubject').value.replace(/\\s+/g, ' ').trim();
     var body = document.getElementById('editPostBody').value.trim();
-    if (!subject) {{ showToast('Subject is required', true); return; }}
-    if (!body) {{ showToast('Content cannot be empty', true); return; }}
+    if (!subject) {{ showEditPostError('Subject is required'); return; }}
+    // An empty details field is allowed -- some posts carry all their content
+    // in the replies, and requiring a body made their subject uneditable.
+    showEditPostError('');
     fetch('/embed/message-board/api/edit', {{
         method: 'POST',
         headers: {{'Content-Type': 'application/json', 'X-CSRF-Token': getCsrf()}},
@@ -4820,9 +4838,9 @@ function saveEditPost(postId) {{
     .then(function(r) {{ return r.json(); }})
     .then(function(data) {{
         if (data.success) window.location.reload();
-        else showToast(data.error || 'Failed', true);
+        else showEditPostError(data.error || 'Failed to save');
     }})
-    .catch(function() {{ showToast('Network error', true); }});
+    .catch(function() {{ showEditPostError('Network error'); }});
 }}
 
 function showEditReply(replyId) {{
@@ -5094,7 +5112,15 @@ def embed_message_board_edit():
 
         if not post_id and not reply_id:
             return jsonify({'success': False, 'error': 'Post or reply ID required'})
-        if not new_body:
+
+        # A reply is nothing but its body, so that must have content. A post is
+        # identified by its subject instead -- an empty details field is valid
+        # (some posts keep all their content in the replies), and requiring a
+        # body here made those posts' subjects impossible to edit.
+        if post_id:
+            if new_subject is not None and not new_subject:
+                return jsonify({'success': False, 'error': 'Subject cannot be empty'})
+        elif not new_body:
             return jsonify({'success': False, 'error': 'Content cannot be empty'})
 
         conn = get_db_connection()

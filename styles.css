@@ -77,37 +77,6 @@ body {
         font-size: 1rem !important;
     }
 }
-
-/* Very narrow viewports: iPhones with Display Zoom / "Larger Text" report a
-   CSS width of ~320px instead of ~390px, but still matched the 600px rules
-   above -- so 22px root text was being laid out in a viewport 18% narrower
-   than it was tuned for, and long labels bled out of their cells. Everything
-   here is rem-based, so easing the root size scales the whole layout back
-   into place. Deliberately 340px, not 380px: an iPhone SE / 13 mini / 8 reports
-   375px in NORMAL mode and must not be caught by this. Display Zoom lands at
-   ~320px, so only genuinely cramped viewports match. */
-@media (max-width: 340px) {
-    html {
-        font-size: 18px;
-    }
-    .container {
-        padding: 12px;
-    }
-    .title {
-        font-size: 1.4rem !important;
-    }
-    .tab-button {
-        padding: 12px 14px;
-        font-size: 1rem;
-    }
-    th, td {
-        padding: 10px 8px;
-        overflow-wrap: break-word;
-    }
-    .score-display {
-        padding: 10px 14px;
-    }
-}
 /* Floating top bar — Dashboard button only, right-aligned */
 .wpl-top-bar {
     display: flex;

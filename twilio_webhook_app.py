@@ -4169,12 +4169,13 @@ def embed_message_board():
 <div class="board-card" style="border-color:rgba(0,232,218,0.3);">
     <div class="form-group" style="margin-bottom:12px;">
         <label style="color:#d7dadc;font-weight:600;font-size:0.9em;margin-bottom:4px;display:block;">Subject</label>
-        <input type="text" id="postSubject" maxlength="200" placeholder="Question or comment..." style="width:100%;padding:10px 12px;background:#0a0a1a;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#d7dadc;font-family:inherit;font-size:0.95em;outline:none;" onfocus="this.style.borderColor='rgba(0,232,218,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'">
+        <textarea id="postSubject" maxlength="200" rows="1" placeholder="Question or comment..." onkeydown="if(event.key==='Enter')event.preventDefault();" oninput="this.style.height='auto';this.style.height=this.scrollHeight+'px';" style="width:100%;padding:10px 12px;background:#0a0a1a;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#d7dadc;font-family:inherit;font-size:16px;line-height:1.4;resize:none;overflow:hidden;outline:none;" onfocus="this.style.borderColor='rgba(0,232,218,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'"></textarea>
     </div>
     <div class="form-group" style="margin-bottom:12px;">
         <label style="color:#d7dadc;font-weight:600;font-size:0.9em;margin-bottom:4px;display:block;">Details</label>
         <textarea id="postBody" maxlength="5000" rows="5" placeholder="Add more details about your question..." style="width:100%;padding:10px 12px;background:#0a0a1a;border:1px solid rgba(255,255,255,0.1);border-radius:8px;color:#d7dadc;font-family:inherit;font-size:0.95em;resize:vertical;outline:none;" onfocus="this.style.borderColor='rgba(0,232,218,0.4)'" onblur="this.style.borderColor='rgba(255,255,255,0.1)'"></textarea>
     </div>
+    <div id="newPostError" style="display:none;color:#f44336;font-size:0.85em;margin-bottom:10px;"></div>
     <div style="display:flex;gap:12px;">
         <button onclick="submitPost()" style="background:#00E8DA;color:#0a0a1a;border:none;padding:10px 24px;border-radius:8px;font-weight:600;cursor:pointer;font-family:inherit;font-size:0.9em;">Submit</button>
         <button onclick="toggleNewPost()" style="background:transparent;color:#8a8aa5;border:1px solid rgba(255,255,255,0.1);padding:10px 24px;border-radius:8px;cursor:pointer;font-family:inherit;font-size:0.9em;">Cancel</button>
@@ -4357,6 +4358,22 @@ document.addEventListener('input', function(e) {{
 function toggleNewPost() {{
     var f = document.getElementById('newPostForm');
     if (f) f.style.display = f.style.display === 'none' ? 'block' : 'none';
+    // The subject field wraps instead of scrolling sideways, but it can only
+    // be measured once the form is visible.
+    var s = document.getElementById('postSubject');
+    if (s && f && f.style.display === 'block') {{
+        s.style.height = 'auto';
+        s.style.height = s.scrollHeight + 'px';
+    }}
+}}
+
+// Same reason as the post page: a position:fixed toast is off-screen inside a
+// content-height iframe, so validation has to show up next to the button.
+function showNewPostError(msg) {{
+    var el = document.getElementById('newPostError');
+    if (!el) {{ showToast(msg, true); return; }}
+    el.textContent = msg || '';
+    el.style.display = msg ? 'block' : 'none';
 }}
 
 function showToast(msg, isError) {{
@@ -4368,9 +4385,11 @@ function showToast(msg, isError) {{
 }}
 
 function submitPost() {{
-    var subject = document.getElementById('postSubject').value.trim();
+    // Wraps like a textarea, stored as one line.
+    var subject = document.getElementById('postSubject').value.replace(/\\s+/g, ' ').trim();
     var body = document.getElementById('postBody').value.trim();
-    if (!subject) {{ showToast('Subject is required', true); return; }}
+    if (!subject) {{ showNewPostError('Subject is required'); return; }}
+    showNewPostError('');
 
     var csrfToken = document.cookie.split('; ').find(function(r) {{ return r.startsWith('csrf_token='); }});
     csrfToken = csrfToken ? csrfToken.split('=')[1] : '';
@@ -4386,10 +4405,10 @@ function submitPost() {{
         if (data.success) {{
             window.location.href = '/embed/message-board/post/' + data.post_id;
         }} else {{
-            showToast(data.error || 'Failed to create post', true);
+            showNewPostError(data.error || 'Failed to create post');
         }}
     }})
-    .catch(function() {{ showToast('Network error', true); }});
+    .catch(function() {{ showNewPostError('Network error'); }});
 }}
 </script>
 </body>

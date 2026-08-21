@@ -5336,8 +5336,15 @@ def _league_content_marker(league_id):
 
 
 @app.route('/leagues/<slug>')
+@app.route('/embed/leagues/<slug>')
 def public_league_page(slug):
-    """Public league page - serves the leaderboard HTML (e.g., /leagues/warriorz)"""
+    """Public league page - serves the leaderboard HTML (e.g., /leagues/warriorz)
+
+    Also served under /embed/leagues/<slug> so the Wix site can iframe a single
+    league. Only /embed/* paths get frame-ancestors from set_security_headers();
+    everything else is X-Frame-Options: SAMEORIGIN and silently fails to render
+    in an iframe. Same HTML either way — the prefix only changes the headers.
+    """
     try:
         # Look up the league AND its content marker on one connection: the
         # cache-hit path should cost a single round trip, not two.

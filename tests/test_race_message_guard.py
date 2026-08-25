@@ -5,6 +5,7 @@ Pure tests — no clock, DB, or OpenAI. They feed the deterministic scenario tex
 """
 from race_message_guard import (
     find_violations, allowed_win_counts, stakes_allowed, build_fallback_message,
+    strip_unsupported_sentences,
 )
 
 
@@ -71,9 +72,22 @@ def test_lower_ordinal_not_flagged():
     assert find_violations(msg, scenario) == []
 
 
-def test_no_scenario_fails_open():
-    assert find_violations("anything at all, 5th win, promotion!", None) == []
-    assert find_violations("anything", "") == []
+def test_no_scenario_still_catches_invented_counts():
+    # Regression: league 11, week 1885. The single-eligible-player path built no
+    # scenario text, so the guard used to fail open and shipped "This is their
+    # 3rd win this season" on what was the player's 1st win.
+    sent = "🎉 Brent wins with a solid 15! 🏆 RACE OVER. This is their 3rd win this season! 🎊"
+    assert find_violations(sent, None)
+    assert find_violations(sent, "")
+
+
+def test_no_scenario_still_catches_invented_stakes():
+    assert find_violations("Brent wins and clinches the season! 🏆", None)
+
+
+def test_no_scenario_plain_message_passes():
+    # Without a win count or stakes language there is nothing to contradict.
+    assert find_violations("🏆 Brent has it locked at 15! Nice work! 🎉", None) == []
 
 
 def test_this_season_not_flagged_as_stakes():
@@ -102,3 +116,24 @@ def test_fallback_message_is_factual():
     out = build_fallback_message(scenario)
     assert "Rally" in out and "1st win" in out
     assert find_violations(out, scenario) == []  # the template must pass its own check
+
+
+# --- stripping, used when there is no scenario text to rebuild from ---
+
+def test_strip_removes_only_the_invented_sentence():
+    sent = "🎉 Brent wins with a solid 15! 🏆 No contenders left. This is their 3rd win this season! 🎊"
+    out = strip_unsupported_sentences(sent, None)
+    assert "Brent wins with a solid 15" in out
+    assert "No contenders left" in out
+    assert "3rd win" not in out
+    assert find_violations(out, None) == []
+
+
+def test_strip_keeps_supported_counts():
+    scenario = "RACE OVER! Rally wins the week with 18! This is their 2nd win this season."
+    sent = "RACE OVER! Rally wins with 18! Their 2nd win this season! 🎉"
+    assert strip_unsupported_sentences(sent, scenario) == sent
+
+
+def test_strip_returns_empty_when_nothing_survives():
+    assert strip_unsupported_sentences("Their 4th win clinches the season!", None) == ""

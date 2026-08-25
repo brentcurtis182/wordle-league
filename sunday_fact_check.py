@@ -499,6 +499,36 @@ def _render_html(reports, week, headline):
     if headline:
         h.append(f'<p style="color:#f39c12;">{headline}</p>')
 
+    # At-a-glance summary: every league and its verdict, so the state of all
+    # leagues is readable without scrolling to hunt for the failures below.
+    if reports:
+        h.append('<div style="font-size:12px;color:#9a9ab0;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px;">Summary</div>')
+        h.append('<table style="width:100%;border-collapse:collapse;margin-bottom:24px;font-size:13px;">')
+        for r in reports:
+            problems = len(r['wrong']) + len(r['omissions']) + len(r.get('faithfulness', []))
+            ok = problems == 0
+            colour = ok_color if ok else bad_color
+            if ok:
+                verdict = 'accurate'
+            else:
+                bits = []
+                if r['wrong']:
+                    bits.append(f"{len(r['wrong'])} wrong claim{'s' if len(r['wrong']) != 1 else ''}")
+                if r['omissions']:
+                    bits.append(f"{len(r['omissions'])} omission{'s' if len(r['omissions']) != 1 else ''}")
+                if r.get('faithfulness'):
+                    bits.append(f"{len(r['faithfulness'])} off-scenario")
+                verdict = ', '.join(bits)
+            name = (r['league_name'] or '').replace('<', '&lt;')
+            h.append(
+                '<tr style="border-bottom:1px solid #26263a;">'
+                f'<td style="padding:7px 8px 7px 0;color:{colour};font-weight:700;width:18px;">{"&#10003;" if ok else "&#10007;"}</td>'
+                f'<td style="padding:7px 8px 7px 0;color:#e8e8f0;">{name} '
+                f'<span style="color:#6a6a80;">(league {r["league_id"]})</span></td>'
+                f'<td style="padding:7px 0;color:{colour};text-align:right;white-space:nowrap;">{verdict}</td>'
+                '</tr>')
+        h.append('</table>')
+
     for r in reports:
         has_problem = bool(r['wrong'] or r['omissions'] or r.get('faithfulness'))
         border = bad_color if has_problem else ok_color

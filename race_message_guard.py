@@ -57,16 +57,22 @@ def find_violations(message, scenario_text):
     data supports) and stakes language when the scenario raised none.
     """
     issues = []
-    if not scenario_text:
-        return issues  # nothing authoritative to check against — fail open
-
     allowed = allowed_win_counts(scenario_text)
     claimed = _ordinals_in(message)
     if allowed:
         ceiling = max(allowed)
         for n in claimed:
             if n > ceiling:
-                issues.append(f"claims '{n}th win' but the data supports at most {ceiling} ({sorted(allowed)})")
+                issues.append(f"claims a win count of {n} but the data supports at most {ceiling} ({sorted(allowed)})")
+    elif claimed:
+        # No authoritative count was stated anywhere, so every "Nth win" in the
+        # message is invented. This branch used to `return` early on empty
+        # scenario text — failing open — which is how league 11 shipped "This is
+        # their 3rd win this season" on a week that was the player's 1st: the
+        # single-eligible-player path built no scenario text, so there was
+        # nothing to check against and the claim sailed through.
+        issues.append(
+            f"claims win count {sorted(claimed)} but the scenario states no win count at all")
 
     if not stakes_allowed(scenario_text) and _CLAIMED_STAKES_RE.search(message):
         issues.append("mentions clinch/promotion/relegation but the scenario raised no season stakes")
@@ -86,3 +92,30 @@ def build_fallback_message(scenario_text):
         return text
     prefix = "🏆 " if "RACE OVER" in text else "📊 "
     return prefix + text
+
+
+def strip_unsupported_sentences(message, scenario_text):
+    """Drop only the sentences carrying unsupported claims, keep everything else.
+
+    Last resort for the case where there is no scenario text to rebuild a
+    message from: sending the AI's update minus the one invented sentence beats
+    sending an empty one. Returns "" if nothing survives.
+    """
+    if not message:
+        return ""
+    allowed = allowed_win_counts(scenario_text)
+    ceiling = max(allowed) if allowed else None
+    stakes_ok = stakes_allowed(scenario_text)
+
+    kept = []
+    for sentence in re.split(r'(?<=[.!?])\s+', message.strip()):
+        sentence = sentence.strip()
+        if not sentence:
+            continue
+        nums = _ordinals_in(sentence)
+        if nums and (ceiling is None or max(nums) > ceiling):
+            continue
+        if not stakes_ok and _CLAIMED_STAKES_RE.search(sentence):
+            continue
+        kept.append(sentence)
+    return " ".join(kept).strip()

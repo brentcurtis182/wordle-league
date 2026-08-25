@@ -557,6 +557,11 @@ def check_relegation_promotion_ties(league_id, div1_season_info, div2_season_inf
     return ' '.join(warnings)
 
 
+def _win_ordinal(n):
+    """'1st', '2nd', '3rd', '4th'... for win counts stated in scenario text."""
+    return {1: '1st', 2: '2nd', 3: '3rd'}.get(n, f'{n}th')
+
+
 def build_division_scenario(div_standings, div_num, div_weekly_wins, div_current_season, min_scores=5, wins_for_season=DIVISION_WINS_FOR_SEASON):
     """Build scenario analysis text for a single division.
     Returns scenario text string for the AI prompt."""
@@ -638,7 +643,7 @@ def build_division_scenario(div_standings, div_num, div_weekly_wins, div_current
             scenarios.append(f"RACE OVER! {leader_list} are tied at {leader_total} and will share the weekly win! (Season wins: {win_notes})")
         else:
             winner_wins = div_weekly_wins.get(leader_names[0], 1)
-            ordinal = {1: '1st', 2: '2nd', 3: '3rd'}.get(winner_wins, f'{winner_wins}th')
+            ordinal = _win_ordinal(winner_wins)
             scenarios.append(f"RACE OVER! {leader_names[0]} wins the week with {leader_total}! This is their {ordinal} win this season.")
     elif len(leaders) == 1:
         leader_text = f"{leader_names[0]} leads at {leader_total}"
@@ -737,7 +742,8 @@ def _apply_race_guard(race_message, scenario_text, openai_client, sunday_system_
     message so the guard can never block a Sunday update from sending.
     """
     try:
-        from race_message_guard import find_violations, build_fallback_message
+        from race_message_guard import (find_violations, build_fallback_message,
+                                        strip_unsupported_sentences)
         violations = find_violations(race_message, scenario_text)
         if not violations:
             return race_message
@@ -760,7 +766,17 @@ def _apply_race_guard(race_message, scenario_text, openai_client, sunday_system_
             logging.info(f"[guard] League {league_id} re-roll passed fact-check.")
             return retry
         logging.warning(f"[guard] League {league_id} re-roll still failed; using deterministic template.")
-        return build_fallback_message(scenario_text)
+        fallback = build_fallback_message(scenario_text)
+        if not fallback:
+            # No scenario text to rebuild from (e.g. the "nobody can qualify"
+            # branch). Keep the AI's wording minus the offending sentence rather
+            # than sending an empty update.
+            fallback = (strip_unsupported_sentences(retry, scenario_text)
+                        or strip_unsupported_sentences(race_message, scenario_text))
+        if not fallback:
+            logging.error(f"[guard] League {league_id} nothing left after stripping; sending original.")
+            return race_message
+        return fallback
     except Exception as e:
         logging.error(f"[guard] League {league_id} guard error, sending original message: {e}")
         return race_message
@@ -1039,6 +1055,11 @@ ACCURACY RULES:
                         names = " or ".join(stakes_clinchers[:2])
                         season_clinch_text = f" SEASON STAKES: {names} are each one win away — today's winner could clinch Season {current_season}!"
 
+                    # Give the guard something authoritative to check this branch
+                    # against too — nobody has qualified yet, so there is no win
+                    # ordinal here, but any the AI invents will now be caught.
+                    scenario_text = f"{scenario}{season_clinch_text}"
+
                     context_block = f"""CURRENT WEEKLY STANDINGS (lower is better, best {min_scores} of 7 scores):
 {standings_summary}
 
@@ -1073,12 +1094,31 @@ WEEKLY RACE ANALYSIS: {scenario}{season_clinch_text}"""
                     if winner['name'] in potential_season_clinchers:
                         season_clinch_text = f" SEASON CLINCH: {winner['name']} clinches Season {current_season} with their {WINS_FOR_SEASON_VICTORY}th win!"
                     logging.info(f"League {league_id} (locked) season clinch text: '{season_clinch_text}'")
+
+                    # This win is already decided, so state the POST-week total as an
+                    # explicit ordinal — the same authoritative-count pattern the full
+                    # analysis path uses below. This path previously left scenario_text
+                    # as None, which gave the guard nothing to check and let the AI
+                    # invent a win count (league 11, week 1885: claimed "their 3rd win"
+                    # on what was the player's 1st win of the season).
+                    locked_win_no = weekly_wins.get(winner['name'], 0) + 1
+                    scenario_text = (
+                        f"RACE OVER! {winner['name']} wins the week with {winner['best_5_total']}! "
+                        f"This is their {_win_ordinal(locked_win_no)} win this season."
+                        f"{season_clinch_text}"
+                    )
+                    logging.info(f"League {league_id} (locked) scenario text: '{scenario_text}'")
+
                     if season_clinch_text:
                         prompt = (f"It's Sunday morning Wordle race update! {winner['name']} has this week LOCKED at "
-                                  f"{winner['best_5_total']}! No one else has enough scores to compete.{season_clinch_text} "
+                                  f"{winner['best_5_total']}! No one else has enough scores to compete. "
+                                  f"WEEKLY RACE ANALYSIS: {scenario_text} "
                                   f"THIS IS HUGE - MENTION THE SEASON CLINCH! Congratulate the winner! Use emojis. Keep it under 240 characters.")
                     else:
-                        prompt = f"It's Sunday morning Wordle race update! {winner['name']} has this week LOCKED at {winner['best_5_total']}! No one else has enough scores to compete. Congratulate the winner! Use emojis. Keep it under 200 characters."
+                        prompt = (f"It's Sunday morning Wordle race update! {winner['name']} has this week LOCKED at "
+                                  f"{winner['best_5_total']}! No one else has enough scores to compete. "
+                                  f"WEEKLY RACE ANALYSIS: {scenario_text} "
+                                  f"Congratulate the winner! Use emojis. Keep it under 200 characters.")
                 else:
                     # Someone could still qualify and beat the leader - fall through to full analysis
                     logging.info(f"Only one eligible player but {[p['name'] for p in potential_qualifiers]} could still qualify and beat them")
@@ -1135,16 +1175,14 @@ WEEKLY RACE ANALYSIS: {scenario}{season_clinch_text}"""
                     # on top of the summary numbers (the PAL bug, 2026-06-21).
                     # NOTE: potential_season_clinchers stays the pre-week snapshot
                     # ("1 away entering"); the clinch logic below relies on that.
-                    def _ordinal(n):
-                        return {1: '1st', 2: '2nd', 3: '3rd'}.get(n, f'{n}th')
                     post_week_wins = {n: weekly_wins.get(n, 0) + 1 for n in leader_names}
 
                     if len(leaders) > 1:
                         leader_list = " and ".join(leader_names)
-                        win_notes = " and ".join(f"{n}'s {_ordinal(post_week_wins[n])} win" for n in leader_names)
+                        win_notes = " and ".join(f"{n}'s {_win_ordinal(post_week_wins[n])} win" for n in leader_names)
                         scenarios.append(f"RACE OVER! {leader_list} are tied at {leader_total} and will share the weekly win! This makes it {win_notes} this season.")
                     else:
-                        scenarios.append(f"RACE OVER! {leader_names[0]} wins the week with {leader_total}! This is their {_ordinal(post_week_wins[leader_names[0]])} win this season.")
+                        scenarios.append(f"RACE OVER! {leader_names[0]} wins the week with {leader_total}! This is their {_win_ordinal(post_week_wins[leader_names[0]])} win this season.")
                 
                 elif len(leaders) > 1 and all_eligible_posted and not not_posted_today:
                     leader_list = " and ".join(leader_names)

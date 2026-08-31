@@ -102,13 +102,14 @@ def extract_claims(message_text):
 def get_league_truth(cursor, league_id, week):
     """Everything needed to adjudicate claims for one league-week."""
     cursor.execute("""
-        SELECT name, COALESCE(division_mode, FALSE), season_wins
+        SELECT name, COALESCE(division_mode, FALSE), season_wins,
+               COALESCE(min_weekly_scores, 5)
         FROM leagues WHERE id = %s
     """, (league_id,))
     row = cursor.fetchone()
     if not row:
         return None
-    league_name, division_mode, season_wins = row
+    league_name, division_mode, season_wins, min_scores = row
 
     wins_needed = season_wins or (DEFAULT_WINS_DIVISION if division_mode else DEFAULT_WINS_REGULAR)
 
@@ -167,12 +168,80 @@ def get_league_truth(cursor, league_id, week):
     return {
         'league_name': league_name,
         'division_mode': division_mode,
+        'min_scores': min_scores,
         'wins_needed': wins_needed,
         'winners': winners,
         'season_starts': season_starts,
         'win_totals': win_totals,
         'roster': roster,
+        'corroborated': _corroborated_numbers(
+            cursor, league_id, week, min_scores, wins_needed,
+            division_mode, winners, win_totals),
     }
+
+
+def _corroborated_numbers(cursor, league_id, week, min_scores, wins_needed,
+                          division_mode, winners, win_totals):
+    """Figures the DATABASE supports for this league-week, mapped to what they are.
+
+    scenario_text is only the RACE ANALYSIS line, but the AI is also handed a
+    standings block and a season-win block (sunday_race_update.py builds all
+    three). A number can therefore be perfectly true and still be absent from the
+    scenario — nerds-only week 1892 named B Dizzle's 23, which is exactly their
+    best-6 total, and the checker called it invented. Reconstructing what those
+    other blocks contained lets check_faithfulness tell "true but off-brief"
+    apart from "made up".
+
+    Returns {int: description}. First label written wins, so the entries are
+    added most-quotable first.
+    """
+    out = {}
+
+    def add(value, label):
+        if value is not None and value not in out:
+            out[value] = label
+
+    cursor.execute("""
+        SELECT p.name, s.wordle_number, s.score
+        FROM scores s JOIN players p ON p.id = s.player_id
+        WHERE p.league_id = %s AND s.wordle_number BETWEEN %s AND %s
+    """, (league_id, week, week + 6))
+    by_player = {}
+    for name, wnum, score in cursor.fetchall():
+        by_player.setdefault(name, []).append((wnum, score))
+
+    # Weekly totals, computed exactly as the standings block does: failed
+    # attempts (7) are dropped, then the best min_scores of what remains.
+    # The message goes out SUNDAY MORNING, so for each player the block held
+    # either their through-Saturday total or their through-Sunday one, depending
+    # on whether they had posted yet that day. Both are legitimate, so accept both.
+    def best_n_total(entries, cutoff):
+        vals = sorted(s for w, s in entries if w <= cutoff and s != 7)
+        return sum(vals[:min_scores]) if vals else None
+
+    for name, entries in by_player.items():
+        add(best_n_total(entries, week + 6), f"{name}'s best-{min_scores} weekly total")
+        add(best_n_total(entries, week + 5), f"{name}'s best-{min_scores} total through Saturday")
+
+    for w in winners:
+        add(w['score'], f"{w['name']}'s winning total")
+
+    # Season win counts. The block shows them ENTERING today, i.e. BEFORE this
+    # week's result, while win_totals here already includes it — so a winner's
+    # count is quotable both ways.
+    for (div, name), cnt in win_totals.items():
+        add(cnt, f"{name}'s season win count")
+        if any(x['name'] == name and (not division_mode or x['division'] == div)
+               for x in winners):
+            add(cnt - 1, f"{name}'s season win count entering the week")
+
+    add(min_scores, 'scores needed to qualify for the week')
+    add(wins_needed, 'wins needed to take the season')
+
+    for name, entries in by_player.items():
+        add(len([1 for w, s in entries if w <= week + 6]), f"{name}'s games played")
+
+    return out
 
 
 def _divisions_for(truth, player):
@@ -316,7 +385,7 @@ def _decided_sections(scenario_text, division_mode):
     return out
 
 
-def check_faithfulness(sent_text, scenario_text, roster, claims=None):
+def check_faithfulness(sent_text, scenario_text, roster, claims=None, corroborated=None):
     """Compare the sent message against the scenario text it was built from.
 
     The projections ("Evan needs a 2 to win, replacing a 5") are computed
@@ -333,6 +402,11 @@ def check_faithfulness(sent_text, scenario_text, roster, claims=None):
     model — mentioning them is off-brief (the prompt says to discuss only players in
     the race analysis), not fabrication. A name that is not on the roster at all is
     the genuinely serious case.
+
+    The same asymmetry applies to numbers, which is why `corroborated` exists: a
+    figure the database confirms for this league-week came out of one of those
+    other blocks, so it gets the same off-brief treatment the names already got.
+    Only a figure nothing in the database supports is reported as invented.
 
     Returns (issues, notes): issues are real accuracy problems, notes are advisory.
     """
@@ -353,10 +427,20 @@ def check_faithfulness(sent_text, scenario_text, roster, claims=None):
         if str(int(n) - 1) in scen_nums:
             msg_nums.discard(n)
 
-    invented_nums = sorted(msg_nums - scen_nums, key=lambda x: int(x))
+    corroborated = corroborated or {}
+    off_scenario = sorted(msg_nums - scen_nums, key=lambda x: int(x))
+
+    confirmed = [(n, corroborated[int(n)]) for n in off_scenario if int(n) in corroborated]
+    invented_nums = [n for n in off_scenario if int(n) not in corroborated]
+
     if invented_nums:
         issues.append(f"number(s) not in the scenario: {', '.join(invented_nums)} "
                       f"— the AI introduced a figure it wasn't given")
+    if confirmed:
+        detail = ', '.join(f"{n} ({what})" for n, what in confirmed)
+        notes.append(f"figure(s) outside the race analysis but confirmed by the database: {detail} "
+                     f"— given to the AI in the standings/season blocks, so this is off-brief "
+                     f"commentary rather than invention")
 
     # Players named in the message but absent from the scenario. Roster-based so
     # ordinary words are never mistaken for names.
@@ -463,7 +547,8 @@ def check_week(week=None, dry_run=False):
         results = [(c, *verify_claim(c, truth, week)) for c in claims]
         omissions = find_omissions(claims, truth, scenario_text)
         faithfulness, faithfulness_notes = check_faithfulness(
-            sent_text, scenario_text, truth['roster'], claims)
+            sent_text, scenario_text, truth['roster'], claims,
+            corroborated=truth.get('corroborated'))
 
         reports.append({
             'league_id': league_id,

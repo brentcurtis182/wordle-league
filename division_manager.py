@@ -884,7 +884,7 @@ def check_division_season_transition(league_id, division):
 
                 # Sort: fewest missed weeks first, then best (lowest) season total, then most wins
                 # Players with missed weeks rank behind full-participation players
-                candidates.sort(key=lambda x: (x[3], x[1], -x[2]))
+                candidates.sort(key=lambda x: promotion_sort_key(x[3], x[1], x[2]))
                 spots_remaining = promoted_count - len(promoted_names)
 
                 # candidates are tuples: (name, season_total, win_count, missed_weeks)
@@ -963,6 +963,32 @@ def check_division_season_transition(league_id, division):
     finally:
         cursor.close()
         conn.close()
+
+
+def relegation_sort_key(missed_weeks, season_total, weekly_wins):
+    """Relegation ordering, worst-first. THE single source of truth.
+
+    Most missed weeks first, then worst (highest) season total, then fewest
+    weekly wins. Two players are genuinely tied for relegation only when all
+    three match — and only then is it settled by a random draw.
+
+    sunday_race_update.check_relegation_promotion_ties must rank with this too.
+    It used to sort on season total alone, which named the wrong player on the
+    one message of the season where it matters: bellyup Season 7 would have
+    announced a coin flip between two players on 71 while Jeremy, on a better
+    70 but carrying a missed week, was the one actually going down.
+    """
+    return (-missed_weeks, -season_total, weekly_wins)
+
+
+def promotion_sort_key(missed_weeks, season_total, weekly_wins):
+    """Promotion ordering, best-first — the mirror of relegation_sort_key.
+
+    Fewest missed weeks first, then best (lowest) season total, then most wins.
+    Same rule as relegation: a genuine tie means all three match, and only then
+    is it a random draw.
+    """
+    return (missed_weeks, season_total, -weekly_wins)
 
 
 def check_division1_relegation(league_id):
@@ -1091,7 +1117,7 @@ def check_division1_relegation(league_id):
         relegated_count = cursor.fetchone()[0]
         
         # Sort: most missed weeks first, then worst (highest) season total, then fewest wins
-        player_stats.sort(key=lambda x: (-x[4], -x[2], x[3]))
+        player_stats.sort(key=lambda x: relegation_sort_key(x[4], x[2], x[3]))
         
         relegated_names = []
         randomized_names = {}  # name -> {'tied_with': [...], 'tied_score': N}

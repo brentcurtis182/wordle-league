@@ -444,13 +444,21 @@ def _new_season_row(season_number, accent):
     Spans all three columns so it reads as a banner rather than a stray entry in the
     Player column. Shown for a brand new league and for the Monday after a season is
     clinched, both of which otherwise render an empty table that looks broken.
+
+    Styling note: styles.css sets `width: 55%` and `white-space: nowrap` on
+    `.season-table td:nth-child(1)`, and this banner IS the first cell of its row,
+    so it inherits both. Left alone, the subtitle cannot wrap and drags the table's
+    minimum width past the viewport — the third column ends up off screen and the
+    text reads as right-aligned because it is centred inside a cell far wider than
+    the screen. Inline styles outrank those selectors, so reset them here.
     """
     return (
-        f'<tr><td colspan="3" style="text-align: center; padding: 22px 12px;">'
+        f'<tr><td colspan="3" style="text-align: center; padding: 22px 12px; '
+        f'width: auto; white-space: normal;">'
         f'<div style="color: {accent}; font-weight: 700; font-size: 1.05em;">'
         f'New Season &mdash; Season {season_number}</div>'
-        f'<div style="color: #818384; font-size: 0.85em; margin-top: 5px;">'
-        f'Weekly winners appear here each Monday</div>'
+        f'<div style="color: #818384; font-size: 0.85em; margin-top: 5px; '
+        f'white-space: normal;">Weekly winners appear here each Monday</div>'
         f'</td></tr>\n'
     )
 

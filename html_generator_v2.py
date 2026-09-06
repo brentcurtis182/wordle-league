@@ -438,6 +438,23 @@ function openFullList() {{
 {js}'''
 
 
+def _new_season_row(season_number, accent):
+    """A full-width 'new season' row for a Season table with no weekly winners yet.
+
+    Spans all three columns so it reads as a banner rather than a stray entry in the
+    Player column. Shown for a brand new league and for the Monday after a season is
+    clinched, both of which otherwise render an empty table that looks broken.
+    """
+    return (
+        f'<tr><td colspan="3" style="text-align: center; padding: 22px 12px;">'
+        f'<div style="color: {accent}; font-weight: 700; font-size: 1.05em;">'
+        f'New Season &mdash; Season {season_number}</div>'
+        f'<div style="color: #818384; font-size: 0.85em; margin-top: 5px;">'
+        f'Weekly winners appear here each Monday</div>'
+        f'</td></tr>\n'
+    )
+
+
 def generate_season_stats_html(league_data):
     """Generate Season / All-Time Stats tab HTML"""
     season_data = league_data.get('season_data', {})
@@ -477,7 +494,13 @@ def generate_season_stats_html(league_data):
             html += f'    <td>{wins}</td>\n'
             html += f'    <td style="white-space: nowrap;">{weeks_display if weeks_display else "-"}</td>\n'
             html += '</tr>\n'
-    
+    else:
+        # season_standings is built purely from weekly-winner rows, so empty means
+        # nobody has won a week yet — a brand new league, or the Monday after someone
+        # clinched. An empty table reads as broken; say what it actually is. Replaced
+        # automatically by the normal rows once the first winner is recorded.
+        html += _new_season_row(current_season, '#00E8DA')
+
     html += '</tbody>\n</table>\n'
     html += '</div>\n'  # Close season-container
 
@@ -1054,7 +1077,11 @@ def generate_division_season_stats_html(league_data):
                 html += f'    <td>{wins}</td>\n'
                 html += f'    <td style="white-space: nowrap;">{weeks_display if weeks_display else "-"}</td>\n'
                 html += '</tr>\n'
-        
+        else:
+            # Each division resets independently, so one division can sit empty while
+            # the other has winners — Div II after a clinch is the common case.
+            html += _new_season_row(current_season, div_color)
+
         html += '</tbody>\n</table>\n'
 
         # Collect division season winners for display below both tables

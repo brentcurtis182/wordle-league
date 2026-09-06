@@ -476,9 +476,15 @@ def check_relegation_promotion_ties(league_id, div1_season_info, div2_season_inf
     season total, then fewest wins. Do not rank on total alone here — that is what
     made this announce the wrong player.
 
-    Returns info text to append to scenario, or empty string."""
+    Returns {1: div_I_text, 2: div_II_text} — each string belongs INSIDE its own
+    division's block. Returning one joined blob put the relegation line after the
+    Division II paragraph, where it also read "relegated to Division II", and the AI
+    duly announced relegation stakes for Division II — a division nobody can be
+    relegated from. Keep these separated.
+    """
     from division_manager import relegation_sort_key
-    warnings = []
+    div1_warnings = []
+    div2_warnings = []
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
@@ -526,17 +532,17 @@ def check_relegation_promotion_ties(league_id, div1_season_info, div2_season_inf
                                         if relegation_sort_key(c[2], c[1], c[3]) == boundary_key]
                     if len(tied_at_boundary) > relegated_count:
                         names = ' and '.join(c[0] for c in tied_at_boundary)
-                        warnings.append(f"Relegation drama: {names} are dead level ({_why(tied_at_boundary[0])}, same wins) — a random draw would decide who moves down! 😮")
+                        div1_warnings.append(f"Relegation drama: {names} are dead level ({_why(tied_at_boundary[0])}, same wins) — a random draw would decide who moves down! 😮")
                     else:
                         relegated = candidates[:relegated_count]
                         rel_names = ' and '.join(c[0] for c in relegated)
                         if relegated_count == 1:
-                            warnings.append(f"Relegation: If the season ends today, {rel_names} ({_why(relegated[0])}) would be relegated to Division II.")
+                            div1_warnings.append(f"Relegation: If the season ends today, {rel_names} ({_why(relegated[0])}) would be relegated to Division II.")
                         else:
-                            warnings.append(f"Relegation: If the season ends today, {rel_names} would be relegated to Division II.")
+                            div1_warnings.append(f"Relegation: If the season ends today, {rel_names} would be relegated to Division II.")
                 elif len(candidates) == relegated_count:
                     rel_names = ' and '.join(c[0] for c in candidates)
-                    warnings.append(f"Relegation: If the season ends today, {rel_names} would be relegated to Division II.")
+                    div1_warnings.append(f"Relegation: If the season ends today, {rel_names} would be relegated to Division II.")
 
         # --- Div II promotion check ---
         cursor.execute("SELECT COALESCE(promoted_count, 1) FROM leagues WHERE id = %s", (league_id,))
@@ -576,14 +582,14 @@ def check_relegation_promotion_ties(league_id, div1_season_info, div2_season_inf
                                             if promotion_sort_key(r[2], r[1], r[3]) == boundary_key]
                         if len(tied_at_boundary) > extra_spots:
                             names = ' and '.join(r[0] for r in tied_at_boundary)
-                            warnings.append(f"Promotion alert: {names} are dead level ({_why(tied_at_boundary[0])}, same wins) for the extra promotion spot — a random draw would decide who also moves up!")
+                            div2_warnings.append(f"Promotion alert: {names} are dead level ({_why(tied_at_boundary[0])}, same wins) for the extra promotion spot — a random draw would decide who also moves up!")
                         else:
                             extra_promoted = remaining[:extra_spots]
                             extra_names = ' and '.join(r[0] for r in extra_promoted)
-                            warnings.append(f"Promotion: if {clincher_names} takes the season, {extra_names} ({_why(extra_promoted[0])}) would also earn promotion to Division I!")
+                            div2_warnings.append(f"Promotion: if {clincher_names} takes the season, {extra_names} ({_why(extra_promoted[0])}) would also earn promotion to Division I!")
                     else:
                         extra_names = ' and '.join(r[0] for r in remaining)
-                        warnings.append(f"Promotion: if {clincher_names} takes the season, {extra_names} would also earn promotion to Division I!")
+                        div2_warnings.append(f"Promotion: if {clincher_names} takes the season, {extra_names} would also earn promotion to Division I!")
 
     except Exception as e:
         logging.warning(f"Error checking relegation/promotion ties: {e}")
@@ -593,7 +599,7 @@ def check_relegation_promotion_ties(league_id, div1_season_info, div2_season_inf
         cursor.close()
         conn.close()
 
-    return ' '.join(warnings)
+    return {1: ' '.join(div1_warnings), 2: ' '.join(div2_warnings)}
 
 
 def _win_ordinal(n):
@@ -912,23 +918,30 @@ def send_sunday_race_update(league_id, force_season_image=False):
             div1_scenario = build_division_scenario(div1_standings, 1, div1_weekly_wins, div1_season_info['current_season'], min_scores=min_scores, wins_for_season=div_wins_needed)
             div2_scenario = build_division_scenario(div2_standings, 2, div2_weekly_wins, div2_season_info['current_season'], min_scores=min_scores, wins_for_season=div_wins_needed)
             
-            scenario_text = f"{div1_scenario}\n\n{div2_scenario}"
-
             # Computed here rather than further down because the relegation/promotion
             # outlook is gated on them: the season has to be genuinely winnable today.
             div1_has_stakes = "SEASON STAKES" in div1_scenario or "SEASON CLINCH" in div1_scenario
             div2_has_stakes = "SEASON STAKES" in div2_scenario or "SEASON CLINCH" in div2_scenario
 
-            # Who goes down / comes up if the season ends today
+            # Who goes down / comes up if the season ends today. Each warning is
+            # folded into ITS OWN division's paragraph — relegation belongs to
+            # Division I and promotion to Division II, and the AI attributes them
+            # by position. Appending both after the combined text made it announce
+            # relegation stakes for Division II, where relegation cannot happen.
             tie_warnings = check_relegation_promotion_ties(
                 league_id, div1_season_info, div2_season_info, min_scores,
                 div1_weekly_wins=div1_weekly_wins, div2_weekly_wins=div2_weekly_wins,
                 div1_standings=div1_standings, div2_standings=div2_standings,
                 wins_for_season=div_wins_needed,
                 div1_has_stakes=div1_has_stakes, div2_has_stakes=div2_has_stakes
-            )
-            if tie_warnings:
-                scenario_text += f"\n\n{tie_warnings}"
+            ) or {}
+
+            if tie_warnings.get(1):
+                div1_scenario = f"{div1_scenario} {tie_warnings[1]}"
+            if tie_warnings.get(2):
+                div2_scenario = f"{div2_scenario} {tie_warnings[2]}"
+
+            scenario_text = f"{div1_scenario}\n\n{div2_scenario}"
 
             logging.info(f"League {league_id} division scenarios: {scenario_text}")
 
@@ -1006,7 +1019,8 @@ ACCURACY RULES:
 7. Use emojis for excitement!
 8. Division I first, then Division II. Line break between them.
 9. Promotion/relegation mechanics exist in this league, but only ever reference them when rule 4 permits (the exact words appear in RACE ANALYSIS). Do not explain or apply the mechanics on your own.
-10. If "Relegation:" or "Promotion:" text appears in RACE ANALYSIS, mention it! These are the STAKES. Convey who's in line and why.
+10. If "Relegation:" or "Promotion:" text appears in RACE ANALYSIS, mention it! These are the STAKES. Convey who's in line and why. Attribute it to the division whose paragraph it appears in — relegation text sits inside the Division I paragraph, promotion text inside the Division II paragraph.
+10a. RELEGATION ONLY EXISTS IN DIVISION I and PROMOTION ONLY EXISTS IN DIVISION II. Division II is the bottom division — nobody can be relegated from it, so NEVER write anything about relegation for Division II, not even a vague tease like "relegation stakes loom". Likewise never mention promotion for Division I. The phrase "relegated to Division II" describes where a Division I player is going; it is not a Division II storyline.
 11. FORBIDDEN PHRASES (unless explicitly in RACE ANALYSIS): "locked", "out of contention", "eliminated", "in the hunt", "hail mary" (only if score of 1 needed).
 12. If two players are tied and one hasn't posted and "could improve", the race is NOT over — say they could break the tie."""
             

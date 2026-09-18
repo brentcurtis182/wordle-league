@@ -3351,23 +3351,7 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
             <div class="modal" style="max-width: 500px; max-height: 90vh; overflow-y: auto;">
                 <h3 style="color: {COLORS['accent']};">🚀 {'Connect Your Channel' if channel_type != 'sms' else 'Activate Your League'}</h3>
                 
-                <!-- Passcode Gate -->
-                <div id="activatePasscodeGate">
-                    <div style="background: {COLORS['accent_orange']}20; border: 1px solid {COLORS['accent_orange']}; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
-                        <p style="color: {COLORS['text']}; margin: 0 0 12px 0;"><strong>🔒 Activation Locked</strong></p>
-                        <p style="color: {COLORS['text_muted']}; margin: 0; font-size: 0.9em;">League activation is currently restricted. Enter the admin passcode to continue, or contact support to get access.</p>
-                    </div>
-                    <div class="form-group" style="margin-bottom: 16px;">
-                        <label>Admin Passcode</label>
-                        <input type="password" id="activatePasscode" placeholder="Enter passcode" style="width: 100%;">
-                    </div>
-                    <div class="modal-actions">
-                        <button type="button" class="btn btn-secondary" onclick="closeActivateModal()">Cancel</button>
-                        <button type="button" class="btn btn-primary" onclick="checkActivatePasscode()">Unlock</button>
-                    </div>
-                </div>
-                
-                <!-- Activation Steps (hidden until passcode entered) -->
+                <!-- Activation Steps -->
                 <div id="activateSteps" style="display: none;">
                     {'<p style="margin-bottom: 20px;">Follow these steps to connect your Slack channel:</p>' if channel_type == 'slack' else '<p style="margin-bottom: 20px;">Follow these steps to connect your Discord channel:</p>' if channel_type == 'discord' else '<p style="margin-bottom: 20px;">Follow these steps to connect your group chat:</p>'}
                     
@@ -4319,18 +4303,9 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
             // Activate League functions
             function showActivateModal() {{
                 document.getElementById('activateModal').classList.add('active');
-                if (leagueIsLinked) {{
-                    // Paid/linked leagues skip passcode gate
-                    document.getElementById('activatePasscodeGate').style.display = 'none';
-                    document.getElementById('activateSteps').style.display = 'block';
-                    generateNewCode();
-                    startActivationPolling();
-                }} else {{
-                    // Reset to passcode gate view
-                    document.getElementById('activatePasscodeGate').style.display = 'block';
-                    document.getElementById('activateSteps').style.display = 'none';
-                    document.getElementById('activatePasscode').value = '';
-                }}
+                document.getElementById('activateSteps').style.display = 'block';
+                generateNewCode();
+                startActivationPolling();
             }}
             
             var activationPollInterval = null;
@@ -4360,20 +4335,6 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
             function closeActivateModal() {{
                 stopActivationPolling();
                 document.getElementById('activateModal').classList.remove('active');
-            }}
-            
-            function checkActivatePasscode() {{
-                const passcode = document.getElementById('activatePasscode').value;
-                if (passcode === 'SlackTest182') {{
-                    document.getElementById('activatePasscodeGate').style.display = 'none';
-                    document.getElementById('activateSteps').style.display = 'block';
-                    // Generate code phrase after unlocking
-                    generateNewCode();
-                    // Start auto-polling for activation
-                    startActivationPolling();
-                }} else {{
-                    alert('Incorrect passcode. Contact support for access.');
-                }}
             }}
             
             function generateNewCode() {{

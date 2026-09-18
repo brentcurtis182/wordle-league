@@ -2127,9 +2127,17 @@ def _handle_slash_score(league_id, league_name, league_slug, bot_token, channel_
     week_date_str = week_start.strftime("%b %d")
 
     standings, todays_wordle = get_weekly_standings(league_id, week_start_wordle)
-    if not standings:
+    # get_weekly_standings returns a row per active player whether or not they
+    # have posted, so an empty list only means "no players". Check for posted
+    # scores too, otherwise a brand new league gets a blank scoreboard image
+    # instead of being told there's nothing to show yet.
+    if not standings or not any(p.get('days_posted', 0) for p in standings):
         from slack_integration import send_slack_message
-        send_slack_message(bot_token, channel_id, "No scores recorded this week yet! 🤷")
+        send_slack_message(
+            bot_token, channel_id,
+            "📊 No scores posted yet this week, so there's no scoreboard to show.\n"
+            "Paste your Wordle result into this channel and it'll appear here."
+        )
         return
 
     def build_image_data(player_list):

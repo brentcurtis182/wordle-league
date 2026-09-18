@@ -2367,6 +2367,63 @@ def _handle_slash_stats(league_id, league_name, bot_token, channel_id):
     return "\n".join(lines)
 
 
+def _ensure_slack_pending_installs(cursor):
+    """Create the parked-install table if it isn't there yet. Idempotent."""
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS slack_pending_installs (
+            user_id INTEGER PRIMARY KEY,
+            team_id TEXT NOT NULL,
+            team_name TEXT,
+            bot_token TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+
+def _store_pending_slack_install(cursor, user_id, team_id, team_name, bot_token):
+    """
+    Park a Slack install that arrived with no league to attach it to.
+
+    A direct install from the Marketplace carries no league_id, so the token
+    used to be dropped on the floor and the user was sent through OAuth a
+    second time when they set their league up. One row per user — a newer
+    install replaces an older one.
+    """
+    _ensure_slack_pending_installs(cursor)
+    cursor.execute("""
+        INSERT INTO slack_pending_installs (user_id, team_id, team_name, bot_token, created_at)
+        VALUES (%s, %s, %s, %s, CURRENT_TIMESTAMP)
+        ON CONFLICT (user_id) DO UPDATE SET
+            team_id = EXCLUDED.team_id,
+            team_name = EXCLUDED.team_name,
+            bot_token = EXCLUDED.bot_token,
+            created_at = EXCLUDED.created_at
+    """, (user_id, team_id, team_name, bot_token))
+
+
+def _claim_pending_slack_install(cursor, user_id, league_id):
+    """
+    Attach a parked Slack install to a newly created league so the user
+    doesn't have to authorize the app a second time. Returns the team_id
+    if one was claimed, otherwise None.
+    """
+    _ensure_slack_pending_installs(cursor)
+    cursor.execute("""
+        SELECT team_id, bot_token FROM slack_pending_installs WHERE user_id = %s
+    """, (user_id,))
+    row = cursor.fetchone()
+    if not row:
+        return None
+
+    team_id, bot_token = row
+    cursor.execute("""
+        UPDATE leagues SET slack_team_id = %s, slack_bot_token = %s WHERE id = %s
+    """, (team_id, bot_token, league_id))
+    cursor.execute("DELETE FROM slack_pending_installs WHERE user_id = %s", (user_id,))
+    logging.info(f"Claimed parked Slack install (team {team_id}) for new league {league_id}")
+    return team_id
+
+
 @app.route('/slack/oauth/callback', methods=['GET'])
 def slack_oauth_callback():
     """Handle Slack OAuth callback when user installs the app to their workspace"""
@@ -2443,15 +2500,32 @@ def slack_oauth_callback():
                 """, (team_id, bot_token, league_id))
                 redirect_target = f"/dashboard/league/{league_id}?message=Slack workspace connected! Now invite the bot to a channel and send the verification code."
             else:
-                # Reinstall: no league_id in state — update ALL leagues for this team
+                # No league_id in state. Either a reinstall for a team we
+                # already know, or a direct install that happened before the
+                # user created a league.
                 cursor.execute("""
-                    UPDATE leagues 
+                    UPDATE leagues
                     SET slack_bot_token = %s
                     WHERE slack_team_id = %s AND channel_type = 'slack'
                 """, (bot_token, team_id))
                 updated = cursor.rowcount
                 logging.info(f"Slack reinstall: updated bot token for {updated} league(s) in team {team_id}")
-                redirect_target = f"/dashboard?message=App for Slack reinstalled! Updated {updated} league(s)."
+
+                if updated:
+                    redirect_target = f"/dashboard?message=App for Slack reinstalled! Updated {updated} league(s)."
+                else:
+                    # Nothing to attach it to yet. Park it against the signed-in
+                    # user so creating a league can claim it, rather than
+                    # throwing the token away and making them install twice.
+                    from auth import validate_session
+                    installer = validate_session(request.cookies.get('session_token'))
+                    if installer:
+                        _store_pending_slack_install(cursor, installer['id'], team_id, team_name, bot_token)
+                        logging.info(f"Slack direct install parked for user {installer['id']} (team {team_id})")
+                        redirect_target = "/dashboard?message=Slack workspace connected! Create a league and we'll link it automatically."
+                    else:
+                        logging.warning(f"Slack direct install for team {team_id} with nobody signed in — cannot attach")
+                        redirect_target = "/dashboard?message=Slack workspace authorized. Sign in and create your league to finish setup."
             
             conn.commit()
             cursor.close()
@@ -3271,7 +3345,13 @@ def dashboard_create_league():
               ai_filter_default, severity_val, severity_val, severity_val, severity_val))
         
         league_id = cursor.fetchone()[0]
-        
+
+        # A direct install from the Marketplace arrives before the league
+        # exists, so claim any parked install here instead of sending the
+        # user through the Add to Slack step a second time.
+        if channel_type == 'slack':
+            _claim_pending_slack_install(cursor, user['id'], league_id)
+
         # Initialize league_seasons with proper season_start_week
         from league_data_adapter import calculate_wordle_number, get_week_start_date
         week_start_wordle = calculate_wordle_number(get_week_start_date())

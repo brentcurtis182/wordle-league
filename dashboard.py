@@ -3358,8 +3358,7 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                     {f"""
                     <div style="background: {COLORS['bg_dark']}; padding: 16px; border-radius: 8px; margin-bottom: 16px;">
                         <h4 style="margin: 0 0 12px 0; color: {COLORS['text']};">Step 1: Install the Wordle League app</h4>
-                        <p style="color: {COLORS['text_muted']}; margin-bottom: 12px;">Click the button below to add the Wordle League bot to your Slack workspace:</p>
-                        <a href="/slack/install?league_id={league['id']}" class="btn btn-primary" style="display: inline-block; text-decoration: none;">Add to Slack</a>
+                        {'<p style="color: #2ECC71; margin: 0;">✅ Already installed in your workspace — nothing to do here.</p>' if league.get('slack_team_id') else '<p style="color: ' + COLORS['text_muted'] + '; margin-bottom: 12px;">Click the button below to add the Wordle League bot to your Slack workspace:</p><a href="/slack/install?league_id=' + str(league['id']) + '" class="btn btn-primary" style="display: inline-block; text-decoration: none;">Add to Slack</a>'}
                     </div>
                     
                     <div style="background: {COLORS['bg_dark']}; padding: 16px; border-radius: 8px; margin-bottom: 16px;">

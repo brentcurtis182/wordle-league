@@ -20,6 +20,24 @@ SLACK_API_BASE = "https://slack.com/api"
 # Resets on deploy/restart, which is fine — just prevents spam within a session
 _notified_non_players = {}
 
+# Mentions we've already answered (message ts -> time we answered it).
+# Slack delivers one "@wordplay score" as BOTH an app_mention and a message
+# event, and retries anything it doesn't get a 200 for within 3 seconds, so
+# without this a single mention could post the scoreboard several times.
+_answered_mentions = {}
+_MENTION_DEDUPE_TTL = 300  # seconds
+
+MENTION_HELP_TEXT = (
+    "*📖 WordPlay League*\n"
+    "Post your Wordle result in this channel and I'll record it automatically.\n\n"
+    "You can ask me for any of these, or use the slash command:\n"
+    "• `score` — current weekly scoreboard (`/wordplay score`)\n"
+    "• `standings` — season win totals (`/wordplay standings`)\n"
+    "• `streak` — current play & win streaks (`/wordplay streak`)\n"
+    "• `stats` — fun league stats (`/wordplay stats`)\n"
+    "• `help` — show this message (`/wordplay help`)"
+)
+
 def verify_slack_signature(request_body: bytes, timestamp: str, signature: str) -> bool:
     """
     Verify that the request came from Slack using the signing secret.
@@ -334,6 +352,132 @@ def get_slack_channel_info(bot_token: str, channel_id: str) -> dict:
         return {}
 
 
+def _claim_mention(event_ts: str) -> bool:
+    """
+    Returns True if this mention is ours to answer, False if we already have.
+    Also expires old entries so the dict doesn't grow without bound.
+    """
+    now = time.time()
+    for ts, seen_at in list(_answered_mentions.items()):
+        if now - seen_at > _MENTION_DEDUPE_TTL:
+            _answered_mentions.pop(ts, None)
+
+    if event_ts in _answered_mentions:
+        return False
+    _answered_mentions[event_ts] = now
+    return True
+
+
+def _parse_mention_subcommand(text: str) -> str:
+    """
+    Map free text like "@wordplay what's the weekly score?" onto a subcommand.
+    Anything we don't recognise falls back to help, which is friendlier than
+    an error and shows people what they can actually ask for.
+    """
+    cleaned = re.sub(r"<@[^>]+>", " ", text or "").strip().lower()
+
+    if not cleaned or "help" in cleaned:
+        return "help"
+    if "standing" in cleaned or "season" in cleaned or "wins" in cleaned:
+        return "standings"
+    if "streak" in cleaned:
+        return "streaks"
+    if "stats" in cleaned:
+        return "stats"
+    if "score" in cleaned or "leaderboard" in cleaned or "weekly" in cleaned:
+        return "score"
+    return "help"
+
+
+def handle_slack_mention(event: dict, team_id: str, db_connection, bot_user_id: str = None) -> dict:
+    """
+    Answer an @mention of the bot, reusing the handlers that back /wordplay.
+
+    Slack retries any event it doesn't get a 200 for within 3 seconds, and
+    building a scoreboard image takes longer than that, so the work runs on a
+    background thread and this returns straight away.
+    """
+    import threading
+
+    channel_id = event.get("channel")
+    text = event.get("text", "") or ""
+    event_ts = event.get("ts")
+
+    if event_ts and not _claim_mention(event_ts):
+        return {"status": "ignored", "reason": "duplicate_mention"}
+
+    subcommand = _parse_mention_subcommand(text)
+    logging.info(f"Slack mention: team={team_id}, channel={channel_id}, text='{text[:60]}' -> {subcommand}")
+
+    cursor = db_connection.cursor()
+    cursor.execute("""
+        SELECT id, display_name, slug, slack_bot_token, division_mode
+        FROM leagues
+        WHERE channel_type = 'slack' AND slack_channel_id = %s
+        LIMIT 1
+    """, (channel_id,))
+    league_row = cursor.fetchone()
+    cursor.close()
+
+    if not league_row:
+        return {"status": "ignored", "reason": "no_league_for_channel"}
+
+    league_id, league_name, league_slug, bot_token, is_division_mode = league_row
+    league_name = league_name or f"League {league_id}"
+    league_slug = league_slug or f"league{league_id}"
+    is_division_mode = is_division_mode or False
+
+    if not bot_token:
+        logging.error(f"Slack mention: league {league_id} has no bot token")
+        return {"status": "error", "reason": "no_bot_token"}
+
+    # Reply inside the thread when we're mentioned in one, otherwise in channel.
+    thread_ts = event.get("thread_ts")
+
+    def _respond():
+        try:
+            if subcommand == "help":
+                send_slack_message(bot_token, channel_id, MENTION_HELP_TEXT, thread_ts=thread_ts)
+                return
+
+            # Imported lazily: twilio_webhook_app imports this module, so a
+            # top-level import here would be circular.
+            from twilio_webhook_app import (
+                _handle_slash_score, _handle_slash_standings,
+                _handle_slash_streaks, _handle_slash_stats,
+            )
+
+            if subcommand == "score":
+                # Posts the scoreboard image to the channel itself.
+                _handle_slash_score(league_id, league_name, league_slug,
+                                    bot_token, channel_id, is_division_mode)
+            elif subcommand == "standings":
+                reply = _handle_slash_standings(league_id, league_name, league_slug,
+                                                bot_token, channel_id, is_division_mode)
+                send_slack_message(bot_token, channel_id, reply, thread_ts=thread_ts)
+            elif subcommand == "streaks":
+                reply = _handle_slash_streaks(league_id, league_name, bot_token, channel_id)
+                send_slack_message(bot_token, channel_id, reply, thread_ts=thread_ts)
+            elif subcommand == "stats":
+                reply = _handle_slash_stats(league_id, league_name, bot_token, channel_id)
+                send_slack_message(bot_token, channel_id, reply, thread_ts=thread_ts)
+        except Exception as e:
+            logging.error(f"Slack mention handler error ({subcommand}) for league {league_id}: {e}")
+            import traceback
+            logging.error(traceback.format_exc())
+            try:
+                send_slack_message(
+                    bot_token, channel_id,
+                    "⚠️ Something went wrong with that one. Try `/wordplay help` for the full list.",
+                    thread_ts=thread_ts
+                )
+            except Exception:
+                pass
+
+    threading.Thread(target=_respond, daemon=True).start()
+    return {"status": "mention_handled", "subcommand": subcommand, "league_id": league_id}
+
+
 def handle_slack_event(event_data: dict, db_connection) -> dict:
     """
     Handle an incoming Slack event.
@@ -352,9 +496,27 @@ def handle_slack_event(event_data: dict, db_connection) -> dict:
     if event.get("bot_id") or event.get("subtype") == "bot_message":
         return {"status": "ignored", "reason": "bot_message"}
     
+    team_id = event_data.get("team_id")
+
+    # The bot's own user ID, used to spot mentions inside plain message events.
+    bot_user_id = None
+    for auth in (event_data.get("authorizations") or []):
+        bot_user_id = auth.get("user_id")
+        break
+
+    if event_type == "app_mention":
+        return handle_slack_mention(event, team_id, db_connection, bot_user_id)
+
     if event_type == "message":
-        return handle_slack_message(event, event_data.get("team_id"), db_connection)
-    
+        # A message that @mentions us is a command, not a score. We handle it
+        # here as well as via app_mention because the two are subscribed
+        # separately in the Slack app config — whichever arrives first wins,
+        # and handle_slack_mention dedupes on the message ts so only one
+        # answer goes out.
+        if bot_user_id and f"<@{bot_user_id}>" in (event.get("text") or ""):
+            return handle_slack_mention(event, team_id, db_connection, bot_user_id)
+        return handle_slack_message(event, team_id, db_connection)
+
     return {"status": "ignored", "reason": f"unhandled_event_type: {event_type}"}
 
 

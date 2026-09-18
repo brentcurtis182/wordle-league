@@ -389,6 +389,42 @@ def _parse_mention_subcommand(text: str) -> str:
     return "help"
 
 
+def _lookup_team_bot_token(db_connection, team_id):
+    """
+    Find a bot token for a workspace that has no league on this channel.
+
+    Prefer a league in the same workspace, since that token is definitely
+    current, and fall back to the one recorded at install time.
+    """
+    if not team_id:
+        return None
+
+    cursor = db_connection.cursor()
+    try:
+        cursor.execute("""
+            SELECT slack_bot_token FROM leagues
+            WHERE slack_team_id = %s AND slack_bot_token IS NOT NULL
+            LIMIT 1
+        """, (team_id,))
+        row = cursor.fetchone()
+        if row and row[0]:
+            return row[0]
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS slack_team_installs (
+                team_id TEXT PRIMARY KEY,
+                team_name TEXT,
+                bot_token TEXT NOT NULL,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        cursor.execute("SELECT bot_token FROM slack_team_installs WHERE team_id = %s", (team_id,))
+        row = cursor.fetchone()
+        return row[0] if row else None
+    finally:
+        cursor.close()
+
+
 def handle_slack_mention(event: dict, team_id: str, db_connection, bot_user_id: str = None) -> dict:
     """
     Answer an @mention of the bot, reusing the handlers that back /wordplay.
@@ -420,7 +456,23 @@ def handle_slack_mention(event: dict, team_id: str, db_connection, bot_user_id: 
     cursor.close()
 
     if not league_row:
-        return {"status": "ignored", "reason": "no_league_for_channel"}
+        # Nobody has linked a league to this channel. Say so instead of going
+        # silent — silence here looks identical to the bot being broken. The
+        # slash command already answers this case via response_url; a mention
+        # has no response_url, so we need a token we stored at install time.
+        fallback_token = _lookup_team_bot_token(db_connection, team_id)
+        if not fallback_token:
+            logging.info(f"Slack mention in unlinked channel {channel_id}, no token for team {team_id}")
+            return {"status": "ignored", "reason": "no_league_for_channel"}
+
+        send_slack_message(
+            fallback_token, channel_id,
+            "👋 There's no WordPlay League connected to this channel yet.\n"
+            f"Set one up at https://{os.environ.get('APP_DOMAIN', 'app.wordplayleague.com')}/dashboard "
+            "— create a league, then send its code phrase here to link it.",
+            thread_ts=event.get("thread_ts")
+        )
+        return {"status": "no_league_for_channel", "replied": True}
 
     league_id, league_name, league_slug, bot_token, is_division_mode = league_row
     league_name = league_name or f"League {league_id}"

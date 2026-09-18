@@ -2367,6 +2367,37 @@ def _handle_slash_stats(league_id, league_name, bot_token, channel_id):
     return "\n".join(lines)
 
 
+def _ensure_slack_team_installs(cursor):
+    """Create the per-workspace install table if absent. Idempotent."""
+    cursor.execute("""
+        CREATE TABLE IF NOT EXISTS slack_team_installs (
+            team_id TEXT PRIMARY KEY,
+            team_name TEXT,
+            bot_token TEXT NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    """)
+
+
+def _record_slack_team_install(cursor, team_id, team_name, bot_token):
+    """
+    Remember the bot token for a workspace, independent of any league.
+
+    Without this the token only survives if it is attached to a league, so the
+    bot has no way to talk to a workspace where nobody has set a league up yet
+    — it just stays silent, which is the behaviour Slack flagged.
+    """
+    _ensure_slack_team_installs(cursor)
+    cursor.execute("""
+        INSERT INTO slack_team_installs (team_id, team_name, bot_token, updated_at)
+        VALUES (%s, %s, %s, CURRENT_TIMESTAMP)
+        ON CONFLICT (team_id) DO UPDATE SET
+            team_name = EXCLUDED.team_name,
+            bot_token = EXCLUDED.bot_token,
+            updated_at = EXCLUDED.updated_at
+    """, (team_id, team_name, bot_token))
+
+
 def _ensure_slack_pending_installs(cursor):
     """Create the parked-install table if it isn't there yet. Idempotent."""
     cursor.execute("""
@@ -2489,7 +2520,11 @@ def slack_oauth_callback():
         try:
             conn = get_db_connection()
             cursor = conn.cursor()
-            
+
+            # Always remember the workspace token, league or not, so the bot can
+            # still answer in a workspace that has not set a league up yet.
+            _record_slack_team_install(cursor, team_id, team_name, bot_token)
+
             if league_id:
                 # Fresh install: league_id was passed in state
                 cursor.execute("""

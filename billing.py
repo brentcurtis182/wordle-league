@@ -93,16 +93,65 @@ def is_league_id_grandfathered(league_id, conn=None):
                 pass
 
 
+def is_owner_billing_exempt(league_id, conn=None):
+    """
+    True when the league's owner is a permanently billing-exempt account.
+
+    `users.billing_exempt` marks an account whose leagues are always free, however
+    many they create and whenever they create them. That is deliberately separate
+    from `role = 'admin'`: making someone an admin should not quietly hand them
+    free leagues.
+
+    Returns False if the column does not exist yet, so the code is safe to deploy
+    before the migration runs.
+    """
+    from auth import get_db_connection
+
+    own_conn = conn is None
+    if own_conn:
+        conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT COALESCE(BOOL_OR(u.billing_exempt), FALSE)
+                FROM user_leagues ul
+                JOIN users u ON u.id = ul.user_id
+                WHERE ul.league_id = %s AND ul.role = 'owner'
+            """, (league_id,))
+            row = cursor.fetchone()
+        finally:
+            cursor.close()
+        return bool(row and row[0])
+    except Exception as e:
+        # Missing column, or no owner row — either way, don't grant a free pass.
+        logging.debug(f"is_owner_billing_exempt({league_id}): {e}")
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        return False
+    finally:
+        if own_conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
 def league_requires_payment(league, payment_required_flag):
     """
     Determine if a league needs a subscription to activate.
-    Returns False if: legacy, grandfathered, or payment_required flag is off.
+    Returns False if: legacy, grandfathered, owner is billing-exempt, or the
+    payment_required flag is off.
     """
     if not payment_required_flag:
         return False
     if is_legacy_league(league['id']):
         return False
     if is_league_grandfathered(league):
+        return False
+    if is_owner_billing_exempt(league['id']):
         return False
     return True
 
@@ -594,6 +643,9 @@ def check_ai_messaging_enabled(league_id, payment_required=False):
         return True
 
     if payment_required and is_league_id_grandfathered(league_id):
+        return True
+
+    if payment_required and is_owner_billing_exempt(league_id):
         return True
 
     conn = get_db_connection()

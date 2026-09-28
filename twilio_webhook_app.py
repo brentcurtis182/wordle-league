@@ -617,10 +617,8 @@ def is_ai_message_enabled(league_id, message_type):
     paid_ai_types = {'perfect_score', 'failure_roast', 'monday_recap', 'daily_loser'}
     if message_type in paid_ai_types:
         try:
-            from billing import check_ai_messaging_enabled
-            from auth import get_all_config
-            config = get_all_config()
-            payment_required = config.get('payment_required', False)
+            from billing import check_ai_messaging_enabled, payment_required_for_league
+            payment_required = payment_required_for_league(league_id)
             if not check_ai_messaging_enabled(league_id, payment_required=payment_required):
                 return False
         except Exception as e:
@@ -1958,6 +1956,37 @@ def slack_events():
     return jsonify({"status": "ignored"})
 
 
+SLASH_HELP_TEXT = (
+    "*📖 WordPlay League Commands*\n"
+    "`/wordplay score` — Current weekly scoreboard\n"
+    "`/wordplay standings` — Season win totals\n"
+    "`/wordplay streak` — Current play & win streaks\n"
+    "`/wordplay stats` — Fun league stats\n"
+    "`/wordplay help` — Show this message"
+)
+
+
+def _post_slash_reply(response_url, parts):
+    """
+    Send the text answer back to a slash command.
+
+    A channel can host more than one league, so `parts` is one chunk per league.
+    They go out as a single message rather than several, because Slack caps how
+    many times a response_url can be used and separate posts arrive out of order.
+    """
+    parts = [p for p in parts if p]
+    if not parts:
+        return
+    try:
+        import requests as req
+        req.post(response_url, json={
+            "response_type": "in_channel",
+            "text": "\n\n".join(parts),
+        }, timeout=10)
+    except Exception as e:
+        logging.error(f"Slash reply post failed: {e}")
+
+
 @app.route('/slack/commands', methods=['POST'])
 def slack_commands():
     """Handle /wordplay slash commands from Slack"""
@@ -1978,128 +2007,122 @@ def slack_commands():
     subcommand = request.form.get('text', '').strip().lower()
     response_url = request.form.get('response_url', '')
     user_name = request.form.get('user_name', 'someone')
+    user_id = request.form.get('user_id', '')
 
     logging.info(f"Slack slash command: /wordplay {subcommand} from {user_name} in channel {channel_id} (team {team_id})")
 
-    # Look up the league by slack_channel_id
+    # help is identical for every league, so answer it before any lookup —
+    # otherwise an unlinked channel gets "no league" instead of the command list.
+    if subcommand == 'help':
+        return jsonify({"response_type": "ephemeral", "text": SLASH_HELP_TEXT}), 200
+
+    # A channel can host several leagues; answer for the ones this user plays in.
     try:
+        from slack_integration import resolve_leagues_for_channel
         conn = get_db_connection()
-        cursor = conn.cursor()
-        cursor.execute("""
-            SELECT l.id, l.display_name, l.slug, l.slack_bot_token, l.division_mode
-            FROM leagues l
-            WHERE l.slack_channel_id = %s AND l.channel_type = 'slack'
-            LIMIT 1
-        """, (channel_id,))
-        league_row = cursor.fetchone()
-        cursor.close()
-        conn.close()
+        try:
+            league_rows = resolve_leagues_for_channel(conn, channel_id, user_id)
+        finally:
+            conn.close()
     except Exception as e:
         logging.error(f"Slash command DB error: {e}")
         return jsonify({"response_type": "ephemeral", "text": "⚠️ Something went wrong. Please try again."}), 200
 
-    if not league_row:
+    if not league_rows:
         return jsonify({
             "response_type": "ephemeral",
             "text": "⚠️ No WordPlay League is linked to this channel. Ask your league admin to set one up!"
         }), 200
 
-    league_id = league_row[0]
-    league_name = league_row[1] or f"League {league_id}"
-    league_slug = league_row[2] or f"league{league_id}"
-    bot_token = league_row[3]
-    is_division_mode = league_row[4] or False
-
+    # Same workspace, so any league's token works for replying.
+    bot_token = next((r[3] for r in league_rows if r[3]), None)
     if not bot_token:
         return jsonify({
             "response_type": "ephemeral",
             "text": "⚠️ Slack bot token not found for this league. Please reinstall the app."
         }), 200
 
+    def _leagues():
+        """Normalised (id, name, slug, token, division_mode) for each league."""
+        for row in league_rows:
+            yield (
+                row[0],
+                row[1] or f"League {row[0]}",
+                row[2] or f"league{row[0]}",
+                row[3] or bot_token,
+                row[4] or False,
+            )
+
+    league_names = ", ".join(name for _, name, _, _, _ in _leagues())
+
     # Route subcommands
     if subcommand in ('score', 'scoreboard', 'leaderboard', ''):
         # Acknowledge immediately (ephemeral) — image generation takes time
         # Process in background thread and post image to channel
         def _send_scoreboard():
-            try:
-                _handle_slash_score(league_id, league_name, league_slug, bot_token, channel_id, is_division_mode)
-            except Exception as e:
-                logging.error(f"Slash /wordplay score error: {e}")
-                import traceback
-                logging.error(traceback.format_exc())
+            for league_id, league_name, league_slug, token, is_division_mode in _leagues():
                 try:
-                    import requests as req
-                    req.post(response_url, json={
-                        "response_type": "ephemeral",
-                        "text": "⚠️ Failed to generate scoreboard. Please try again."
-                    }, timeout=5)
-                except:
-                    pass
+                    _handle_slash_score(league_id, league_name, league_slug, token, channel_id, is_division_mode)
+                except Exception as e:
+                    logging.error(f"Slash /wordplay score error (league {league_id}): {e}")
+                    import traceback
+                    logging.error(traceback.format_exc())
+                    try:
+                        import requests as req
+                        req.post(response_url, json={
+                            "response_type": "ephemeral",
+                            "text": f"⚠️ Failed to generate the scoreboard for *{league_name}*. Please try again."
+                        }, timeout=5)
+                    except:
+                        pass
 
         threading.Thread(target=_send_scoreboard, daemon=True).start()
         return jsonify({
             "response_type": "ephemeral",
-            "text": f"📊 Generating scoreboard for *{league_name}*..."
+            "text": f"📊 Generating scoreboard for *{league_names}*..."
         }), 200
 
     elif subcommand in ('standings', 'season', 'wins'):
         # Text-only — respond directly via response_url (single message)
         def _send_standings():
-            try:
-                text = _handle_slash_standings(league_id, league_name, league_slug, bot_token, channel_id, is_division_mode)
-                import requests as req
-                req.post(response_url, json={
-                    "response_type": "in_channel",
-                    "text": text
-                }, timeout=10)
-            except Exception as e:
-                logging.error(f"Slash /wordplay standings error: {e}")
-                import traceback
-                logging.error(traceback.format_exc())
+            parts = []
+            for league_id, league_name, league_slug, token, is_division_mode in _leagues():
+                try:
+                    parts.append(_handle_slash_standings(league_id, league_name, league_slug, token, channel_id, is_division_mode))
+                except Exception as e:
+                    logging.error(f"Slash /wordplay standings error (league {league_id}): {e}")
+                    import traceback
+                    logging.error(traceback.format_exc())
+            _post_slash_reply(response_url, parts)
 
         threading.Thread(target=_send_standings, daemon=True).start()
         return '', 200
 
     elif subcommand in ('streak', 'streaks'):
         def _send_streaks():
-            try:
-                text = _handle_slash_streaks(league_id, league_name, bot_token, channel_id)
-                import requests as req
-                req.post(response_url, json={
-                    "response_type": "in_channel",
-                    "text": text
-                }, timeout=10)
-            except Exception as e:
-                logging.error(f"Slash /wordplay streak error: {e}")
+            parts = []
+            for league_id, league_name, _slug, token, _div in _leagues():
+                try:
+                    parts.append(_handle_slash_streaks(league_id, league_name, token, channel_id))
+                except Exception as e:
+                    logging.error(f"Slash /wordplay streak error (league {league_id}): {e}")
+            _post_slash_reply(response_url, parts)
 
         threading.Thread(target=_send_streaks, daemon=True).start()
         return '', 200
 
     elif subcommand in ('stats',):
         def _send_stats():
-            try:
-                text = _handle_slash_stats(league_id, league_name, bot_token, channel_id)
-                import requests as req
-                req.post(response_url, json={
-                    "response_type": "in_channel",
-                    "text": text
-                }, timeout=10)
-            except Exception as e:
-                logging.error(f"Slash /wordplay stats error: {e}")
+            parts = []
+            for league_id, league_name, _slug, token, _div in _leagues():
+                try:
+                    parts.append(_handle_slash_stats(league_id, league_name, token, channel_id))
+                except Exception as e:
+                    logging.error(f"Slash /wordplay stats error (league {league_id}): {e}")
+            _post_slash_reply(response_url, parts)
 
         threading.Thread(target=_send_stats, daemon=True).start()
         return '', 200
-
-    elif subcommand == 'help':
-        help_text = (
-            "*📖 WordPlay League Commands*\n"
-            "`/wordplay score` — Current weekly scoreboard\n"
-            "`/wordplay standings` — Season win totals\n"
-            "`/wordplay streak` — Current play & win streaks\n"
-            "`/wordplay stats` — Fun league stats\n"
-            "`/wordplay help` — Show this message"
-        )
-        return jsonify({"response_type": "ephemeral", "text": help_text}), 200
 
     else:
         return jsonify({

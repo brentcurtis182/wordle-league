@@ -425,6 +425,49 @@ def _lookup_team_bot_token(db_connection, team_id):
         cursor.close()
 
 
+def resolve_leagues_for_channel(db_connection, channel_id, slack_user_id=None):
+    """
+    Work out which league(s) a channel command should answer for.
+
+    A channel can legitimately host more than one league — handle_slack_score
+    fans a score out to every league the poster belongs to, and real workspaces
+    rely on it. The read paths used to take LIMIT 1 with no ORDER BY, so they
+    answered for an arbitrary league and the row Postgres returned could change
+    after any update to either, with nothing deployed.
+
+    Prefer the leagues the asker actually plays in. Fall back to every league on
+    the channel so a non-player still gets an answer — and so does someone who
+    has been added but hasn't posted a score yet, since slack_user_id is only
+    recorded on their first post.
+
+    Returns a list of (id, display_name, slug, slack_bot_token, division_mode).
+    """
+    cursor = db_connection.cursor()
+    try:
+        cursor.execute("""
+            SELECT id, display_name, slug, slack_bot_token, division_mode
+            FROM leagues
+            WHERE channel_type = 'slack' AND slack_channel_id = %s
+            ORDER BY id
+        """, (channel_id,))
+        rows = cursor.fetchall()
+
+        if not rows or not slack_user_id or len(rows) == 1:
+            return rows
+
+        cursor.execute("""
+            SELECT DISTINCT league_id FROM players
+            WHERE league_id = ANY(%s) AND slack_user_id = %s AND active = TRUE
+        """, ([r[0] for r in rows], slack_user_id))
+        mine = {r[0] for r in cursor.fetchall()}
+
+        if mine:
+            return [r for r in rows if r[0] in mine]
+        return rows
+    finally:
+        cursor.close()
+
+
 def handle_slack_mention(event: dict, team_id: str, db_connection, bot_user_id: str = None) -> dict:
     """
     Answer an @mention of the bot, reusing the handlers that back /wordplay.
@@ -445,17 +488,9 @@ def handle_slack_mention(event: dict, team_id: str, db_connection, bot_user_id: 
     subcommand = _parse_mention_subcommand(text)
     logging.info(f"Slack mention: team={team_id}, channel={channel_id}, text='{text[:60]}' -> {subcommand}")
 
-    cursor = db_connection.cursor()
-    cursor.execute("""
-        SELECT id, display_name, slug, slack_bot_token, division_mode
-        FROM leagues
-        WHERE channel_type = 'slack' AND slack_channel_id = %s
-        LIMIT 1
-    """, (channel_id,))
-    league_row = cursor.fetchone()
-    cursor.close()
+    league_rows = resolve_leagues_for_channel(db_connection, channel_id, event.get("user"))
 
-    if not league_row:
+    if not league_rows:
         # Nobody has linked a league to this channel. Say so instead of going
         # silent — silence here looks identical to the bot being broken. The
         # slash command already answers this case via response_url; a mention
@@ -474,60 +509,75 @@ def handle_slack_mention(event: dict, team_id: str, db_connection, bot_user_id: 
         )
         return {"status": "no_league_for_channel", "replied": True}
 
-    league_id, league_name, league_slug, bot_token, is_division_mode = league_row
-    league_name = league_name or f"League {league_id}"
-    league_slug = league_slug or f"league{league_id}"
-    is_division_mode = is_division_mode or False
-
+    # Every league on a channel belongs to the same workspace, so any of their
+    # tokens works for replying. Take the first that has one.
+    bot_token = next((r[3] for r in league_rows if r[3]), None)
     if not bot_token:
-        logging.error(f"Slack mention: league {league_id} has no bot token")
+        logging.error(f"Slack mention: no bot token on any league in channel {channel_id}")
         return {"status": "error", "reason": "no_bot_token"}
 
     # Reply inside the thread when we're mentioned in one, otherwise in channel.
     thread_ts = event.get("thread_ts")
 
     def _respond():
-        try:
-            if subcommand == "help":
-                send_slack_message(bot_token, channel_id, MENTION_HELP_TEXT, thread_ts=thread_ts)
-                return
-
-            # Imported lazily: twilio_webhook_app imports this module, so a
-            # top-level import here would be circular.
-            from twilio_webhook_app import (
-                _handle_slash_score, _handle_slash_standings,
-                _handle_slash_streaks, _handle_slash_stats,
-            )
-
-            if subcommand == "score":
-                # Posts the scoreboard image to the channel itself.
-                _handle_slash_score(league_id, league_name, league_slug,
-                                    bot_token, channel_id, is_division_mode)
-            elif subcommand == "standings":
-                reply = _handle_slash_standings(league_id, league_name, league_slug,
-                                                bot_token, channel_id, is_division_mode)
-                send_slack_message(bot_token, channel_id, reply, thread_ts=thread_ts)
-            elif subcommand == "streaks":
-                reply = _handle_slash_streaks(league_id, league_name, bot_token, channel_id)
-                send_slack_message(bot_token, channel_id, reply, thread_ts=thread_ts)
-            elif subcommand == "stats":
-                reply = _handle_slash_stats(league_id, league_name, bot_token, channel_id)
-                send_slack_message(bot_token, channel_id, reply, thread_ts=thread_ts)
-        except Exception as e:
-            logging.error(f"Slack mention handler error ({subcommand}) for league {league_id}: {e}")
-            import traceback
-            logging.error(traceback.format_exc())
+        # help is the same text regardless of league — and it's the probe people
+        # reach for first, so it must not depend on resolving one.
+        if subcommand == "help":
             try:
-                send_slack_message(
-                    bot_token, channel_id,
-                    "⚠️ Something went wrong with that one. Try `/wordplay help` for the full list.",
-                    thread_ts=thread_ts
-                )
-            except Exception:
-                pass
+                send_slack_message(bot_token, channel_id, MENTION_HELP_TEXT, thread_ts=thread_ts)
+            except Exception as e:
+                logging.error(f"Slack mention help failed: {e}")
+            return
+
+        # Imported lazily: twilio_webhook_app imports this module, so a
+        # top-level import here would be circular.
+        from twilio_webhook_app import (
+            _handle_slash_score, _handle_slash_standings,
+            _handle_slash_streaks, _handle_slash_stats,
+        )
+
+        for row in league_rows:
+            league_id, league_name, league_slug, league_token, is_division_mode = row
+            league_name = league_name or f"League {league_id}"
+            league_slug = league_slug or f"league{league_id}"
+            is_division_mode = is_division_mode or False
+            token = league_token or bot_token
+
+            try:
+                if subcommand == "score":
+                    # Posts the scoreboard image to the channel itself.
+                    _handle_slash_score(league_id, league_name, league_slug,
+                                        token, channel_id, is_division_mode)
+                elif subcommand == "standings":
+                    reply = _handle_slash_standings(league_id, league_name, league_slug,
+                                                    token, channel_id, is_division_mode)
+                    send_slack_message(token, channel_id, reply, thread_ts=thread_ts)
+                elif subcommand == "streaks":
+                    reply = _handle_slash_streaks(league_id, league_name, token, channel_id)
+                    send_slack_message(token, channel_id, reply, thread_ts=thread_ts)
+                elif subcommand == "stats":
+                    reply = _handle_slash_stats(league_id, league_name, token, channel_id)
+                    send_slack_message(token, channel_id, reply, thread_ts=thread_ts)
+            except Exception as e:
+                # One bad league shouldn't silence the others.
+                logging.error(f"Slack mention handler error ({subcommand}) for league {league_id}: {e}")
+                import traceback
+                logging.error(traceback.format_exc())
+                try:
+                    send_slack_message(
+                        token, channel_id,
+                        "⚠️ Something went wrong with that one. Try `/wordplay help` for the full list.",
+                        thread_ts=thread_ts
+                    )
+                except Exception:
+                    pass
 
     threading.Thread(target=_respond, daemon=True).start()
-    return {"status": "mention_handled", "subcommand": subcommand, "league_id": league_id}
+    return {
+        "status": "mention_handled",
+        "subcommand": subcommand,
+        "league_ids": [r[0] for r in league_rows],
+    }
 
 
 def handle_slack_event(event_data: dict, db_connection) -> dict:

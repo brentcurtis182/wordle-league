@@ -502,6 +502,46 @@ def assign_league_to_slot(user_id, league_id, plan_type):
         conn.close()
 
 
+def payment_required_for_league(league_id, conn=None):
+    """
+    Resolve the payment_required flag that actually applies to a league.
+
+    The bare `payment_required` key predates the per-channel toggles and nothing
+    writes it any more, so reading it is wrong twice over: it targets a key the
+    admin UI no longer sets, and because get_all_config() returns raw strings it
+    hands back the string 'false', which is truthy. Callers want a real bool for
+    the league's own channel.
+    """
+    from auth import get_db_connection, get_config
+
+    own_conn = conn is None
+    if own_conn:
+        conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT channel_type FROM leagues WHERE id = %s", (league_id,))
+            row = cursor.fetchone()
+        finally:
+            cursor.close()
+
+        channel_type = (row[0] if row else None) or 'slack'
+        key = {
+            'sms': 'payment_required_sms',
+            'discord': 'payment_required_discord',
+        }.get(channel_type, 'payment_required_slack')
+        return get_config(key, 'false', conn=conn) == 'true'
+    except Exception as e:
+        logging.error(f"payment_required_for_league({league_id}) failed: {e}")
+        return False
+    finally:
+        if own_conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
 def check_ai_messaging_enabled(league_id, payment_required=False):
     """
     Check if AI messaging (the 3 optional messages) is enabled for a league.

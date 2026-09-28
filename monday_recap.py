@@ -46,10 +46,8 @@ def _ordinal(n):
 def is_monday_recap_enabled(league_id):
     """Check if Monday recap is enabled for a league (requires AI billing eligibility)"""
     try:
-        from billing import check_ai_messaging_enabled
-        from auth import get_all_config
-        config = get_all_config()
-        payment_required = config.get('payment_required', False)
+        from billing import check_ai_messaging_enabled, payment_required_for_league
+        payment_required = payment_required_for_league(league_id)
         if not check_ai_messaging_enabled(league_id, payment_required=payment_required):
             return False
     except Exception as e:

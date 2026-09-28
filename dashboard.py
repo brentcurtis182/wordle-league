@@ -1682,15 +1682,28 @@ def render_dashboard(user, leagues, shared_leagues=None, message=None, error=Non
         else:
             status_text = '⚠ Inactive' if channel_type == 'sms' else '⚠ Setup Required'
         
-        # Build subtitle based on channel type
-        if channel_type == 'slack' and league.get('channel_name'):
-            meta_text = f"Channel: #{league['channel_name']}"
-        elif channel_type == 'discord' and league.get('channel_name'):
-            meta_text = f"Channel: #{league['channel_name']}"
-        else:
-            meta_text = ""
-        
-        meta_html = f'<div class="meta">{meta_text}</div>' if meta_text else ''
+        # Build subtitle based on channel type. Where a league lives is two
+        # facts, not one: the workspace or server, then the channel inside it.
+        # A channel name on its own is ambiguous for anyone in more than one
+        # workspace, which is most people with a work Slack and a personal one.
+        meta_lines = []
+        if channel_type in ('slack', 'discord'):
+            place_label = 'Workspace' if channel_type == 'slack' else 'Server'
+            place_name = league.get('workspace_name')
+            if place_name:
+                meta_lines.append(f"{place_label}: {html_escape(str(place_name))}")
+
+            channel_name = league.get('channel_name')
+            if channel_name:
+                meta_lines.append(f"Channel: #{html_escape(str(channel_name))}")
+            elif place_name:
+                # Connected to the workspace but no channel linked yet — say so,
+                # rather than leaving a half-finished setup looking complete.
+                meta_lines.append("Channel: not linked yet")
+
+        meta_html = ''.join(
+            f'<div class="meta">{line}</div>' for line in meta_lines
+        )
         
         return f"""
         <div class="league-card">
@@ -2645,6 +2658,40 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
             f'</div>'
         )
 
+    # Where the league lives: the workspace or server first, then the channel
+    # inside it. Built here rather than inline because the header is already a
+    # dense nest of conditionals.
+    _place_html = ''
+    _channel_html = ''
+    if channel_type in ('slack', 'discord'):
+        _place_label = 'Workspace' if channel_type == 'slack' else 'Server'
+        _place_name = league.get('workspace_name')
+        if _place_name:
+            _place_html = (
+                f'<span style="color: {COLORS["text_muted"]};">'
+                f'{_place_label}: {html_escape(str(_place_name))}</span>'
+            )
+
+    if league.get('channel_name') and channel_type in ('slack', 'discord'):
+        _channel_html = (
+            f'<span onclick="handleActivateClick()" title="Change or reconnect this channel" '
+            f'style="color: {COLORS["text_muted"]}; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px;" '
+            f'onmouseover="this.style.color=\'{COLORS["accent"]}\'" '
+            f'onmouseout="this.style.color=\'{COLORS["text_muted"]}\'">'
+            f'Channel: #{html_escape(str(league["channel_name"]))} ✎</span>'
+        )
+    elif league.get('channel_name'):
+        _channel_html = (
+            f'<span style="color: {COLORS["text_muted"]};">'
+            f'Channel: #{html_escape(str(league["channel_name"]))}</span>'
+        )
+    elif channel_type in ('slack', 'discord') and league.get('workspace_name'):
+        _channel_html = (
+            f'<span onclick="handleActivateClick()" title="Link a channel" '
+            f'style="color: {COLORS["accent_orange"]}; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px;">'
+            f'Channel: not linked yet ✎</span>'
+        )
+
     return f"""
     <!DOCTYPE html>
     <html>
@@ -2884,7 +2931,8 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                 {f'<a href="/dashboard/membership" id="linkStatusBadge" title="View subscription" style="position: absolute; top: 16px; right: 16px; background: #2ECC71; color: #000; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600; text-decoration: none; cursor: pointer;" onmouseover="this.style.opacity=\'0.85\'" onmouseout="this.style.opacity=\'1\'">🔗 Linked</a>' if payment_required and linked_subscription else f'<span id="linkStatusBadge" onclick="showInfoModal(\'unlinked\')" title="What is this?" style="position: absolute; top: 16px; right: 16px; background: {COLORS["accent_orange"]}; color: #000; padding: 4px 10px; border-radius: 12px; font-size: 0.8em; font-weight: 600; cursor: pointer;">⚠ Unlinked <span style="display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(0,0,0,0.22);color:#000;font-size:0.75em;font-weight:700;margin-left:2px;">?</span></span>' if payment_required and requires_payment else ''}
                 <h2>⚙️ {league['display_name']}</h2>
                 <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
-                    {f'<span onclick="handleActivateClick()" title="Change or reconnect this channel" style="color: {COLORS["text_muted"]}; cursor: pointer; text-decoration: underline dotted; text-underline-offset: 3px;" onmouseover="this.style.color=\'{COLORS["accent"]}\'" onmouseout="this.style.color=\'{COLORS["text_muted"]}\'">Channel: #{league["channel_name"]} ✎</span>' if league.get('channel_name') and channel_type in ('slack', 'discord') else (f'<span style="color: {COLORS["text_muted"]};">Channel: #{league["channel_name"]}</span>' if league.get('channel_name') else '')}
+                    {_place_html}
+                    {_channel_html}
                     <span style="background: {COLORS['bg_dark']}; color: {COLORS['text']}; padding: 4px 10px; border-radius: 12px; font-size: 0.8em;">
                         {'📱 SMS' if channel_type == 'sms' else '💬 Slack' if channel_type == 'slack' else '🎮 Discord'}
                     </span>
@@ -5417,7 +5465,8 @@ def get_league_info(league_id, conn=None):
                    header_emoji,
                    COALESCE(public_listed, TRUE),
                    max_players,
-                   season_wins
+                   season_wins,
+                   discord_guild_id
             FROM leagues
             WHERE id = %s
         """, (league_id,))
@@ -5456,18 +5505,37 @@ def get_league_info(league_id, conn=None):
                 'public_listed': row[28] if row[28] is not None else True,
                 'max_players': row[29],
                 'season_wins': int(row[30]) if row[30] is not None else None,
-                'channel_name': None
+                'discord_guild_id': row[31],
+                'channel_name': None,
+                'workspace_name': None,
             }
-            
-            # Look up Slack channel name if applicable
-            if league_data['channel_type'] == 'slack' and league_data['slack_channel_id'] and league_data['slack_bot_token']:
+
+            # Which workspace or server a league lives in matters as much as the
+            # channel — someone in several Slack workspaces cannot tell from the
+            # channel name alone whether a league landed in the right place.
+            if league_data['channel_type'] == 'slack':
+                if league_data['slack_channel_id'] and league_data['slack_bot_token']:
+                    try:
+                        from slack_integration import get_slack_channel_info
+                        channel_info = get_slack_channel_info(league_data['slack_bot_token'], league_data['slack_channel_id'])
+                        league_data['channel_name'] = channel_info.get('name')
+                    except Exception as e:
+                        logging.error(f"Error fetching Slack channel name for league {league_id}: {e}")
                 try:
-                    from slack_integration import get_slack_channel_info
-                    channel_info = get_slack_channel_info(league_data['slack_bot_token'], league_data['slack_channel_id'])
-                    league_data['channel_name'] = channel_info.get('name')
+                    from slack_integration import get_slack_workspace_name
+                    league_data['workspace_name'] = get_slack_workspace_name(
+                        league_data['slack_bot_token'], league_data['slack_team_id'], conn)
                 except Exception as e:
-                    logging.error(f"Error fetching Slack channel name for league {league_id}: {e}")
-            
+                    logging.error(f"Error fetching Slack workspace name for league {league_id}: {e}")
+
+            elif league_data['channel_type'] == 'discord':
+                try:
+                    from discord_integration import get_discord_server_name, get_discord_channel_name
+                    league_data['workspace_name'] = get_discord_server_name(league_data['discord_guild_id'])
+                    league_data['channel_name'] = get_discord_channel_name(league_data['discord_channel_id'])
+                except Exception as e:
+                    logging.error(f"Error fetching Discord names for league {league_id}: {e}")
+
             return league_data
         return None
     finally:

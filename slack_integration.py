@@ -316,6 +316,76 @@ def get_slack_user_info(bot_token: str, user_id: str) -> dict:
 _slack_channel_cache = {}  # {channel_id: (timestamp, data)}
 _SLACK_CHANNEL_CACHE_TTL = 600  # 10 minutes
 
+_slack_team_cache = {}  # {team_id or token tail: (timestamp, name)}
+
+
+def get_slack_workspace_name(bot_token: str, team_id: str = None, db_connection=None) -> str:
+    """
+    Name of the workspace a league lives in, for display.
+
+    Prefer the name recorded at install time — most workspaces predate that
+    column, so fall back to auth.test, which returns the team name and needs no
+    scope at all (team.info would need `team:read`, which we don't request).
+    Anything we learn that way is written back so the next read is free.
+    """
+    import time as _time
+
+    if not bot_token and not team_id:
+        return None
+
+    cache_key = team_id or bot_token[-12:]
+    now = _time.time()
+    cached = _slack_team_cache.get(cache_key)
+    if cached and (now - cached[0]) < _SLACK_CHANNEL_CACHE_TTL:
+        return cached[1]
+
+    name = None
+    if team_id and db_connection is not None:
+        try:
+            cursor = db_connection.cursor()
+            try:
+                cursor.execute("SELECT team_name FROM slack_team_installs WHERE team_id = %s", (team_id,))
+                row = cursor.fetchone()
+                name = row[0] if row else None
+            finally:
+                cursor.close()
+        except Exception as e:
+            logging.debug(f"Slack workspace name lookup failed for {team_id}: {e}")
+
+    if not name and bot_token:
+        try:
+            response = requests.post(
+                f"{SLACK_API_BASE}/auth.test",
+                headers={"Authorization": f"Bearer {bot_token}"},
+                timeout=10,
+            )
+            result = response.json()
+            if result.get("ok"):
+                name = result.get("team")
+                found_team = result.get("team_id") or team_id
+                if name and found_team and db_connection is not None:
+                    try:
+                        cursor = db_connection.cursor()
+                        try:
+                            cursor.execute(
+                                "UPDATE slack_team_installs SET team_name = %s WHERE team_id = %s AND team_name IS DISTINCT FROM %s",
+                                (name, found_team, name),
+                            )
+                            db_connection.commit()
+                        finally:
+                            cursor.close()
+                    except Exception as e:
+                        logging.debug(f"Could not persist workspace name for {found_team}: {e}")
+            else:
+                logging.debug(f"auth.test failed: {result.get('error')}")
+        except Exception as e:
+            logging.debug(f"auth.test error: {e}")
+
+    if name:
+        _slack_team_cache[cache_key] = (now, name)
+    return name
+
+
 def get_slack_channel_info(bot_token: str, channel_id: str) -> dict:
     """
     Get channel info from Slack API (cached for 10 minutes).

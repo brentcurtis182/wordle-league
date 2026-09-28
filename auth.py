@@ -424,6 +424,44 @@ def logout_user(session_token):
         cursor.close()
         conn.close()
 
+def _annotate_channel_names(league_data, conn=None):
+    """
+    Fill in `channel_name` and `workspace_name` for display.
+
+    The workspace or server matters as much as the channel: someone who belongs
+    to several Slack workspaces cannot tell from "#general" alone whether their
+    league landed in the right one. Both lookups are cached in the integration
+    modules, and every failure is soft — a missing name just renders less, it
+    never blocks the dashboard.
+    """
+    channel_type = league_data.get('channel_type')
+
+    if channel_type == 'slack':
+        if league_data.get('slack_channel_id') and league_data.get('slack_bot_token'):
+            try:
+                from slack_integration import get_slack_channel_info
+                info = get_slack_channel_info(league_data['slack_bot_token'], league_data['slack_channel_id'])
+                league_data['channel_name'] = info.get('name')
+            except Exception as e:
+                logging.error(f"Error fetching Slack channel name: {e}")
+        try:
+            from slack_integration import get_slack_workspace_name
+            league_data['workspace_name'] = get_slack_workspace_name(
+                league_data.get('slack_bot_token'), league_data.get('slack_team_id'), conn)
+        except Exception as e:
+            logging.error(f"Error fetching Slack workspace name: {e}")
+
+    elif channel_type == 'discord':
+        try:
+            from discord_integration import get_discord_server_name, get_discord_channel_name
+            league_data['workspace_name'] = get_discord_server_name(league_data.get('discord_guild_id'))
+            league_data['channel_name'] = get_discord_channel_name(league_data.get('discord_channel_id'))
+        except Exception as e:
+            logging.error(f"Error fetching Discord names: {e}")
+
+    return league_data
+
+
 def get_user_leagues(user_id, conn=None):
     """Get all leagues a user manages"""
     own_conn = conn is None
@@ -435,13 +473,13 @@ def get_user_leagues(user_id, conn=None):
         cursor.execute("""
             SELECT l.id, l.name, l.display_name, ul.role, l.twilio_conversation_sid, l.slug,
                    l.channel_type, l.slack_channel_id, l.discord_channel_id,
-                   l.slack_bot_token
+                   l.slack_bot_token, l.slack_team_id, l.discord_guild_id
             FROM user_leagues ul
             JOIN leagues l ON ul.league_id = l.id
             WHERE ul.user_id = %s
             ORDER BY l.name
         """, (user_id,))
-        
+
         leagues = []
         for row in cursor.fetchall():
             league_data = {
@@ -455,18 +493,13 @@ def get_user_leagues(user_id, conn=None):
                 'slack_channel_id': row[7],
                 'discord_channel_id': row[8],
                 'slack_bot_token': row[9],
-                'channel_name': None
+                'slack_team_id': row[10],
+                'discord_guild_id': row[11],
+                'channel_name': None,
+                'workspace_name': None,
             }
-            
-            # Look up Slack channel name if applicable
-            if league_data['channel_type'] == 'slack' and league_data['slack_channel_id'] and league_data['slack_bot_token']:
-                try:
-                    from slack_integration import get_slack_channel_info
-                    channel_info = get_slack_channel_info(league_data['slack_bot_token'], league_data['slack_channel_id'])
-                    league_data['channel_name'] = channel_info.get('name')
-                except Exception as e:
-                    logging.error(f"Error fetching Slack channel name: {e}")
-            
+
+            _annotate_channel_names(league_data, conn)
             leagues.append(league_data)
         return leagues
         

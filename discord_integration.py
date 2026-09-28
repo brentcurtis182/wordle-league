@@ -226,6 +226,60 @@ def get_discord_user_info(user_id: str) -> dict:
         return {}
 
 
+_discord_name_cache = {}  # {('guild'|'channel', id): (timestamp, name)}
+_DISCORD_NAME_CACHE_TTL = 600  # 10 minutes
+
+
+def _discord_name(kind: str, object_id: str) -> str:
+    """
+    Look up a Discord server or channel name for display, cached.
+
+    Both need the bot to already be in the server, which it is for any league
+    that has been linked — the ids only get stored once the bot is there.
+    """
+    import time as _time
+
+    if not object_id:
+        return None
+
+    key = (kind, object_id)
+    now = _time.time()
+    cached = _discord_name_cache.get(key)
+    if cached and (now - cached[0]) < _DISCORD_NAME_CACHE_TTL:
+        return cached[1]
+
+    bot_token = os.environ.get('DISCORD_BOT_TOKEN')
+    if not bot_token:
+        return None
+
+    path = 'guilds' if kind == 'guild' else 'channels'
+    try:
+        response = requests.get(
+            f"{DISCORD_API_BASE}/{path}/{object_id}",
+            headers={"Authorization": f"Bot {bot_token}", "Content-Type": "application/json"},
+            timeout=10,
+        )
+        if response.status_code == 200:
+            name = response.json().get('name')
+            if name:
+                _discord_name_cache[key] = (now, name)
+            return name
+        logging.debug(f"Discord {kind} lookup for {object_id}: HTTP {response.status_code}")
+    except Exception as e:
+        logging.debug(f"Discord {kind} lookup error for {object_id}: {e}")
+    return None
+
+
+def get_discord_server_name(guild_id: str) -> str:
+    """Name of the Discord server (guild) a league lives in."""
+    return _discord_name('guild', guild_id)
+
+
+def get_discord_channel_name(channel_id: str) -> str:
+    """Name of a Discord channel, without the leading #."""
+    return _discord_name('channel', channel_id)
+
+
 def handle_discord_interaction(interaction_data: dict, db_connection) -> dict:
     """
     Handle a Discord interaction (slash command, message component, etc.)

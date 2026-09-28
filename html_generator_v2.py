@@ -1822,7 +1822,7 @@ def generate_full_html(league_data, league_name="League 6 Beta"):
 .wpl-cta .wpl-cta-sub{{margin:16px 0 0;font-size:12px;color:#9a9ab0;line-height:1.5;}}
 /* Scoped past `.wpl-footer p` in styles.css, which sets margin:0 and would
    otherwise kill the auto-centering and the smaller size. */
-.wpl-footer p.wpl-legal{{margin:20px auto 0;max-width:460px;font-size:11px;line-height:1.6;color:#6a6a80;text-align:center;}}
+.wpl-footer p.wpl-legal{{margin:34px auto 0;max-width:460px;font-size:10px;line-height:1.65;color:#6a6a80;text-align:center;}}
 .wpl-legal a{{color:#8a8aa0;text-decoration:underline;text-underline-offset:2px;}}
 .wpl-legal a:hover{{color:#b8b8c8;}}
 </style>

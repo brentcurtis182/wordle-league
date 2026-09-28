@@ -1374,12 +1374,12 @@ function divFlChangePage(dir) {{ divFlShowPage(divFlCurrentPage + dir); }}
 </script>
 '''
 
-            all_modals_html += f'''<div id="div-season-full-list-modal" class="season-modal-overlay" onclick="if(event.target===this){{var dvs=document.querySelectorAll('[id^=div-fl-]');for(var i=0;i<dvs.length;i++){{if(dvs[i].id!=='div-fl-list-view')dvs[i].style.display='none'}};document.getElementById('div-fl-list-view').style.display='block';divFlShowPage(1);this.style.display='none'}}" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
+            all_modals_html += f'''<div id="div-season-full-list-modal" class="season-modal-overlay" onclick="if(event.target===this){{var dvs=document.querySelectorAll('[id^=div-fl-d]');for(var i=0;i<dvs.length;i++){{if(dvs[i].id!=='div-fl-list-view')dvs[i].style.display='none'}};document.getElementById('div-fl-list-view').style.display='block';divFlShowPage(1);this.style.display='none'}}" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
   <div style="background:#1a1a1b; border:1px solid #333; border-radius:10px; padding:24px; max-width:320px; width:90%; max-height:80vh; overflow-y:auto;">
     <div id="div-fl-list-view">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
         <h3 style="color:#FFA64D; margin:0;">Season Winners</h3>
-        <span onclick="var dvs=document.querySelectorAll('[id^=div-fl-]');for(var i=0;i<dvs.length;i++){{if(dvs[i].id!=='div-fl-list-view')dvs[i].style.display='none'}};document.getElementById('div-fl-list-view').style.display='block';document.getElementById('div-season-full-list-modal').style.display='none'" style="color:#d7dadc; cursor:pointer; font-size:1.5rem; line-height:1; padding:4px 8px;">&times;</span>
+        <span onclick="var dvs=document.querySelectorAll('[id^=div-fl-d]');for(var i=0;i<dvs.length;i++){{if(dvs[i].id!=='div-fl-list-view')dvs[i].style.display='none'}};document.getElementById('div-fl-list-view').style.display='block';document.getElementById('div-season-full-list-modal').style.display='none'" style="color:#d7dadc; cursor:pointer; font-size:1.5rem; line-height:1; padding:4px 8px;">&times;</span>
       </div>
       {full_list_items}
       {div_pagination_html}

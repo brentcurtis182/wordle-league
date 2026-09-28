@@ -360,7 +360,11 @@ def generate_full_list_modal(seasons_dict, past_season_breakdowns):
     total_pages = (len(sorted_seasons) + 7) // 8
     pagination_html = ''
     if total_pages > 1:
-        pagination_html = f'''<div id="fl-pagination" style="display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:12px; padding-top:8px;">
+        # Sticky: this list lives in a modal that scrolls on its own, so a pager
+        # sitting at the end of the content is only discoverable by scrolling to
+        # the bottom of a nested scroll area. Pinned, "is there a page 2?" is
+        # answerable at a glance.
+        pagination_html = f'''<div id="fl-pagination" style="display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:12px; padding:8px 0 2px; position:sticky; bottom:0; background:#1a1a1b; border-top:1px solid #333;">
   <span id="fl-page-label" style="color:#818384; font-size:0.8em; margin-right:auto;">Page 1 of {total_pages}</span>
   <span id="fl-prev" onclick="flChangePage(-1)" style="color:#FFA64D; cursor:pointer; font-size:0.85em; padding:4px 10px; background:#2a2a2c; border-radius:6px; display:none;">&#8592; Prev</span>
   <span id="fl-next" onclick="flChangePage(1)" style="color:#FFA64D; cursor:pointer; font-size:0.85em; padding:4px 10px; background:#2a2a2c; border-radius:6px;">Next &#8594;</span>
@@ -1342,7 +1346,9 @@ def generate_division_season_stats_html(league_data):
             div_total_pages = (len(sorted_display_nums) + 7) // 8
             div_pagination_html = ''
             if div_total_pages > 1:
-                div_pagination_html = f'''<div id="div-fl-pagination" style="display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:12px; padding-top:8px;">
+                # Sticky for the same reason as the standard list above — and it
+                # bites harder here, since division rows are taller.
+                div_pagination_html = f'''<div id="div-fl-pagination" style="display:flex; justify-content:flex-end; align-items:center; gap:8px; margin-top:12px; padding:8px 0 2px; position:sticky; bottom:0; background:#1a1a1b; border-top:1px solid #333;">
   <span id="div-fl-page-label" style="color:#818384; font-size:0.8em; margin-right:auto;">Page 1 of {div_total_pages}</span>
   <span id="div-fl-prev" onclick="divFlChangePage(-1)" style="color:#FFA64D; cursor:pointer; font-size:0.85em; padding:4px 10px; background:#2a2a2c; border-radius:6px; display:none;">&#8592; Prev</span>
   <span id="div-fl-next" onclick="divFlChangePage(1)" style="color:#FFA64D; cursor:pointer; font-size:0.85em; padding:4px 10px; background:#2a2a2c; border-radius:6px;">Next &#8594;</span>

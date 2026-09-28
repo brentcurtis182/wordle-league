@@ -1820,6 +1820,9 @@ def generate_full_html(league_data, league_name="League 6 Beta"):
 .wpl-footer a.wpl-cta-btn{{display:inline-block;margin:4px 0;padding:12px 26px;border-radius:10px;background:linear-gradient(145deg,#00E8DA,#00c4b8);color:#06060e;font-weight:800;font-size:14px;line-height:1.2;text-decoration:none;}}
 .wpl-footer a.wpl-cta-btn:hover{{opacity:.88;color:#06060e;}}
 .wpl-cta .wpl-cta-sub{{margin:16px 0 0;font-size:12px;color:#9a9ab0;line-height:1.5;}}
+.wpl-legal{{margin:20px auto 0;max-width:560px;font-size:11px;line-height:1.6;color:#6a6a80;text-align:center;}}
+.wpl-legal a{{color:#8a8aa0;text-decoration:underline;text-underline-offset:2px;}}
+.wpl-legal a:hover{{color:#b8b8c8;}}
 </style>
 <footer class="wpl-footer">
 <div class="container">
@@ -1836,6 +1839,7 @@ def generate_full_html(league_data, league_name="League 6 Beta"):
 <a class="wpl-cta-btn" href="https://{os.environ.get('APP_DOMAIN', 'app.wordplayleague.com')}/auth/register">Start your own league &rarr;</a>
 <p class="wpl-cta-sub">Works in your group text, Slack or Discord. Free trial on Slack &amp; Discord.</p>
 </div>
+<p class="wpl-legal">WordPlayLeague is not affiliated with or endorsed by Slack, Discord, The New York Times, or any puzzle publisher. Wordle is a trademark of The New York Times Company.<br><a href="https://www.wordplayleague.com/terms-of-service">Terms</a> · <a href="https://www.wordplayleague.com/privacy-policy">Privacy</a> · <a href="https://www.wordplayleague.com/sms-terms">SMS Terms</a></p>
 </div>
 </footer>
 <script>

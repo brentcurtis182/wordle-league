@@ -57,6 +57,42 @@ def is_league_grandfathered(league):
     return False
 
 
+def is_league_id_grandfathered(league_id, conn=None):
+    """
+    is_league_grandfathered() for callers that only have an id.
+
+    Same rule: legacy, or already connected on any channel.
+    """
+    from auth import get_db_connection
+
+    if is_legacy_league(league_id):
+        return True
+
+    own_conn = conn is None
+    if own_conn:
+        conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        try:
+            cursor.execute("""
+                SELECT twilio_conversation_sid, slack_channel_id, discord_channel_id
+                FROM leagues WHERE id = %s
+            """, (league_id,))
+            row = cursor.fetchone()
+        finally:
+            cursor.close()
+        return bool(row and any(row))
+    except Exception as e:
+        logging.error(f"is_league_id_grandfathered({league_id}) failed: {e}")
+        return False
+    finally:
+        if own_conn:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
 def league_requires_payment(league, payment_required_flag):
     """
     Determine if a league needs a subscription to activate.
@@ -547,10 +583,17 @@ def check_ai_messaging_enabled(league_id, payment_required=False):
     Check if AI messaging (the 3 optional messages) is enabled for a league.
     Returns True if: legacy league, grandfathered, or subscription includes AI/addon.
     When payment_required is ON and league has no subscription, returns False.
+
+    Grandfathering applies here the same way it applies to activation: turning a
+    payment flag on must not take something away from a league that was already
+    running. Only new activations pay.
     """
     from auth import get_db_connection
 
     if is_legacy_league(league_id):
+        return True
+
+    if payment_required and is_league_id_grandfathered(league_id):
         return True
 
     conn = get_db_connection()

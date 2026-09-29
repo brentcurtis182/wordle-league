@@ -763,7 +763,12 @@ def get_league_billing_context(league_id, league, channel_type, payment_required
 
         linked_sub = None
         status = None
-        ai_enabled = not payment_required  # default when no subscription
+        # Default when no subscription. Must use requires_payment, not the raw
+        # payment_required flag: requires_payment already accounts for legacy
+        # leagues, grandfathered ones and billing-exempt owners, which is what
+        # check_ai_messaging_enabled gates on. Reading the raw flag greys the AI
+        # toggles out in the UI for leagues the backend would happily allow.
+        ai_enabled = not requires_payment
         max_players_override = row[5] if row else None
 
         if row and row[0] is not None:

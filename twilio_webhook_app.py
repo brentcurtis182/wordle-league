@@ -2140,8 +2140,11 @@ _SCOREBOARD_PNG_TTL = 120    # seconds
 # came out roughly twice the size it used to. Blocks accept no width or height,
 # so the only lever is the canvas: padding it horizontally means the column
 # width is shared with empty margin and the content itself renders smaller.
-# 1.0 disables padding entirely; raise it to shrink the board further.
-_SCOREBOARD_PAD_RATIO = 1.6
+# 1.0 disables padding entirely; raise it to shrink the board further. At 2.3 the
+# content lands near 255px in a ~590px desktop column. Note this scales on every
+# client — a narrower mobile column shrinks the content by the same proportion,
+# so pushing this much higher starts to hurt readability on phones.
+_SCOREBOARD_PAD_RATIO = 2.3
 
 
 def _pad_scoreboard(png_bytes):

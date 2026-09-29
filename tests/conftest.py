@@ -39,6 +39,13 @@ def pytest_addoption(parser):
         default=False,
         help="Run browser in headed mode (visible window)",
     )
+    parser.addoption(
+        "--layout-slug",
+        action="store",
+        default="super-test",
+        help="League slug the layout tests measure. Needs real scores and long "
+             "player names — seed one with seed_layout_fixture.py.",
+    )
 
 
 # ---------------------------------------------------------------------------

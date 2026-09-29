@@ -116,6 +116,24 @@ def send_slack_message(bot_token: str, channel_id: str, text: str, thread_ts: st
         return {"ok": False, "error": str(e)}
 
 
+def _image_text_fallback(bot_token: str, channel_id: str, text: str, reason: str) -> dict:
+    """
+    Post the message as plain text when an image upload fails.
+
+    The common cause is a workspace whose install predates (or postdates) us
+    requesting files:write — uploading needs that scope, posting does not. The
+    caller's `text` already carries the league link, so the message is still
+    useful without the picture. Silence is the one thing we must not do: the
+    slash command has already told the user a scoreboard is coming.
+    """
+    logging.warning(f"Slack image upload failed ({reason}) — falling back to text in {channel_id}")
+    result = send_slack_message(bot_token, channel_id, text)
+    result = dict(result) if isinstance(result, dict) else {}
+    result["image_fallback"] = True
+    result["image_error"] = reason
+    return result
+
+
 def send_slack_message_with_image(bot_token: str, channel_id: str, text: str, 
                                    image_url: str = None, image_bytes: bytes = None,
                                    filename: str = "image.png") -> dict:
@@ -143,7 +161,7 @@ def send_slack_message_with_image(bot_token: str, channel_id: str, text: str,
             data1 = resp1.json()
             if not data1.get("ok"):
                 logging.error(f"Slack getUploadURLExternal failed: {data1.get('error')}")
-                return data1
+                return _image_text_fallback(bot_token, channel_id, text, data1.get('error'))
 
             upload_url = data1["upload_url"]
             file_id = data1["file_id"]
@@ -156,7 +174,7 @@ def send_slack_message_with_image(bot_token: str, channel_id: str, text: str,
             )
             if resp2.status_code != 200:
                 logging.error(f"Slack file upload PUT failed: {resp2.status_code} {resp2.text[:200]}")
-                return {"ok": False, "error": f"Upload failed: {resp2.status_code}"}
+                return _image_text_fallback(bot_token, channel_id, text, f"upload_{resp2.status_code}")
 
             # Step 3: Complete the upload and share to channel
             import json as _json
@@ -173,12 +191,13 @@ def send_slack_message_with_image(bot_token: str, channel_id: str, text: str,
             data3 = resp3.json()
             if not data3.get("ok"):
                 logging.error(f"Slack completeUploadExternal failed: {data3.get('error')}")
+                return _image_text_fallback(bot_token, channel_id, text, data3.get('error'))
             else:
                 logging.info(f"Slack file uploaded successfully: file_id={file_id}")
             return data3
         except Exception as e:
             logging.error(f"Failed to upload Slack image: {e}")
-            return {"ok": False, "error": str(e)}
+            return _image_text_fallback(bot_token, channel_id, text, str(e))
     
     elif image_url:
         # Send message with image block

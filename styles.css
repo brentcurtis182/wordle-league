@@ -65,13 +65,15 @@ body {
     .player-name {
         font-size: 1.25rem;
     }
-    /* Tighter cap on phones, where the columns have far less room to give. */
+    /* Tighter caps on phones, where there is far less room to give. The Latest
+       card gets a cap too: the name shares its row with the emoji grid, so an
+       uncapped name pushes the grid off the side of the screen. */
     .sticky-column,
     .name-cell {
         max-width: 130px;
     }
     .player-name {
-        max-width: 100%;
+        max-width: 170px;
     }
     .score-display {
         font-size: 1.5rem;

@@ -224,7 +224,14 @@ def send_slack_message_with_image(bot_token: str, channel_id: str, text: str,
                 json=payload,
                 timeout=10
             )
-            return response.json()
+            result = response.json()
+            if not result.get("ok"):
+                # Slack fetches the image URL itself and rejects the whole
+                # message if it cannot. Losing the picture is acceptable;
+                # losing the message is not.
+                logging.error(f"Slack image block post failed: {result.get('error')}")
+                return _image_text_fallback(bot_token, channel_id, text, result.get('error'))
+            return result
         except Exception as e:
             logging.error(f"Failed to send Slack image message: {e}")
             return {"ok": False, "error": str(e)}

@@ -2131,11 +2131,86 @@ def slack_commands():
         }), 200
 
 
-def _handle_slash_score(league_id, league_name, league_slug, bot_token, channel_id, is_division_mode):
-    """Generate and post the weekly scoreboard image to Slack"""
+_scoreboard_png_cache = {}   # league_id -> (marker, png_bytes, generated_at)
+_SCOREBOARD_PNG_TTL = 120    # seconds
+
+
+@app.route('/leagues/<slug>/scoreboard.png')
+def public_league_scoreboard(slug):
+    """
+    Serve this week's scoreboard as a PNG.
+
+    Public and unauthenticated on purpose: Slack fetches this URL itself when
+    rendering an image block, and it arrives as an anonymous request from
+    Slack's servers. Posting by URL is what lets the scoreboard work without
+    files:write, which our Slack app does not request.
+    """
+    from flask import Response
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT id, COALESCE(display_name, name), COALESCE(division_mode, FALSE),
+                   division_confirmed_at
+            FROM leagues WHERE slug = %s
+        """, (slug,))
+        row = cursor.fetchone()
+
+        marker = None
+        if row:
+            cursor.execute("""
+                SELECT COALESCE(MAX(s.id), 0), COUNT(s.id)
+                FROM scores s JOIN players p ON p.id = s.player_id
+                WHERE p.league_id = %s
+            """, (row[0],))
+            m = cursor.fetchone()
+            marker = (m[0], m[1]) if m else None
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        logging.error(f"Scoreboard PNG lookup failed for {slug}: {e}")
+        return "Error", 500
+
+    if not row:
+        return "League not found", 404
+
+    league_id, league_name, division_mode, division_confirmed_at = row
+    is_division_mode = bool(division_mode and division_confirmed_at is not None)
+
+    import time as _time
+    cached = _scoreboard_png_cache.get(league_id)
+    if cached and marker is not None:
+        c_marker, c_png, c_at = cached
+        if c_marker == marker and (_time.time() - c_at) < _SCOREBOARD_PNG_TTL:
+            return Response(c_png, mimetype='image/png',
+                            headers={'Cache-Control': 'public, max-age=120'})
+
+    try:
+        png = build_weekly_scoreboard_png(league_id, league_name, is_division_mode)
+    except Exception as e:
+        logging.error(f"Scoreboard PNG generation failed for league {league_id}: {e}")
+        return "Error", 500
+
+    if png is None:
+        # Nobody has posted this week — there is genuinely no image to serve.
+        return "No scores yet", 404
+
+    _scoreboard_png_cache[league_id] = (marker, png, _time.time())
+    return Response(png, mimetype='image/png',
+                    headers={'Cache-Control': 'public, max-age=120'})
+
+
+def build_weekly_scoreboard_png(league_id, league_name, is_division_mode):
+    """
+    Render the current week's scoreboard as PNG bytes.
+
+    Shared by the slash command and the public scoreboard route so both show
+    exactly the same image. Returns None when nobody has posted yet — callers
+    decide what to say about that.
+    """
     from sunday_race_update import get_weekly_standings
     from image_generator import generate_weekly_image, generate_division_weekly_image, image_to_bytes
-    from slack_integration import send_slack_message_with_image
     from league_data_adapter import get_week_start_date
     import pytz
     from datetime import date
@@ -2143,25 +2218,13 @@ def _handle_slash_score(league_id, league_name, league_slug, bot_token, channel_
     pacific = pytz.timezone('America/Los_Angeles')
     today = datetime.now(pacific).date()
     week_start = get_week_start_date(today)
-    ref_date = date(2025, 7, 31)
-    ref_wordle = 1503
-    days_offset = (week_start - ref_date).days
-    week_start_wordle = ref_wordle + days_offset
+    days_offset = (week_start - date(2025, 7, 31)).days
+    week_start_wordle = 1503 + days_offset
     week_date_str = week_start.strftime("%b %d")
 
-    standings, todays_wordle = get_weekly_standings(league_id, week_start_wordle)
-    # get_weekly_standings returns a row per active player whether or not they
-    # have posted, so an empty list only means "no players". Check for posted
-    # scores too, otherwise a brand new league gets a blank scoreboard image
-    # instead of being told there's nothing to show yet.
+    standings, _todays_wordle = get_weekly_standings(league_id, week_start_wordle)
     if not standings or not any(p.get('days_posted', 0) for p in standings):
-        from slack_integration import send_slack_message
-        send_slack_message(
-            bot_token, channel_id,
-            "📊 No scores posted yet this week, so there's no scoreboard to show.\n"
-            "Paste your Wordle result into this channel and it'll appear here."
-        )
-        return
+        return None
 
     def build_image_data(player_list):
         image_data = []
@@ -2179,23 +2242,59 @@ def _handle_slash_score(league_id, league_name, league_slug, bot_token, channel_
                 'used': player['days_posted'],
                 'failed': player.get('failed_attempts', 0),
                 'thrown': player.get('thrown_out', []),
-                'eligible': player['eligible']
+                'eligible': player['eligible'],
             })
         return image_data
 
     if is_division_mode:
-        div1 = sorted([s for s in standings if s.get('division') == 1],
-                       key=lambda x: (not x['eligible'], x['best_5_total'] if x['best_5_total'] is not None else 999))
-        div2 = sorted([s for s in standings if s.get('division') == 2],
-                       key=lambda x: (not x['eligible'], x['best_5_total'] if x['best_5_total'] is not None else 999))
-        img = generate_division_weekly_image(league_name, build_image_data(div1), build_image_data(div2), week_date_str)
+        key = lambda x: (not x['eligible'], x['best_5_total'] if x['best_5_total'] is not None else 999)
+        div1 = sorted([s for s in standings if s.get('division') == 1], key=key)
+        div2 = sorted([s for s in standings if s.get('division') == 2], key=key)
+        img = generate_division_weekly_image(league_name, build_image_data(div1),
+                                             build_image_data(div2), week_date_str)
     else:
         img = generate_weekly_image(league_name, build_image_data(standings), week_date_str)
 
-    img_bytes = image_to_bytes(img)
+    return image_to_bytes(img)
+
+
+def _handle_slash_score(league_id, league_name, league_slug, bot_token, channel_id, is_division_mode):
+    """Generate and post the weekly scoreboard image to Slack"""
+    from slack_integration import send_slack_message, send_slack_message_with_image
+    from league_data_adapter import get_week_start_date
+    import pytz
+    from datetime import date
+
+    png = build_weekly_scoreboard_png(league_id, league_name, is_division_mode)
+
+    # build_weekly_scoreboard_png returns None when nobody has posted. A brand
+    # new league should be told that rather than shown an empty board.
+    if png is None:
+        send_slack_message(
+            bot_token, channel_id,
+            "📊 No scores posted yet this week, so there's no scoreboard to show.\n"
+            "Paste your Wordle result into this channel and it'll appear here."
+        )
+        return
+
     league_url = f"{APP_BASE_URL}/leagues/{league_slug}"
-    send_slack_message_with_image(bot_token, channel_id, f"📊 *Weekly Scoreboard* — {league_url}", image_bytes=img_bytes, filename="scoreboard.png")
-    logging.info(f"Slash /wordplay score: posted scoreboard for league {league_id}")
+
+    # Post the image by PUBLIC URL rather than uploading the bytes. Uploading
+    # needs files:write, which this Slack app does not request — so an upload
+    # fails in every workspace that installed after 2026-04-09. An image block
+    # needs only chat:write, which every install has. The week number busts
+    # Slack's URL cache so a new week never shows last week's render.
+    pacific = pytz.timezone('America/Los_Angeles')
+    week_start = get_week_start_date(datetime.now(pacific).date())
+    week_tag = 1503 + (week_start - date(2025, 7, 31)).days
+    image_url = f"{APP_BASE_URL}/leagues/{league_slug}/scoreboard.png?w={week_tag}"
+
+    send_slack_message_with_image(
+        bot_token, channel_id,
+        f"📊 *Weekly Scoreboard* — {league_url}",
+        image_url=image_url,
+    )
+    logging.info(f"Slash /wordplay score: posted scoreboard for league {league_id} via {image_url}")
 
 
 def _handle_slash_standings(league_id, league_name, league_slug, bot_token, channel_id, is_division_mode):

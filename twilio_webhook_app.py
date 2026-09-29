@@ -2613,12 +2613,14 @@ def slack_install():
     redirect_uri = f"{APP_BASE_URL}/slack/oauth/callback"
     
     # Scopes must match exactly what's listed in Slack app settings
-    # files:write is required to post the weekly scoreboard image. It was dropped
-    # in 2d28609039 (2026-04-09) to "match scopes to app settings", which fixed an
-    # install error and silently broke image posting for every workspace that
-    # installed afterwards — 7 of 10 by the time it was noticed. It must also be
-    # declared in the Slack app config, or the install fails with invalid_scope.
-    scopes = "app_mentions:read,channels:history,channels:read,chat:write,commands,files:write,users:read"
+    # MUST stay in sync with Bot Token Scopes in the Slack app config — requesting
+    # anything not declared there makes the install fail with invalid_scope.
+    # Confirmed 2026-09-29: the config does NOT include files:write, so we must not
+    # ask for it here. That is why scoreboard IMAGES cannot be uploaded in any
+    # workspace that installed after 2026-04-09; see the image_url path in
+    # slack_integration.send_slack_message_with_image, which posts an image by
+    # public URL using chat:write alone and needs no new scope.
+    scopes = "app_mentions:read,channels:history,channels:read,chat:write,commands,users:read"
     
     # Generate a cryptographically random, non-guessable state parameter
     # Store it in the DB with the associated league_id so the callback can validate it

@@ -2135,34 +2135,40 @@ _scoreboard_png_cache = {}   # league_id -> (marker, png_bytes, generated_at)
 _SCOREBOARD_PNG_TTL = 120    # seconds
 
 # Slack renders an image BLOCK at the full width of the message column, scaling
-# up if it has to — unlike an uploaded file, which it shows as a smaller
-# constrained preview. Since we post by URL (we have no files:write), the board
-# came out roughly twice the size it used to. Blocks accept no width or height,
-# so the only lever is the canvas: padding it horizontally means the column
-# width is shared with empty margin and the content itself renders smaller.
-# 1.0 disables padding entirely; raise it to shrink the board further. At 2.3 the
-# content lands near 255px in a ~590px desktop column. Note this scales on every
-# client — a narrower mobile column shrinks the content by the same proportion,
-# so pushing this much higher starts to hurt readability on phones.
-_SCOREBOARD_PAD_RATIO = 2.3
+# DOWN to fit but never up — unlike an uploaded file, which it showed as a
+# smaller constrained preview. Since we post by URL (we have no files:write), a
+# 550px board filled a ~590px desktop column and came out roughly twice its
+# former size.
+#
+# An earlier version padded the canvas to shrink the content, which worked but
+# wasted most of the image and shrank mobile by the same proportion. Rendering
+# smaller is strictly better: an image narrower than the column renders at its
+# natural size on desktop and barely scales on mobile, so both look the same and
+# stay sharp. LANCZOS downsampling keeps text crisp — it is upsampling that goes
+# soft. Set to 0 to disable resizing entirely.
+_SCOREBOARD_TARGET_WIDTH = 310
 
 
-def _pad_scoreboard(png_bytes):
-    """Widen the canvas so a full-width Slack image block renders it smaller."""
-    if _SCOREBOARD_PAD_RATIO <= 1.0:
+def _fit_scoreboard(png_bytes):
+    """Downscale the board so Slack renders it at a sensible size."""
+    if not _SCOREBOARD_TARGET_WIDTH:
         return png_bytes
     try:
         import io
         from PIL import Image
         src = Image.open(io.BytesIO(png_bytes)).convert('RGB')
-        target_w = int(src.width * _SCOREBOARD_PAD_RATIO)
-        canvas = Image.new('RGB', (target_w, src.height), src.getpixel((0, 0)))
-        canvas.paste(src, ((target_w - src.width) // 2, 0))
+        if src.width <= _SCOREBOARD_TARGET_WIDTH:
+            return png_bytes
+        ratio = _SCOREBOARD_TARGET_WIDTH / src.width
+        small = src.resize(
+            (_SCOREBOARD_TARGET_WIDTH, max(1, int(src.height * ratio))),
+            Image.LANCZOS,
+        )
         out = io.BytesIO()
-        canvas.save(out, format='PNG')
+        small.save(out, format='PNG')
         return out.getvalue()
     except Exception as e:
-        logging.error(f"Scoreboard padding failed, serving unpadded: {e}")
+        logging.error(f"Scoreboard resize failed, serving full size: {e}")
         return png_bytes
 
 
@@ -2227,7 +2233,7 @@ def public_league_scoreboard(slug):
         # Nobody has posted this week — there is genuinely no image to serve.
         return "No scores yet", 404
 
-    png = _pad_scoreboard(png)
+    png = _fit_scoreboard(png)
     _scoreboard_png_cache[league_id] = (marker, png, _time.time())
     return Response(png, mimetype='image/png',
                     headers={'Cache-Control': 'public, max-age=120'})
@@ -2319,7 +2325,13 @@ def _handle_slash_score(league_id, league_name, league_slug, bot_token, channel_
     pacific = pytz.timezone('America/Los_Angeles')
     week_start = get_week_start_date(datetime.now(pacific).date())
     week_tag = 1503 + (week_start - date(2025, 7, 31)).days
-    image_url = f"{APP_BASE_URL}/leagues/{league_slug}/scoreboard.png?w={week_tag}"
+    # Unique per post. Slack caches images by URL, so anything stable — a week
+    # number, say — means it keeps serving the render it fetched the first time:
+    # stale scores on a second post, and old sizing after a design change. Our
+    # own route caches for 2 minutes, so the re-fetch costs nothing.
+    import time as _t
+    image_url = (f"{APP_BASE_URL}/leagues/{league_slug}/scoreboard.png"
+                 f"?w={week_tag}&t={int(_t.time())}")
 
     send_slack_message_with_image(
         bot_token, channel_id,

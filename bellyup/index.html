@@ -199,9 +199,9 @@
 </div><div class="score-card">
     <div class="player-info">
         <div class="player-name">Dan</div>
-        <div class="player-score"><span>No Score</span></div>
+        <div class="player-score"><span style="color: #FFA64D; background-color: rgba(255, 166, 77, 0.15); padding: 2px 8px; border-radius: 3px; display: inline-block; font-weight: bold;">4/6</span></div>
     </div>
-    <div class="emoji-container"><div class="emoji-pattern"></div></div>
+    <div class="emoji-container"><div class="emoji-pattern"><div class="emoji-row"><span class="wl-block wl-light"></span><span class="wl-block wl-light"></span><span class="wl-block wl-orange"></span><span class="wl-block wl-light"></span><span class="wl-block wl-light"></span></div><div class="emoji-row"><span class="wl-block wl-cyan"></span><span class="wl-block wl-light"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-light"></span><span class="wl-block wl-light"></span></div><div class="emoji-row"><span class="wl-block wl-cyan"></span><span class="wl-block wl-orange"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-orange"></span><span class="wl-block wl-light"></span></div><div class="emoji-row"><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span></div></div></div>
 </div><div class="score-card">
     <div class="player-info">
         <div class="player-name">Henry</div>
@@ -268,6 +268,20 @@
 <td>-</td>
 </tr>
 <tr>
+    <td class="sticky-column"><strong>Dan</strong></td>
+    <td class="score-col-weekly-1" style="font-weight: bold;">7</td>
+    <td class="score-col-season-1" style="display:none; font-weight: bold;">59</td>
+    <td>2</td>
+    <td>-</td>
+    <td>-</td>
+    <td>-</td>
+<td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+<td>-</td>
+</tr>
+<tr>
     <td class="sticky-column"><strong>Dave</strong></td>
     <td class="score-col-weekly-1" style="font-weight: bold;">7</td>
     <td class="score-col-season-1" style="display:none; font-weight: bold;">53</td>
@@ -290,21 +304,6 @@
     <td>-</td>
     <td>-</td>
 <td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td>-</td>
-<td>-</td>
-<td>-</td>
-<td>-</td>
-<td>-</td>
-</tr>
-<tr>
-    <td class="sticky-column"><strong>Dan</strong></td>
-    <td class="score-col-weekly-1" style="font-weight: bold;">3</td>
-    <td class="score-col-season-1" style="display:none; font-weight: bold;">55</td>
-    <td>1</td>
-    <td>-</td>
-    <td>-</td>
-    <td>-</td>
-<td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td>-</td>
-<td>-</td>
 <td>-</td>
 <td>-</td>
 <td>-</td>
@@ -478,12 +477,12 @@ function toggleScoreView(divNum) {
 <thead><tr><th>Player</th><th>Weekly Wins</th><th>Wordle Week (Score)</th></tr></thead>
 <tbody>
 <tr>
-    <td><strong>Troy</strong></td>
+    <td class="name-cell"><strong>Troy</strong></td>
     <td>2</td>
     <td style="white-space: nowrap;">Sep 07 (14)<br>Sep 21 (14)</td>
 </tr>
 <tr>
-    <td><strong>Dave</strong></td>
+    <td class="name-cell"><strong>Dave</strong></td>
     <td>1</td>
     <td style="white-space: nowrap;">Sep 14 (14)</td>
 </tr>
@@ -496,17 +495,17 @@ function toggleScoreView(divNum) {
 <thead><tr><th>Player</th><th>Weekly Wins</th><th>Wordle Week (Score)</th></tr></thead>
 <tbody>
 <tr>
-    <td><strong>Henry</strong></td>
+    <td class="name-cell"><strong>Henry</strong></td>
     <td>2</td>
     <td style="white-space: nowrap;">Aug 31 (19)<br>Sep 07 (17)</td>
 </tr>
 <tr>
-    <td><strong>Meredith</strong></td>
+    <td class="name-cell"><strong>Meredith</strong></td>
     <td>2</td>
     <td style="white-space: nowrap;">Sep 07 (17)<br>Sep 14 (15)</td>
 </tr>
 <tr>
-    <td><strong style="color: #FFA64D;">Jeremy</strong></td>
+    <td class="name-cell"><strong style="color: #FFA64D;">Jeremy</strong></td>
     <td>1</td>
     <td style="white-space: nowrap;">Sep 21 (18)</td>
 </tr>
@@ -526,47 +525,47 @@ function toggleScoreView(divNum) {
 <thead><tr><th>Player</th><th>Games</th><th>Avg</th></tr></thead>
 <tbody>
 <tr class="highlight" style="background-color: rgba(0, 232, 218, 0.15);">
-    <td><strong>Troy</strong></td>
+    <td class="name-cell"><strong>Troy</strong></td>
     <td>166</td>
     <td>3.68</td>
 </tr>
 <tr>
-    <td><strong>Jennie</strong></td>
+    <td class="name-cell"><strong>Jennie</strong></td>
     <td>146</td>
     <td>3.70</td>
 </tr>
 <tr>
-    <td><strong>Meredith</strong></td>
+    <td class="name-cell"><strong>Meredith</strong></td>
     <td>242</td>
     <td>3.79</td>
 </tr>
 <tr>
-    <td><strong>Dave</strong></td>
+    <td class="name-cell"><strong>Dave</strong></td>
     <td>82</td>
     <td>3.79</td>
 </tr>
 <tr>
-    <td><strong>Dan</strong></td>
-    <td>85</td>
+    <td class="name-cell"><strong>Dan</strong></td>
+    <td>86</td>
     <td>3.81</td>
 </tr>
 <tr>
-    <td><strong>Henry</strong></td>
+    <td class="name-cell"><strong>Henry</strong></td>
     <td>233</td>
     <td>4.09</td>
 </tr>
 <tr>
-    <td><strong>Brent</strong></td>
+    <td class="name-cell"><strong>Brent</strong></td>
     <td>306</td>
     <td>4.10</td>
 </tr>
 <tr>
-    <td><strong>Jeremy</strong></td>
+    <td class="name-cell"><strong>Jeremy</strong></td>
     <td>265</td>
     <td>4.14</td>
 </tr>
 <tr>
-    <td><strong>Roy</strong></td>
+    <td class="name-cell"><strong>Roy</strong></td>
     <td>152</td>
     <td>4.46</td>
 </tr>
@@ -581,10 +580,10 @@ function toggleScoreView(divNum) {
     </div>
     <table class="season-table" style="width:100%;">
       <thead><tr><th>Player</th><th>Wins</th></tr></thead>
-      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td><strong>Troy</strong></td><td style="text-align:center;">3</td></tr>
-<tr><td><strong>Jennie</strong></td><td style="text-align:center;">2</td></tr>
-<tr><td><strong>Dave</strong></td><td style="text-align:center;">1</td></tr>
-<tr><td><strong>Jeremy</strong></td><td style="text-align:center;">1</td></tr>
+      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td class="name-cell"><strong>Troy</strong></td><td style="text-align:center;">3</td></tr>
+<tr><td class="name-cell"><strong>Jennie</strong></td><td style="text-align:center;">2</td></tr>
+<tr><td class="name-cell"><strong>Dave</strong></td><td style="text-align:center;">1</td></tr>
+<tr><td class="name-cell"><strong>Jeremy</strong></td><td style="text-align:center;">1</td></tr>
 </tbody>
     </table>
   </div>
@@ -597,9 +596,9 @@ function toggleScoreView(divNum) {
     </div>
     <table class="season-table" style="width:100%;">
       <thead><tr><th>Player</th><th>Wins</th></tr></thead>
-      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td><strong>Dave</strong></td><td style="text-align:center;">3</td></tr>
-<tr><td><strong>Jennie</strong></td><td style="text-align:center;">2</td></tr>
-<tr><td><strong>Troy</strong></td><td style="text-align:center;">1</td></tr>
+      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td class="name-cell"><strong>Dave</strong></td><td style="text-align:center;">3</td></tr>
+<tr><td class="name-cell"><strong>Jennie</strong></td><td style="text-align:center;">2</td></tr>
+<tr><td class="name-cell"><strong>Troy</strong></td><td style="text-align:center;">1</td></tr>
 </tbody>
     </table>
   </div>
@@ -612,10 +611,10 @@ function toggleScoreView(divNum) {
     </div>
     <table class="season-table" style="width:100%;">
       <thead><tr><th>Player</th><th>Wins</th></tr></thead>
-      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td><strong>Dan</strong></td><td style="text-align:center;">3</td></tr>
-<tr><td><strong>Meredith</strong></td><td style="text-align:center;">2</td></tr>
-<tr><td><strong>Henry</strong></td><td style="text-align:center;">1</td></tr>
-<tr><td><strong>Roy</strong></td><td style="text-align:center;">1</td></tr>
+      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td class="name-cell"><strong>Dan</strong></td><td style="text-align:center;">3</td></tr>
+<tr><td class="name-cell"><strong>Meredith</strong></td><td style="text-align:center;">2</td></tr>
+<tr><td class="name-cell"><strong>Henry</strong></td><td style="text-align:center;">1</td></tr>
+<tr><td class="name-cell"><strong>Roy</strong></td><td style="text-align:center;">1</td></tr>
 </tbody>
     </table>
   </div>
@@ -695,10 +694,10 @@ function toggleScoreView(divNum) {
     <h3 style="color:#00E8DA; margin:0 0 14px 0; text-align:center; font-size:1.05em;">Season 7 - Division I</h3>
     <table class="season-table" style="width:100%;">
       <thead><tr><th>Player</th><th>Wins</th></tr></thead>
-      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td><strong>Troy</strong></td><td style="text-align:center;">3</td></tr>
-<tr><td><strong>Jennie</strong></td><td style="text-align:center;">2</td></tr>
-<tr><td><strong>Dave</strong></td><td style="text-align:center;">1</td></tr>
-<tr><td><strong>Jeremy</strong></td><td style="text-align:center;">1</td></tr>
+      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td class="name-cell"><strong>Troy</strong></td><td style="text-align:center;">3</td></tr>
+<tr><td class="name-cell"><strong>Jennie</strong></td><td style="text-align:center;">2</td></tr>
+<tr><td class="name-cell"><strong>Dave</strong></td><td style="text-align:center;">1</td></tr>
+<tr><td class="name-cell"><strong>Jeremy</strong></td><td style="text-align:center;">1</td></tr>
 </tbody>
     </table>
 </div>
@@ -710,9 +709,9 @@ function toggleScoreView(divNum) {
     <h3 style="color:#00E8DA; margin:0 0 14px 0; text-align:center; font-size:1.05em;">Season 6 - Division I</h3>
     <table class="season-table" style="width:100%;">
       <thead><tr><th>Player</th><th>Wins</th></tr></thead>
-      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td><strong>Dave</strong></td><td style="text-align:center;">3</td></tr>
-<tr><td><strong>Jennie</strong></td><td style="text-align:center;">2</td></tr>
-<tr><td><strong>Troy</strong></td><td style="text-align:center;">1</td></tr>
+      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td class="name-cell"><strong>Dave</strong></td><td style="text-align:center;">3</td></tr>
+<tr><td class="name-cell"><strong>Jennie</strong></td><td style="text-align:center;">2</td></tr>
+<tr><td class="name-cell"><strong>Troy</strong></td><td style="text-align:center;">1</td></tr>
 </tbody>
     </table>
 </div>
@@ -724,10 +723,10 @@ function toggleScoreView(divNum) {
     <h3 style="color:#00E8DA; margin:0 0 14px 0; text-align:center; font-size:1.05em;">Season 6 - Division II</h3>
     <table class="season-table" style="width:100%;">
       <thead><tr><th>Player</th><th>Wins</th></tr></thead>
-      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td><strong>Dan</strong></td><td style="text-align:center;">3</td></tr>
-<tr><td><strong>Meredith</strong></td><td style="text-align:center;">2</td></tr>
-<tr><td><strong>Henry</strong></td><td style="text-align:center;">1</td></tr>
-<tr><td><strong>Roy</strong></td><td style="text-align:center;">1</td></tr>
+      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td class="name-cell"><strong>Dan</strong></td><td style="text-align:center;">3</td></tr>
+<tr><td class="name-cell"><strong>Meredith</strong></td><td style="text-align:center;">2</td></tr>
+<tr><td class="name-cell"><strong>Henry</strong></td><td style="text-align:center;">1</td></tr>
+<tr><td class="name-cell"><strong>Roy</strong></td><td style="text-align:center;">1</td></tr>
 </tbody>
     </table>
 </div>
@@ -739,10 +738,10 @@ function toggleScoreView(divNum) {
     <h3 style="color:#00E8DA; margin:0 0 14px 0; text-align:center; font-size:1.05em;">Season 5 - Division I</h3>
     <table class="season-table" style="width:100%;">
       <thead><tr><th>Player</th><th>Wins</th></tr></thead>
-      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td><strong>Troy</strong></td><td style="text-align:center;">3</td></tr>
-<tr><td><strong>Meredith</strong></td><td style="text-align:center;">1</td></tr>
-<tr><td><strong>Jennie</strong></td><td style="text-align:center;">1</td></tr>
-<tr><td><strong>Jeremy</strong></td><td style="text-align:center;">1</td></tr>
+      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td class="name-cell"><strong>Troy</strong></td><td style="text-align:center;">3</td></tr>
+<tr><td class="name-cell"><strong>Meredith</strong></td><td style="text-align:center;">1</td></tr>
+<tr><td class="name-cell"><strong>Jennie</strong></td><td style="text-align:center;">1</td></tr>
+<tr><td class="name-cell"><strong>Jeremy</strong></td><td style="text-align:center;">1</td></tr>
 </tbody>
     </table>
 </div>
@@ -754,8 +753,8 @@ function toggleScoreView(divNum) {
     <h3 style="color:#00E8DA; margin:0 0 14px 0; text-align:center; font-size:1.05em;">Season 5 - Division II</h3>
     <table class="season-table" style="width:100%;">
       <thead><tr><th>Player</th><th>Wins</th></tr></thead>
-      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td><strong>Brent</strong></td><td style="text-align:center;">3</td></tr>
-<tr><td><strong>Meredith</strong></td><td style="text-align:center;">1</td></tr>
+      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td class="name-cell"><strong>Brent</strong></td><td style="text-align:center;">3</td></tr>
+<tr><td class="name-cell"><strong>Meredith</strong></td><td style="text-align:center;">1</td></tr>
 </tbody>
     </table>
 </div>
@@ -767,9 +766,9 @@ function toggleScoreView(divNum) {
     <h3 style="color:#00E8DA; margin:0 0 14px 0; text-align:center; font-size:1.05em;">Season 4 - Division I</h3>
     <table class="season-table" style="width:100%;">
       <thead><tr><th>Player</th><th>Wins</th></tr></thead>
-      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td><strong>Meredith</strong></td><td style="text-align:center;">3</td></tr>
-<tr><td><strong>Jeremy</strong></td><td style="text-align:center;">2</td></tr>
-<tr><td><strong>Troy</strong></td><td style="text-align:center;">1</td></tr>
+      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td class="name-cell"><strong>Meredith</strong></td><td style="text-align:center;">3</td></tr>
+<tr><td class="name-cell"><strong>Jeremy</strong></td><td style="text-align:center;">2</td></tr>
+<tr><td class="name-cell"><strong>Troy</strong></td><td style="text-align:center;">1</td></tr>
 </tbody>
     </table>
 </div>
@@ -781,11 +780,11 @@ function toggleScoreView(divNum) {
     <h3 style="color:#00E8DA; margin:0 0 14px 0; text-align:center; font-size:1.05em;">Season 4 - Division II</h3>
     <table class="season-table" style="width:100%;">
       <thead><tr><th>Player</th><th>Wins</th></tr></thead>
-      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td><strong>Jennie</strong></td><td style="text-align:center;">3</td></tr>
-<tr><td><strong>Mikaila</strong></td><td style="text-align:center;">1</td></tr>
-<tr><td><strong>Roy</strong></td><td style="text-align:center;">1</td></tr>
-<tr><td><strong>Brent</strong></td><td style="text-align:center;">1</td></tr>
-<tr><td><strong>Henry</strong></td><td style="text-align:center;">1</td></tr>
+      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td class="name-cell"><strong>Jennie</strong></td><td style="text-align:center;">3</td></tr>
+<tr><td class="name-cell"><strong>Mikaila</strong></td><td style="text-align:center;">1</td></tr>
+<tr><td class="name-cell"><strong>Roy</strong></td><td style="text-align:center;">1</td></tr>
+<tr><td class="name-cell"><strong>Brent</strong></td><td style="text-align:center;">1</td></tr>
+<tr><td class="name-cell"><strong>Henry</strong></td><td style="text-align:center;">1</td></tr>
 </tbody>
     </table>
 </div>
@@ -797,9 +796,9 @@ function toggleScoreView(divNum) {
     <h3 style="color:#00E8DA; margin:0 0 14px 0; text-align:center; font-size:1.05em;">Season 3 - Division I</h3>
     <table class="season-table" style="width:100%;">
       <thead><tr><th>Player</th><th>Wins</th></tr></thead>
-      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td><strong>Jeremy</strong></td><td style="text-align:center;">3</td></tr>
-<tr style="background-color: rgba(0, 232, 218, 0.15);"><td><strong>Meredith</strong></td><td style="text-align:center;">3</td></tr>
-<tr><td><strong>Brent</strong></td><td style="text-align:center;">1</td></tr>
+      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td class="name-cell"><strong>Jeremy</strong></td><td style="text-align:center;">3</td></tr>
+<tr style="background-color: rgba(0, 232, 218, 0.15);"><td class="name-cell"><strong>Meredith</strong></td><td style="text-align:center;">3</td></tr>
+<tr><td class="name-cell"><strong>Brent</strong></td><td style="text-align:center;">1</td></tr>
 </tbody>
     </table>
 </div>
@@ -811,9 +810,9 @@ function toggleScoreView(divNum) {
     <h3 style="color:#00E8DA; margin:0 0 14px 0; text-align:center; font-size:1.05em;">Season 3 - Division II</h3>
     <table class="season-table" style="width:100%;">
       <thead><tr><th>Player</th><th>Wins</th></tr></thead>
-      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td><strong>Troy</strong></td><td style="text-align:center;">3</td></tr>
-<tr><td><strong>Mikaila</strong></td><td style="text-align:center;">1</td></tr>
-<tr><td><strong>Jennie</strong></td><td style="text-align:center;">1</td></tr>
+      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td class="name-cell"><strong>Troy</strong></td><td style="text-align:center;">3</td></tr>
+<tr><td class="name-cell"><strong>Mikaila</strong></td><td style="text-align:center;">1</td></tr>
+<tr><td class="name-cell"><strong>Jennie</strong></td><td style="text-align:center;">1</td></tr>
 </tbody>
     </table>
 </div>
@@ -825,11 +824,11 @@ function toggleScoreView(divNum) {
     <h3 style="color:#00E8DA; margin:0 0 14px 0; text-align:center;">Season 2</h3>
     <table class="season-table" style="width:100%;">
       <thead><tr><th>Player</th><th>Wins</th></tr></thead>
-      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td><strong>Jeremy</strong></td><td style="text-align:center;">4</td></tr>
-<tr><td><strong>Meredith</strong></td><td style="text-align:center;">3</td></tr>
-<tr><td><strong>Pete</strong></td><td style="text-align:center;">2</td></tr>
-<tr><td><strong>Henry</strong></td><td style="text-align:center;">2</td></tr>
-<tr><td><strong>Brent</strong></td><td style="text-align:center;">2</td></tr>
+      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td class="name-cell"><strong>Jeremy</strong></td><td style="text-align:center;">4</td></tr>
+<tr><td class="name-cell"><strong>Meredith</strong></td><td style="text-align:center;">3</td></tr>
+<tr><td class="name-cell"><strong>Pete</strong></td><td style="text-align:center;">2</td></tr>
+<tr><td class="name-cell"><strong>Henry</strong></td><td style="text-align:center;">2</td></tr>
+<tr><td class="name-cell"><strong>Brent</strong></td><td style="text-align:center;">2</td></tr>
 </tbody>
     </table>
 </div>
@@ -841,12 +840,12 @@ function toggleScoreView(divNum) {
     <h3 style="color:#00E8DA; margin:0 0 14px 0; text-align:center;">Season 1</h3>
     <table class="season-table" style="width:100%;">
       <thead><tr><th>Player</th><th>Wins</th></tr></thead>
-      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td><strong>Meredith</strong></td><td style="text-align:center;">4</td></tr>
-<tr><td><strong>Brent</strong></td><td style="text-align:center;">3</td></tr>
-<tr><td><strong>Pete</strong></td><td style="text-align:center;">3</td></tr>
-<tr><td><strong>Henry</strong></td><td style="text-align:center;">2</td></tr>
-<tr><td><strong>Mikaila</strong></td><td style="text-align:center;">1</td></tr>
-<tr><td><strong>Jeremy</strong></td><td style="text-align:center;">1</td></tr>
+      <tbody><tr style="background-color: rgba(0, 232, 218, 0.15);"><td class="name-cell"><strong>Meredith</strong></td><td style="text-align:center;">4</td></tr>
+<tr><td class="name-cell"><strong>Brent</strong></td><td style="text-align:center;">3</td></tr>
+<tr><td class="name-cell"><strong>Pete</strong></td><td style="text-align:center;">3</td></tr>
+<tr><td class="name-cell"><strong>Henry</strong></td><td style="text-align:center;">2</td></tr>
+<tr><td class="name-cell"><strong>Mikaila</strong></td><td style="text-align:center;">1</td></tr>
+<tr><td class="name-cell"><strong>Jeremy</strong></td><td style="text-align:center;">1</td></tr>
 </tbody>
     </table>
 </div>

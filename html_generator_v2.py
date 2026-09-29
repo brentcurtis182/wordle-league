@@ -302,7 +302,7 @@ def _build_breakdown_rows(breakdown):
     for player_name, data in sorted(breakdown.items(), key=sort_key):
         wins = data['wins']
         row_style = ' style="background-color: rgba(0, 232, 218, 0.15);"' if wins == top_wins and top_wins > 0 else ''
-        rows += f'<tr{row_style}><td><strong>{player_name}</strong></td><td style="text-align:center;">{wins}</td></tr>\n'
+        rows += f'<tr{row_style}><td class="name-cell"><strong>{player_name}</strong></td><td style="text-align:center;">{wins}</td></tr>\n'
     return rows
 
 
@@ -502,7 +502,7 @@ def generate_season_stats_html(league_data):
             # Convert Wordle numbers to dates - each on its own line
             weeks_display = '<br>'.join([f"{wordle_to_date_string(w)} ({s})" for w, s in zip(data['weeks'], data['scores'])])
             html += f'<tr>\n'
-            html += f'    <td><strong>{player_name}</strong></td>\n'
+            html += f'    <td class="name-cell"><strong>{player_name}</strong></td>\n'
             html += f'    <td>{wins}</td>\n'
             html += f'    <td style="white-space: nowrap;">{weeks_display if weeks_display else "-"}</td>\n'
             html += '</tr>\n'
@@ -819,7 +819,7 @@ function openFullList() {
         has_scores = stats["games_played"] > 0
         row_class = ' class="highlight" style="background-color: rgba(0, 232, 218, 0.15);"' if i == 0 and has_scores else ''
         html += f'<tr{row_class}>\n'
-        html += f'    <td><strong>{stats["name"]}</strong></td>\n'
+        html += f'    <td class="name-cell"><strong>{stats["name"]}</strong></td>\n'
         html += f'    <td>{stats["games_played"] if has_scores else "-"}</td>\n'
         avg_display = f'{stats["avg_score"]:.2f}' if has_scores else "-"
         html += f'    <td>{avg_display}</td>\n'
@@ -1085,7 +1085,7 @@ def generate_division_season_stats_html(league_data):
                 # Highlight immune player names with division color
                 name_style = f' style="color: {div_color};"' if player_name in immune_players else ''
                 html += f'<tr{row_style}>\n'
-                html += f'    <td><strong{name_style}>{player_name}</strong></td>\n'
+                html += f'    <td class="name-cell"><strong{name_style}>{player_name}</strong></td>\n'
                 html += f'    <td>{wins}</td>\n'
                 html += f'    <td style="white-space: nowrap;">{weeks_display if weeks_display else "-"}</td>\n'
                 html += '</tr>\n'
@@ -1401,7 +1401,7 @@ function divFlChangePage(dir) {{ divFlShowPage(divFlCurrentPage + dir); }}
         has_scores = stats["games_played"] > 0
         row_class = ' class="highlight" style="background-color: rgba(0, 232, 218, 0.15);"' if i == 0 and has_scores else ''
         html += f'<tr{row_class}>\n'
-        html += f'    <td><strong>{stats["name"]}</strong></td>\n'
+        html += f'    <td class="name-cell"><strong>{stats["name"]}</strong></td>\n'
         html += f'    <td>{stats["games_played"] if has_scores else "-"}</td>\n'
         avg_display = f'{stats["avg_score"]:.2f}' if has_scores else "-"
         html += f'    <td>{avg_display}</td>\n'

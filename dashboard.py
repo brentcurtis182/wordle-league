@@ -2471,7 +2471,7 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                 <div id="edit-{player['id']}" style="display: none;">
                     <form id="form-{player['id']}" class="edit-form" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
                         <input type="hidden" name="player_id" value="{player['id']}">
-                        <input type="text" name="name" value="{safe(player['name'])}" style="flex: 1; min-width: 120px; padding: 8px 12px; background: {COLORS['bg_card']}; border: 1px solid {COLORS['border']}; border-radius: 6px; color: {COLORS['text']}; font-size: 0.95em;" placeholder="Name" maxlength="14">
+                        <input type="text" name="name" value="{safe(player['name'])}" style="flex: 1; min-width: 120px; padding: 8px 12px; background: {COLORS['bg_card']}; border: 1px solid {COLORS['border']}; border-radius: 6px; color: {COLORS['text']}; font-size: 0.95em;" placeholder="Name" maxlength="25">
                         <input type="hidden" name="identifier" value="{safe(identifier_value)}">
                         <div style="display: flex; gap: 8px;">
                             <button type="button" class="btn btn-primary btn-small" onclick="showSaveModal({player['id']}, {safe_js_attr(player['name'])})">Save</button>
@@ -2502,7 +2502,7 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                     <form id="form-{player['id']}" class="edit-form">
                         <input type="hidden" name="player_id" value="{player['id']}">
                         <div class="edit-fields">
-                            <input type="text" name="name" value="{safe(player['name'])}" class="edit-input" placeholder="Name" maxlength="14">
+                            <input type="text" name="name" value="{safe(player['name'])}" class="edit-input" placeholder="Name" maxlength="25">
                             <input type="text" name="identifier" value="{safe(identifier_value)}" class="edit-input" placeholder="{identifier_placeholder}">
                         </div>
                         <div class="edit-actions">
@@ -3049,7 +3049,7 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                     {'<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">' if channel_type == 'sms' else '<div style="display: grid; grid-template-columns: 1fr; gap: 16px; max-width: 400px;">'}
                         <div class="form-group">
                             <label>Player Name</label>
-                            <input type="text" name="name" required maxlength="14" placeholder="{'John Doe' if channel_type == 'sms' else 'Display Name (must match their ' + ('Slack' if channel_type == 'slack' else 'Discord') + ' name)'}" {f'disabled' if len(players) >= player_limit else ''}>
+                            <input type="text" name="name" required maxlength="25" placeholder="{'John Doe' if channel_type == 'sms' else 'Display Name (must match their ' + ('Slack' if channel_type == 'slack' else 'Discord') + ' name)'}" {f'disabled' if len(players) >= player_limit else ''}>
                         </div>
                         {f'<div class="form-group"><label>{identifier_label}</label><input type="tel" name="identifier" id="phoneInput" required placeholder="{identifier_placeholder}" {"disabled" if len(players) >= player_limit else ""}><div id="phoneError" style="display:none; color: {COLORS["error"]}; font-size: 0.8em; margin-top: 4px;"></div></div>' if channel_type == 'sms' else '<input type="hidden" name="identifier" value="">'}
                     </div>

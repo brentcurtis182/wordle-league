@@ -100,7 +100,7 @@ def generate_weekly_image(league_name, standings_data, week_date_str=None):
     # Image dimensions - MUCH BIGGER for mobile readability
     width = 550
     row_height = 60
-    header_height = 95
+    header_height = 118
     padding = 20
     num_players = len(standings_data)
     height = header_height + (num_players * row_height) + padding * 2 + 40
@@ -127,7 +127,7 @@ def generate_weekly_image(league_name, standings_data, week_date_str=None):
     week_font = get_font(22, bold=True)
     draw.text((width // 2, 35), league_title, font=title_font,
               fill=hex_to_rgb(COLORS['primary']), anchor="mm")
-    draw.text((width // 2, 58), week_label, font=week_font,
+    draw.text((width // 2, 70), week_label, font=week_font,
               fill=hex_to_rgb(COLORS['text_secondary']), anchor="mm")
     
     # Column positions - 3 columns only: Player, Score, Thrown Out
@@ -136,7 +136,7 @@ def generate_weekly_image(league_name, standings_data, week_date_str=None):
     col_out = 400
     
     # Column headers
-    y = 70
+    y = 90
     draw.text((col_player, y), "Player", font=header_font, fill=hex_to_rgb(COLORS['text_secondary']))
     draw.text((col_score, y), "Score", font=header_font, fill=hex_to_rgb(COLORS['text_secondary']))
     draw.text((col_out, y), "Thrown Out", font=header_font, fill=hex_to_rgb(COLORS['text_secondary']))
@@ -296,7 +296,7 @@ def generate_division_weekly_image(league_name, div1_data, div2_data, week_date_
     width = 550
     row_height = 50
     div_header_height = 45
-    header_height = 80
+    header_height = 92
     section_gap = 20
     padding = 20
     
@@ -331,7 +331,7 @@ def generate_division_weekly_image(league_name, div1_data, div2_data, week_date_
     week_font = get_font(18, bold=True)
     draw.text((width // 2, 30), league_title, font=title_font,
               fill=hex_to_rgb(COLORS['primary']), anchor="mm")
-    draw.text((width // 2, 52), week_label, font=week_font,
+    draw.text((width // 2, 66), week_label, font=week_font,
               fill=hex_to_rgb(COLORS['text_secondary']), anchor="mm")
     
     col_player = 30
@@ -342,9 +342,20 @@ def generate_division_weekly_image(league_name, div1_data, div2_data, week_date_
         """Draw a single division table, return y position after table"""
         nonlocal draw, img
         
-        # Division header bar
-        draw.rectangle([20, y_start, width - 20, y_start + div_header_height],
-                       fill=hex_to_rgb(div_color) + (40,) if len(div_color) > 6 else None)
+        # Division header bar. Blended rather than filled: draw.rectangle on an
+        # RGB image discards the alpha, so this painted a SOLID block in
+        # div_color and the label below — drawn in that same colour — vanished
+        # into it. Blending gives the intended tint and keeps the label legible.
+        bar_h = div_header_height
+        tint = Image.new('RGBA', (width - 40, bar_h), hex_to_rgb(div_color) + (40,))
+        img.paste(
+            Image.blend(
+                img.crop((20, y_start, width - 20, y_start + bar_h)).convert('RGBA'),
+                tint, 0.4
+            ).convert('RGB'),
+            (20, y_start)
+        )
+        draw = ImageDraw.Draw(img)
         # Draw a subtle colored line under the division header
         draw.line([(20, y_start + div_header_height), (width - 20, y_start + div_header_height)],
                   fill=hex_to_rgb(div_color), width=2)

@@ -2134,6 +2134,34 @@ def slack_commands():
 _scoreboard_png_cache = {}   # league_id -> (marker, png_bytes, generated_at)
 _SCOREBOARD_PNG_TTL = 120    # seconds
 
+# Slack renders an image BLOCK at the full width of the message column, scaling
+# up if it has to — unlike an uploaded file, which it shows as a smaller
+# constrained preview. Since we post by URL (we have no files:write), the board
+# came out roughly twice the size it used to. Blocks accept no width or height,
+# so the only lever is the canvas: padding it horizontally means the column
+# width is shared with empty margin and the content itself renders smaller.
+# 1.0 disables padding entirely; raise it to shrink the board further.
+_SCOREBOARD_PAD_RATIO = 1.6
+
+
+def _pad_scoreboard(png_bytes):
+    """Widen the canvas so a full-width Slack image block renders it smaller."""
+    if _SCOREBOARD_PAD_RATIO <= 1.0:
+        return png_bytes
+    try:
+        import io
+        from PIL import Image
+        src = Image.open(io.BytesIO(png_bytes)).convert('RGB')
+        target_w = int(src.width * _SCOREBOARD_PAD_RATIO)
+        canvas = Image.new('RGB', (target_w, src.height), src.getpixel((0, 0)))
+        canvas.paste(src, ((target_w - src.width) // 2, 0))
+        out = io.BytesIO()
+        canvas.save(out, format='PNG')
+        return out.getvalue()
+    except Exception as e:
+        logging.error(f"Scoreboard padding failed, serving unpadded: {e}")
+        return png_bytes
+
 
 @app.route('/leagues/<slug>/scoreboard.png')
 def public_league_scoreboard(slug):
@@ -2196,6 +2224,7 @@ def public_league_scoreboard(slug):
         # Nobody has posted this week — there is genuinely no image to serve.
         return "No scores yet", 404
 
+    png = _pad_scoreboard(png)
     _scoreboard_png_cache[league_id] = (marker, png, _time.time())
     return Response(png, mimetype='image/png',
                     headers={'Cache-Control': 'public, max-age=120'})

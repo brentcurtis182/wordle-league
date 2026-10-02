@@ -100,7 +100,8 @@ def generate_weekly_image(league_name, standings_data, week_date_str=None, show_
     # Image dimensions - MUCH BIGGER for mobile readability
     width = 550
     row_height = 60
-    header_height = 118
+    # Stacked two-line column headers need another line's worth of room.
+    header_height = 148 if show_games else 118
     padding = 20
     num_players = len(standings_data)
     height = header_height + (num_players * row_height) + padding * 2 + 40
@@ -138,22 +139,28 @@ def generate_weekly_image(league_name, standings_data, week_date_str=None, show_
     col_player = 30
     if show_games:
         col_score = 250
-        col_games = 355
-        col_out = 460
-        out_label = "Out"
+        col_games = 350
+        col_out = 450
     else:
         col_games = None
         col_score = 250
         col_out = 400
-        out_label = "Thrown Out"
     
-    # Column headers
+    # Column headers. With the extra column the two-word labels are stacked onto
+    # two lines rather than abbreviated — "Games Played" and "Thrown Out" read
+    # better in full, and stacking buys the width without shrinking anything.
     y = 90
-    draw.text((col_player, y), "Player", font=header_font, fill=hex_to_rgb(COLORS['text_secondary']))
-    draw.text((col_score, y), "Score", font=header_font, fill=hex_to_rgb(COLORS['text_secondary']))
+    hdr = hex_to_rgb(COLORS['text_secondary'])
+    line2 = 26
+    draw.text((col_player, y), "Player", font=header_font, fill=hdr)
+    draw.text((col_score, y), "Score", font=header_font, fill=hdr)
     if show_games:
-        draw.text((col_games, y), "Games", font=header_font, fill=hex_to_rgb(COLORS['text_secondary']))
-    draw.text((col_out, y), out_label, font=header_font, fill=hex_to_rgb(COLORS['text_secondary']))
+        draw.text((col_games, y), "Games", font=header_font, fill=hdr)
+        draw.text((col_games, y + line2), "Played", font=header_font, fill=hdr)
+        draw.text((col_out, y), "Thrown", font=header_font, fill=hdr)
+        draw.text((col_out, y + line2), "Out", font=header_font, fill=hdr)
+    else:
+        draw.text((col_out, y), "Thrown Out", font=header_font, fill=hdr)
     
     # Divider line
     y = header_height
@@ -325,10 +332,11 @@ def generate_division_weekly_image(league_name, div1_data, div2_data, week_date_
     num_div2 = len(div2_data)
     
     # Calculate total height
+    hdr_extra = 24 if show_games else 0   # stacked column headers, per table
     height = (header_height +
-              div_header_height + (num_div1 * row_height) + 30 +
+              div_header_height + hdr_extra + (num_div1 * row_height) + 30 +
               section_gap +
-              div_header_height + (num_div2 * row_height) + 30 +
+              div_header_height + hdr_extra + (num_div2 * row_height) + 30 +
               padding * 2 + 30)
     
     img = Image.new('RGB', (width, height), hex_to_rgb(COLORS['background']))
@@ -360,14 +368,12 @@ def generate_division_weekly_image(league_name, div1_data, div2_data, week_date_
     col_player = 30
     if show_games:
         col_score = 250
-        col_games = 355
-        col_out = 460
-        out_label = "Out"
+        col_games = 350
+        col_out = 450
     else:
         col_games = None
         col_score = 250
         col_out = 400
-        out_label = "Thrown Out"
     
     def draw_division_table(y_start, div_label, div_color, div_data):
         """Draw a single division table, return y position after table"""
@@ -393,15 +399,21 @@ def generate_division_weekly_image(league_name, div1_data, div2_data, week_date_
         draw.text((col_player, y_start + 10), div_label, font=div_title_font,
                   fill=hex_to_rgb(div_color))
         
-        # Column headers
+        # Column headers — two-word labels stacked onto two lines when the
+        # Games column is present, so they read in full without squeezing.
         y = y_start + div_header_height + 5
-        draw.text((col_player, y), "Player", font=header_font, fill=hex_to_rgb(COLORS['text_secondary']))
-        draw.text((col_score, y), "Score", font=header_font, fill=hex_to_rgb(COLORS['text_secondary']))
+        hdr = hex_to_rgb(COLORS['text_secondary'])
+        draw.text((col_player, y), "Player", font=header_font, fill=hdr)
+        draw.text((col_score, y), "Score", font=header_font, fill=hdr)
         if show_games:
-            draw.text((col_games, y), "Games", font=header_font, fill=hex_to_rgb(COLORS['text_secondary']))
-        draw.text((col_out, y), out_label, font=header_font, fill=hex_to_rgb(COLORS['text_secondary']))
+            draw.text((col_games, y), "Games", font=header_font, fill=hdr)
+            draw.text((col_games, y + 24), "Played", font=header_font, fill=hdr)
+            draw.text((col_out, y), "Thrown", font=header_font, fill=hdr)
+            draw.text((col_out, y + 24), "Out", font=header_font, fill=hdr)
+        else:
+            draw.text((col_out, y), "Thrown Out", font=header_font, fill=hdr)
         
-        y += 28
+        y += 52 if show_games else 28
         
         for i, player in enumerate(div_data):
             row_y = y + (i * row_height)

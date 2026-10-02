@@ -2331,9 +2331,10 @@ def build_weekly_scoreboard_png(league_id, league_name, is_division_mode):
         div1 = [s for s in standings if s.get('division') == 1]
         div2 = [s for s in standings if s.get('division') == 2]
         img = generate_division_weekly_image(league_name, ranked(div1),
-                                             ranked(div2), week_date_str)
+                                             ranked(div2), week_date_str, show_games=True)
     else:
-        img = generate_weekly_image(league_name, ranked(standings), week_date_str)
+        img = generate_weekly_image(league_name, ranked(standings), week_date_str,
+                                    show_games=True)
 
     return image_to_bytes(img)
 

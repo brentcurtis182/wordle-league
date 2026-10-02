@@ -2239,6 +2239,24 @@ def public_league_scoreboard(slug):
                     headers={'Cache-Control': 'public, max-age=120'})
 
 
+def _league_min_weekly_scores(league_id, default=5):
+    """How many scores a player needs before they count as eligible."""
+    try:
+        conn = get_db_connection()
+        try:
+            cur = conn.cursor()
+            cur.execute("SELECT COALESCE(min_weekly_scores, %s) FROM leagues WHERE id = %s",
+                        (default, league_id))
+            row = cur.fetchone()
+            cur.close()
+            return int(row[0]) if row and row[0] is not None else default
+        finally:
+            conn.close()
+    except Exception as e:
+        logging.error(f"min_weekly_scores lookup failed for league {league_id}: {e}")
+        return default
+
+
 def build_weekly_scoreboard_png(league_id, league_name, is_division_mode):
     """
     Render the current week's scoreboard as PNG bytes.
@@ -2277,21 +2295,45 @@ def build_weekly_scoreboard_png(league_id, league_name, is_division_mode):
             image_data.append({
                 'name': player['name'],
                 'score': current_score,
-                'used': player['days_posted'],
+                # Count VALID scores, not posts. days_posted includes X/6
+                # failures, so a player who failed twice looked like a full
+                # week's play with a flatteringly low total — and sorted above
+                # people who had actually completed more puzzles. The web
+                # Weekly Totals table counts used_scores, which excludes
+                # failures; this has to match or the two disagree.
+                'used': len(score_values) if player['days_posted'] > 0 else 0,
                 'failed': player.get('failed_attempts', 0),
                 'thrown': player.get('thrown_out', []),
                 'eligible': player['eligible'],
             })
         return image_data
 
+    # Order the board the same way the web Weekly Totals table does
+    # (html_generator_v2, "Sort players: ELIGIBLE FIRST"). The image used to
+    # render whatever order get_weekly_standings happened to return, which is
+    # not the same thing — so the Slack board and the league page disagreed,
+    # and the board appeared to rank by raw total while ignoring how many games
+    # each person had played. Comparing a 2-game total against a 5-game total
+    # ranks the person who has played least at the top.
+    min_scores = _league_min_weekly_scores(league_id)
+
+    def ranked(player_list):
+        rows = build_image_data(player_list)
+        rows.sort(key=lambda d: (
+            (d['used'] or 0) < min_scores,                              # eligible first
+            -(d['used'] or 0) if (d['used'] or 0) < min_scores else 0,  # then most games
+            d['score'] if (d['used'] or 0) > 0 and d['score'] is not None else 999,
+            -(d['used'] or 0),                                          # tie-break: more games
+        ))
+        return rows
+
     if is_division_mode:
-        key = lambda x: (not x['eligible'], x['best_5_total'] if x['best_5_total'] is not None else 999)
-        div1 = sorted([s for s in standings if s.get('division') == 1], key=key)
-        div2 = sorted([s for s in standings if s.get('division') == 2], key=key)
-        img = generate_division_weekly_image(league_name, build_image_data(div1),
-                                             build_image_data(div2), week_date_str)
+        div1 = [s for s in standings if s.get('division') == 1]
+        div2 = [s for s in standings if s.get('division') == 2]
+        img = generate_division_weekly_image(league_name, ranked(div1),
+                                             ranked(div2), week_date_str)
     else:
-        img = generate_weekly_image(league_name, build_image_data(standings), week_date_str)
+        img = generate_weekly_image(league_name, ranked(standings), week_date_str)
 
     return image_to_bytes(img)
 

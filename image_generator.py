@@ -130,16 +130,21 @@ def generate_weekly_image(league_name, standings_data, week_date_str=None):
     draw.text((width // 2, 70), week_label, font=week_font,
               fill=hex_to_rgb(COLORS['text_secondary']), anchor="mm")
     
-    # Column positions - 3 columns only: Player, Score, Thrown Out
+    # Column positions. Games is worth the space: the board ranks by games
+    # played before score, so without it the order reads as arbitrary — a 3-game
+    # 11 sitting above a 2-game 8 looks wrong until you can see the counts.
+    # "Thrown Out" shortened to "Out" to make room within the same width.
     col_player = 30
-    col_score = 250  # Centered more
-    col_out = 400
+    col_games = 250
+    col_score = 345
+    col_out = 455
     
     # Column headers
     y = 90
     draw.text((col_player, y), "Player", font=header_font, fill=hex_to_rgb(COLORS['text_secondary']))
+    draw.text((col_games, y), "Games", font=header_font, fill=hex_to_rgb(COLORS['text_secondary']))
     draw.text((col_score, y), "Score", font=header_font, fill=hex_to_rgb(COLORS['text_secondary']))
-    draw.text((col_out, y), "Thrown Out", font=header_font, fill=hex_to_rgb(COLORS['text_secondary']))
+    draw.text((col_out, y), "Out", font=header_font, fill=hex_to_rgb(COLORS['text_secondary']))
     
     # Divider line
     y = header_height
@@ -165,13 +170,18 @@ def generate_weekly_image(league_name, standings_data, week_date_str=None):
         draw.text((col_player, row_y + 15), name, font=player_font, 
                   fill=hex_to_rgb(COLORS['text_primary']))
         
+        # Games — valid scores counted, which is what the ranking uses
+        used = player.get('used') or 0
+        draw.text((col_games + 22, row_y + 15), str(used), font=score_font,
+                  fill=hex_to_rgb(COLORS['text_primary'] if used else COLORS['text_secondary']))
+
         # Score - show current total even if not eligible
         score = player.get('score')
         if score is not None and score > 0:
-            draw.text((col_score + 30, row_y + 15), str(score), font=score_font,
+            draw.text((col_score + 22, row_y + 15), str(score), font=score_font,
                       fill=hex_to_rgb(COLORS['text_primary']))
         else:
-            draw.text((col_score + 30, row_y + 15), "-", font=score_font,
+            draw.text((col_score + 22, row_y + 15), "-", font=score_font,
                       fill=hex_to_rgb(COLORS['text_secondary']))
         
         # Thrown out
@@ -183,7 +193,7 @@ def generate_weekly_image(league_name, standings_data, week_date_str=None):
             draw.text((col_out, row_y + 15), thrown_text, font=score_font,
                       fill=hex_to_rgb(COLORS['text_secondary']))
         else:
-            draw.text((col_out + 20, row_y + 15), "-", font=score_font,
+            draw.text((col_out + 12, row_y + 15), "-", font=score_font,
                       fill=hex_to_rgb(COLORS['text_secondary']))
     
     # Footer

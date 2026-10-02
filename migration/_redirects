@@ -1,0 +1,78 @@
+# Cloudflare Pages redirects for wordplayleague.com
+# Format: /source  /destination  status
+# Drop this at the root of the Pages project (alongside index.html).
+#
+# Built 2026-09-26 from the live sitemaps plus the Wix editor page list.
+# Rule of thumb applied here: redirect pages that have links or rankings,
+# and let genuinely dead pages 404. Mass-redirecting unrelated pages to /
+# is read as a soft 404 and passes nothing, so it is not done below.
+
+# ---------------------------------------------------------------------------
+# A2P / SMS — the campaign quotes these two URLs in its consent description
+# AND inside the opt-in message body every player receives. They are also the
+# Privacy and Support URLs on the Slack Marketplace submission. These are
+# rebuilt as real pages, not redirected. Listed here only as a reminder.
+#   /privacy-policy   -> rebuild
+#   /sms-terms        -> rebuild
+#   /terms-of-service -> rebuild
+
+# ---------------------------------------------------------------------------
+# /register is deliberately NOT redirected.
+#
+# The legacy A2P campaign (858) declares it by name as the web-form opt-in,
+# and that page as written is what satisfied the registration. Nobody uses the
+# form, but the audience for it is carriers and auditors, not players. Rebuild
+# it verbatim on Cloudflare -- same fields (first name, last name, email*,
+# phone*) and the same consent paragraph, which must keep reading:
+#
+#   "By providing your mobile phone number and clicking "Register", you agree
+#    to receive automated text messages from Wordplay League at the number you
+#    provide, including score confirmations, league standings, and other
+#    information related to your participation in Wordplay League. Message and
+#    data rates may apply. Reply STOP to cancel, HELP for help. See our Text
+#    Messaging Terms and Privacy Policy."
+#
+# Keep it noindexed, and keep both legal links live.
+
+# ---------------------------------------------------------------------------
+# Blog — being retired. All four URLs are indexed, so redirect rather than
+# delete. Posts go to the closest real equivalent, not blindly to /.
+/post/exploring-the-new-rules-tab-and-its-impact-on-user-experience  /rules      301
+/post/enhancing-user-engagement-with-a-minimum-weekly-score-feature  /rules      301
+/post/custom-season-wins                                            /how-it-works 301
+/blog                                                               /            301
+/post/*                                                             /            301
+
+# ---------------------------------------------------------------------------
+# /blank-1 and /blank-3 are NOT redirected.
+#
+# They are titled "Accessibility Statement" and "Refund Policy" but contain
+# Wix's own instructional templates, never filled in -- the refund page is
+# literally Wix explaining how to write a refund policy, and the accessibility
+# page still has "[enter organization / business name]" in it. Both are being
+# deleted in Wix ahead of the cutover, so they will already be 404ing and
+# deindexed by the time the apex flips. Nothing worth pointing anywhere.
+#
+# Real versions get written after cutover at /refund-policy and /accessibility.
+# The refund policy is the one that matters: Stripe subscriptions are live.
+
+# ---------------------------------------------------------------------------
+# Orphaned per-league pages. Noindexed and unlinked since the directory
+# replaced them, but they were public once. Send each to its live league.
+/bellyup         https://app.wordplayleague.com/leagues/bellyup   301
+/pal             https://app.wordplayleague.com/leagues/pal       301
+/wordle-warriorz https://app.wordplayleague.com/leagues/warriorz  301
+/pickle-party    https://app.wordplayleague.com/leagues/party     301
+
+# ---------------------------------------------------------------------------
+# Deliberately NOT redirected — these should 404.
+#
+#   /donation-thank-you-page
+#       An unconfigured Wix Donations template. It still renders its own
+#       placeholders ("Thank you, Donor Name ... donation of $0") and there is
+#       no payment flow behind it. It is indexed today; letting it 404 is the
+#       point, not an oversight.
+#
+#   /my-orders, /my-subscriptions, /notifications, /member-profiles
+#       Wix defaults that were never used. Wix Members has zero members
+#       (its sitemap is empty). Nothing to preserve.

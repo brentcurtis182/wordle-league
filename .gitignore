@@ -48,3 +48,8 @@ staging/
 
 # Backup files
 *.backup_*
+
+# Marketing source images for the Wix -> Cloudflare migration (~20MB of PNGs).
+# Local-only on purpose: the app never reads them, and this repo rebuilds on
+# Railway every deploy. NOT a backup — keep copies somewhere else.
+image_artifacts/

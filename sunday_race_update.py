@@ -312,6 +312,33 @@ def compute_player_scenario(player, leader_total, leader_names, min_scores=5):
 
     return None, None
 
+def find_potential_qualifiers(standings, leader_total, min_scores):
+    """Ineligible players one game short who could STILL tie or beat the leader.
+
+    A one-short player's next score ADDS to their total rather than replacing a
+    throw-out, so the live/eliminated line is whether their BEST possible finish
+    (a 1) reaches the leader. Asking whether their WORST possible finish (a 6)
+    reaches the leader is a guaranteed-win test, and using it to decide the race
+    is what declared "RACE OVER" over a challenger sitting one score away
+    (league 44, week 1927: Andreas at 17 with 4 games needed a 3 to tie the
+    leader's 20, and was dropped because 17+6 > 20).
+
+    Matches the elimination test in compute_player_scenario, which both callers
+    hand these players off to. Keep the two in agreement.
+    """
+    one_short = min_scores - 1
+    qualifiers = []
+    for p in standings:
+        if p['eligible']:
+            continue
+        non_fail = [s for s in p['scores'].values() if s != 7]
+        # len(non_fail) == one_short already implies days_posted >= one_short.
+        if len(non_fail) != one_short:
+            continue
+        if sum(sorted(non_fail)[:one_short]) + 1 <= leader_total:
+            qualifiers.append(p)
+    return qualifiers
+
 def upload_image_to_twilio(image_bytes, twilio_sid, twilio_token, chat_service_sid):
     """Upload an image to Twilio MCS and return the Media SID"""
     try:
@@ -637,8 +664,13 @@ def build_division_scenario(div_standings, div_num, div_weekly_wins, div_current
     
     if len(eligible) == 1:
         winner = eligible[0]
-        return f"{div_label}: {winner['name']} has this week LOCKED at {winner['best_5_total']}! No one else has enough scores to compete."
-    
+        # Only LOCKED if nobody one game short can qualify today and still reach
+        # them. The non-division path has always made this check; this one did
+        # not, and declared the week over the moment a single player qualified.
+        if not find_potential_qualifiers(div_standings, winner['best_5_total'], min_scores):
+            return f"{div_label}: {winner['name']} has this week LOCKED at {winner['best_5_total']}! No one else has enough scores to compete."
+        # Someone can still catch them — fall through to the full analysis.
+
     # Find leader(s)
     leader_total = eligible[0]['best_5_total']
     leaders = [s for s in eligible if s['best_5_total'] == leader_total]
@@ -1132,17 +1164,10 @@ WEEKLY RACE ANALYSIS: {scenario}{season_clinch_text}"""
             elif len(eligible) == 1:
                 # Check if any ineligible player one short of qualifying could still qualify and beat the leader
                 winner = eligible[0]
-                potential_qualifiers = []
-                one_short = min_scores - 1
-                for p in standings:
-                    if not p['eligible'] and p['days_posted'] >= one_short:
-                        non_fail = [s for s in p['scores'].values() if s != 7]
-                        if len(non_fail) == one_short:
-                            current_total = sum(sorted(non_fail)[:one_short])
-                            # With a next score of 6 (worst non-fail), could they beat or tie the leader?
-                            if current_total + 6 <= winner['best_5_total']:
-                                potential_qualifiers.append(p)
-                
+                potential_qualifiers = find_potential_qualifiers(
+                    standings, winner['best_5_total'], min_scores
+                )
+
                 if not potential_qualifiers:
                     # Truly locked - no one can qualify and beat them
                     logging.info(f"Only one eligible player in league {league_id}: {winner['name']} has it locked")

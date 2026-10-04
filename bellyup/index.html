@@ -204,6 +204,12 @@
     <div class="emoji-container"><div class="emoji-pattern"><div class="emoji-row"><span class="wl-block wl-cyan"></span><span class="wl-block wl-light"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-light"></span><span class="wl-block wl-light"></span></div><div class="emoji-row"><span class="wl-block wl-cyan"></span><span class="wl-block wl-light"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span></div><div class="emoji-row"><span class="wl-block wl-cyan"></span><span class="wl-block wl-light"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span></div><div class="emoji-row"><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span></div></div></div>
 </div><div class="score-card">
     <div class="player-info">
+        <div class="player-name">Meredith</div>
+        <div class="player-score"><span style="color: #FFA64D; background-color: rgba(255, 166, 77, 0.15); padding: 2px 8px; border-radius: 3px; display: inline-block; font-weight: bold;">4/6</span></div>
+    </div>
+    <div class="emoji-container"><div class="emoji-pattern"><div class="emoji-row"><span class="wl-block wl-light"></span><span class="wl-block wl-orange"></span><span class="wl-block wl-light"></span><span class="wl-block wl-orange"></span><span class="wl-block wl-light"></span></div><div class="emoji-row"><span class="wl-block wl-cyan"></span><span class="wl-block wl-light"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-light"></span><span class="wl-block wl-light"></span></div><div class="emoji-row"><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-light"></span><span class="wl-block wl-light"></span></div><div class="emoji-row"><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span></div></div></div>
+</div><div class="score-card">
+    <div class="player-info">
         <div class="player-name">Jeremy</div>
         <div class="player-score"><span style="color: #FFA64D; background-color: rgba(255, 166, 77, 0.15); padding: 2px 8px; border-radius: 3px; display: inline-block; font-weight: bold;">5/6</span></div>
     </div>
@@ -214,12 +220,6 @@
         <div class="player-score"><span style="color: #FFA64D; background-color: rgba(255, 166, 77, 0.15); padding: 2px 8px; border-radius: 3px; display: inline-block; font-weight: bold;">5/6</span></div>
     </div>
     <div class="emoji-container"><div class="emoji-pattern"><div class="emoji-row"><span class="wl-block wl-orange"></span><span class="wl-block wl-orange"></span><span class="wl-block wl-light"></span><span class="wl-block wl-light"></span><span class="wl-block wl-orange"></span></div><div class="emoji-row"><span class="wl-block wl-cyan"></span><span class="wl-block wl-orange"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-light"></span><span class="wl-block wl-light"></span></div><div class="emoji-row"><span class="wl-block wl-cyan"></span><span class="wl-block wl-light"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span></div><div class="emoji-row"><span class="wl-block wl-cyan"></span><span class="wl-block wl-light"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span></div><div class="emoji-row"><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span><span class="wl-block wl-cyan"></span></div></div></div>
-</div><div class="score-card">
-    <div class="player-info">
-        <div class="player-name">Meredith</div>
-        <div class="player-score"><span>No Score</span></div>
-    </div>
-    <div class="emoji-container"><div class="emoji-pattern"></div></div>
 </div>
 </div>
 <div class="tab-content" id="weekly">
@@ -232,6 +232,7 @@
     <option value="season">Season Total</option>
   </select>
 </div>
+<p class="season-note-1" style="display:none; margin:0 0 8px 0; font-size:0.82em; color:#818384; font-style:italic;">Ranked by weeks missed first, then Season Total, then weekly wins &mdash; the same order used for promotion and relegation. A missed week leaves an unfairly low total, so it outweighs the score.</p>
 <div class="table-container" style="overflow-x: auto;">
 <table id="div-table-1">
 <thead>
@@ -253,51 +254,51 @@
 </tr>
 </thead>
 <tbody>
-<tr style="background-color: rgba(0, 232, 218, 0.15);">
+<tr style="background-color: rgba(0, 232, 218, 0.15);" data-wins="0">
     <td class="sticky-column"><strong>Dan</strong></td>
     <td class="score-col-weekly-1" style="font-weight: bold;">17</td>
     <td class="score-col-season-1" style="display:none; font-weight: bold;">69</td>
     <td>5</td>
     <td>-</td>
     <td style="white-space: nowrap;">4, 5</td>
-    <td>-</td>
+    <td class="wks-missed-1">-</td>
 <td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="medium" style="color: #FFA64D; font-weight: bold;">5</td><td class="good" style="color: #00E8DA; font-weight: bold;">3</td></tr>
-<tr style="background-color: rgba(0, 232, 218, 0.15);">
+<tr style="background-color: rgba(0, 232, 218, 0.15);" data-wins="0">
     <td class="sticky-column"><strong>Jennie</strong></td>
     <td class="score-col-weekly-1" style="font-weight: bold;">17</td>
     <td class="score-col-season-1" style="display:none; font-weight: bold;">65</td>
     <td>5</td>
     <td>-</td>
     <td style="white-space: nowrap;">4, 4</td>
-    <td>-</td>
+    <td class="wks-missed-1">-</td>
 <td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td></tr>
-<tr style="background-color: rgba(0, 232, 218, 0.15);">
+<tr style="background-color: rgba(0, 232, 218, 0.15);" data-wins="2">
     <td class="sticky-column"><strong>Troy</strong></td>
     <td class="score-col-weekly-1" style="font-weight: bold;">17</td>
     <td class="score-col-season-1" style="display:none; font-weight: bold;">61</td>
     <td>5</td>
     <td>-</td>
     <td style="white-space: nowrap;">4, 5</td>
-    <td>-</td>
+    <td class="wks-missed-1">-</td>
 <td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="medium" style="color: #FFA64D; font-weight: bold;">5</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="good" style="color: #00E8DA; font-weight: bold;">2</td></tr>
-<tr style="background-color: rgba(0, 232, 218, 0.15);">
+<tr style="background-color: rgba(0, 232, 218, 0.15);" data-wins="1">
     <td class="sticky-column"><strong>Dave</strong></td>
     <td class="score-col-weekly-1" style="font-weight: bold;">17</td>
     <td class="score-col-season-1" style="display:none; font-weight: bold;">63</td>
     <td>5</td>
     <td>-</td>
     <td style="white-space: nowrap;">5</td>
-    <td style="color: #ff5c5c; font-weight: bold;">1</td>
+    <td class="wks-missed-1" style="color: #ff5c5c; font-weight: bold;">1</td>
 <td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td>-</td>
 <td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="good" style="color: #00E8DA; font-weight: bold;">2</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="medium" style="color: #FFA64D; font-weight: bold;">5</td></tr>
-<tr style="background-color: rgba(0, 232, 218, 0.15);">
+<tr style="background-color: rgba(0, 232, 218, 0.15);" data-wins="0">
     <td class="sticky-column"><strong>Brent</strong></td>
     <td class="score-col-weekly-1" style="font-weight: bold;">19</td>
     <td class="score-col-season-1" style="display:none; font-weight: bold;">69</td>
     <td>5</td>
     <td style="color: #ff5c5c; font-weight: bold;">1</td>
     <td style="white-space: nowrap;">5</td>
-    <td>-</td>
+    <td class="wks-missed-1">-</td>
 <td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td class="failed" style="color: #787c7e; font-weight: bold;">X</td><td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td class="medium" style="color: #FFA64D; font-weight: bold;">5</td><td class="medium" style="color: #FFA64D; font-weight: bold;">5</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td></tr>
 </tbody>
 </table>
@@ -312,6 +313,7 @@
     <option value="season">Season Total</option>
   </select>
 </div>
+<p class="season-note-2" style="display:none; margin:0 0 8px 0; font-size:0.82em; color:#818384; font-style:italic;">Ranked by weeks missed first, then Season Total, then weekly wins &mdash; the same order used for promotion and relegation. A missed week leaves an unfairly low total, so it outweighs the score.</p>
 <div class="table-container" style="overflow-x: auto;">
 <table id="div-table-2">
 <thead>
@@ -333,45 +335,44 @@
 </tr>
 </thead>
 <tbody>
-<tr style="background-color: rgba(255, 166, 77, 0.15);">
+<tr style="background-color: rgba(255, 166, 77, 0.15);" data-wins="2">
     <td class="sticky-column"><strong>Meredith</strong></td>
     <td class="score-col-weekly-2" style="font-weight: bold;">17</td>
     <td class="score-col-season-2" style="display:none; font-weight: bold;">84</td>
     <td>5</td>
     <td>-</td>
-    <td style="white-space: nowrap;">4</td>
-    <td style="color: #ff5c5c; font-weight: bold;">1</td>
-<td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td>-</td>
-</tr>
-<tr style="background-color: rgba(255, 166, 77, 0.15);">
+    <td style="white-space: nowrap;">4, 4</td>
+    <td class="wks-missed-2" style="color: #ff5c5c; font-weight: bold;">1</td>
+<td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td></tr>
+<tr style="background-color: rgba(255, 166, 77, 0.15);" data-wins="0">
     <td class="sticky-column"><strong>Roy</strong></td>
     <td class="score-col-weekly-2" style="font-weight: bold;">18</td>
     <td class="score-col-season-2" style="display:none; font-weight: bold;">95</td>
     <td>5</td>
     <td style="color: #ff5c5c; font-weight: bold;">1</td>
     <td>-</td>
-    <td>-</td>
+    <td class="wks-missed-2">-</td>
 <td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="failed" style="color: #787c7e; font-weight: bold;">X</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td>-</td>
 <td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="good" style="color: #00E8DA; font-weight: bold;">2</td></tr>
-<tr style="background-color: rgba(255, 166, 77, 0.15);">
+<tr style="background-color: rgba(255, 166, 77, 0.15);" data-wins="2">
     <td class="sticky-column"><strong>Henry</strong></td>
     <td class="score-col-weekly-2" style="font-weight: bold;">20</td>
     <td class="score-col-season-2" style="display:none; font-weight: bold;">92</td>
     <td>5</td>
     <td>-</td>
     <td>-</td>
-    <td>-</td>
+    <td class="wks-missed-2">-</td>
 <td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="medium" style="color: #FFA64D; font-weight: bold;">6</td><td>-</td>
 <td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td>-</td>
 <td class="good" style="color: #00E8DA; font-weight: bold;">3</td></tr>
-<tr style="background-color: rgba(255, 166, 77, 0.15);">
+<tr style="background-color: rgba(255, 166, 77, 0.15);" data-wins="1">
     <td class="sticky-column"><strong style="color: #FFA64D;">Jeremy</strong></td>
     <td class="score-col-weekly-2" style="font-weight: bold;">21</td>
     <td class="score-col-season-2" style="display:none; font-weight: bold;"><span style="color: #FFA64D;">Relegated</span></td>
     <td>5</td>
     <td>-</td>
     <td style="white-space: nowrap;">5, 5</td>
-    <td>-</td>
+    <td class="wks-missed-2">-</td>
 <td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="good" style="color: #00E8DA; font-weight: bold;">3</td><td class="medium" style="color: #FFA64D; font-weight: bold;">5</td><td class="medium" style="color: #FFA64D; font-weight: bold;">4</td><td class="medium" style="color: #FFA64D; font-weight: bold;">5</td><td class="medium" style="color: #FFA64D; font-weight: bold;">5</td><td class="medium" style="color: #FFA64D; font-weight: bold;">5</td></tr>
 </tbody>
 </table>
@@ -389,34 +390,54 @@ function toggleScoreView(divNum) {
     var tbody = table.querySelector('tbody');
     var rows = Array.from(tbody.querySelectorAll('tr'));
     
+    var seasonNotes = document.querySelectorAll('.season-note-' + divNum);
+
     if (mode === 'season') {
         weeklyCols.forEach(function(el) { el.style.display = 'none'; });
         seasonCols.forEach(function(el) { el.style.display = ''; });
+        seasonNotes.forEach(function(el) { el.style.display = ''; });
         // Save original order if not saved
         if (!originalOrder[divNum]) {
             originalOrder[divNum] = rows.map(function(r) { return r; });
         }
-        // Sort by season total: numeric ascending (lower=better), Immune/Relegated and - go to bottom
+        // Order by actual standing: MISSED WEEKS first, then season total.
+        // Sorting on total alone is actively misleading — a missed week
+        // contributes fewer scores, so skipping games LOWERS your total and
+        // floats you to the top. That is exactly why relegation ranks missed
+        // weeks above total, and why Dave (63, 1 missed week) appeared to be
+        // leading Belly Up Div I while being the one in the drop zone.
         var statusLabels = ['Immune', 'Relegated'];
+        function readRow(r) {
+            var sCell = r.querySelector('.score-col-season-' + divNum);
+            var mCell = r.querySelector('.wks-missed-' + divNum);
+            var sVal = sCell ? sCell.textContent.trim() : '-';
+            var mVal = mCell ? mCell.textContent.trim() : '-';
+            var isStatus = statusLabels.indexOf(sVal) >= 0;
+            var blank = isStatus || sVal === '-' || sVal === '0';
+            return {
+                isStatus: isStatus,
+                blank: blank,
+                total: blank ? 99999 : parseInt(sVal, 10),
+                missed: (mVal === '-' || mVal === '') ? 0 : (parseInt(mVal, 10) || 0),
+                wins: parseInt(r.getAttribute('data-wins') || '0', 10) || 0
+            };
+        }
         rows.sort(function(a, b) {
-            var aCell = a.querySelector('.score-col-season-' + divNum);
-            var bCell = b.querySelector('.score-col-season-' + divNum);
-            var aVal = aCell ? aCell.textContent.trim() : '-';
-            var bVal = bCell ? bCell.textContent.trim() : '-';
-            var aIsStatus = statusLabels.indexOf(aVal) >= 0;
-            var bIsStatus = statusLabels.indexOf(bVal) >= 0;
-            var aNum = (aIsStatus || aVal === '-' || aVal === '0') ? 99999 : parseInt(aVal);
-            var bNum = (bIsStatus || bVal === '-' || bVal === '0') ? 99999 : parseInt(bVal);
-            if (aIsStatus && !bIsStatus) return 1;
-            if (bIsStatus && !aIsStatus) return -1;
-            if (aVal === '-' && bVal !== '-') return 1;
-            if (bVal === '-' && aVal !== '-') return -1;
-            return aNum - bNum;
+            var x = readRow(a), y = readRow(b);
+            // Immune/Relegated and players with no season score sink to the bottom.
+            if (x.isStatus !== y.isStatus) return x.isStatus ? 1 : -1;
+            if (x.blank !== y.blank) return x.blank ? 1 : -1;
+            // Mirrors division_manager.promotion_sort_key exactly:
+            // fewest missed weeks, then best total, then MOST weekly wins.
+            if (x.missed !== y.missed) return x.missed - y.missed;
+            if (x.total !== y.total) return x.total - y.total;
+            return y.wins - x.wins;
         });
         rows.forEach(function(r) { tbody.appendChild(r); });
     } else {
         weeklyCols.forEach(function(el) { el.style.display = ''; });
         seasonCols.forEach(function(el) { el.style.display = 'none'; });
+        seasonNotes.forEach(function(el) { el.style.display = 'none'; });
         // Restore original order
         if (originalOrder[divNum]) {
             originalOrder[divNum].forEach(function(r) { tbody.appendChild(r); });
@@ -493,7 +514,7 @@ function toggleScoreView(divNum) {
 </tr>
 <tr>
     <td class="name-cell"><strong>Meredith</strong></td>
-    <td>247</td>
+    <td>248</td>
     <td>3.79</td>
 </tr>
 <tr>

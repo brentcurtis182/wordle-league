@@ -1041,6 +1041,19 @@ def get_division_season_data(league_id, weekly_stats=None, conn=None, min_scores
         missed_weeks = {}
         clear_min_scores_cache(league_id)
 
+        # Weekly wins this season — the third tiebreak in the promotion/relegation
+        # ordering (division_manager.promotion_sort_key), so the Season Total view
+        # can rank two players level on missed weeks AND total.
+        div_weekly_wins = {}
+        if season_start:
+            cursor.execute("""
+                SELECT player_name, COUNT(*)
+                FROM weekly_winners
+                WHERE league_id = %s AND division = %s AND week_wordle_number >= %s
+                GROUP BY player_name
+            """, (league_id, div_num, season_start))
+            div_weekly_wins = {r[0]: r[1] for r in cursor.fetchall()}
+
         # Determine current week start wordle from weekly_stats
         current_week_start = None
         if weekly_stats:
@@ -1117,6 +1130,7 @@ def get_division_season_data(league_id, weekly_stats=None, conn=None, min_scores
             'players': div_players,
             'season_totals': season_totals,
             'missed_weeks': missed_weeks,
+            'weekly_wins': div_weekly_wins,
             # Current-season target is the effective per-league value; DIVISION_WINS
             # above stays fixed at 3 for reconstructing PAST seasons (no retroactive change).
             'wins_needed': get_league_season_wins(league_id, division_mode=True, conn=conn)

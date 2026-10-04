@@ -547,9 +547,6 @@ def check_relegation_promotion_ties(league_id, div1_season_info, div2_season_inf
             relegated_count = cursor.fetchone()[0]
 
             if candidates:
-                def _why(c):
-                    return f"{c[1]} total, {c[2]} missed wk{'s' if c[2] != 1 else ''}" if c[2] else f"Season Total {c[1]}"
-
                 if len(candidates) > relegated_count:
                     # A genuine tie needs ALL THREE criteria equal — only then is it a draw.
                     boundary_key = relegation_sort_key(candidates[relegated_count - 1][2],
@@ -559,17 +556,13 @@ def check_relegation_promotion_ties(league_id, div1_season_info, div2_season_inf
                                         if relegation_sort_key(c[2], c[1], c[3]) == boundary_key]
                     if len(tied_at_boundary) > relegated_count:
                         names = ' and '.join(c[0] for c in tied_at_boundary)
-                        div1_warnings.append(f"Relegation drama: {names} are dead level ({_why(tied_at_boundary[0])}, same wins) — a random draw would decide who moves down! 😮")
+                        reason = _standing_reason(tied_at_boundary[0][1], tied_at_boundary[0][2])
+                        div1_warnings.append(f"Relegation drama: {names} are dead level ({reason}, same wins) — a random draw would decide who moves down! 😮")
                     else:
                         relegated = candidates[:relegated_count]
-                        rel_names = ' and '.join(c[0] for c in relegated)
-                        if relegated_count == 1:
-                            div1_warnings.append(f"Relegation: If the season ends today, {rel_names} ({_why(relegated[0])}) would be relegated to Division II.")
-                        else:
-                            div1_warnings.append(f"Relegation: If the season ends today, {rel_names} would be relegated to Division II.")
+                        div1_warnings.append(f"Relegation: If the season ends today, {_names_with_reasons(relegated)} would be relegated to Division II.")
                 elif len(candidates) == relegated_count:
-                    rel_names = ' and '.join(c[0] for c in candidates)
-                    div1_warnings.append(f"Relegation: If the season ends today, {rel_names} would be relegated to Division II.")
+                    div1_warnings.append(f"Relegation: If the season ends today, {_names_with_reasons(candidates)} would be relegated to Division II.")
 
         # --- Div II promotion check ---
         cursor.execute("SELECT COALESCE(promoted_count, 1) FROM leagues WHERE id = %s", (league_id,))
@@ -597,9 +590,6 @@ def check_relegation_promotion_ties(league_id, div1_season_info, div2_season_inf
                 remaining.sort(key=lambda r: promotion_sort_key(r[2], r[1], r[3]))
 
                 if remaining:
-                    def _why(r):
-                        return f"{r[1]} total, {r[2]} missed wk{'s' if r[2] != 1 else ''}" if r[2] else f"Season Total {r[1]}"
-
                     clincher_names = ' and '.join(promoted_so_far)
                     if len(remaining) > extra_spots:
                         boundary_key = promotion_sort_key(remaining[extra_spots - 1][2],
@@ -609,14 +599,13 @@ def check_relegation_promotion_ties(league_id, div1_season_info, div2_season_inf
                                             if promotion_sort_key(r[2], r[1], r[3]) == boundary_key]
                         if len(tied_at_boundary) > extra_spots:
                             names = ' and '.join(r[0] for r in tied_at_boundary)
-                            div2_warnings.append(f"Promotion alert: {names} are dead level ({_why(tied_at_boundary[0])}, same wins) for the extra promotion spot — a random draw would decide who also moves up!")
+                            reason = _standing_reason(tied_at_boundary[0][1], tied_at_boundary[0][2])
+                            div2_warnings.append(f"Promotion alert: {names} are dead level ({reason}, same wins) for the extra promotion spot — a random draw would decide who also moves up!")
                         else:
                             extra_promoted = remaining[:extra_spots]
-                            extra_names = ' and '.join(r[0] for r in extra_promoted)
-                            div2_warnings.append(f"Promotion: if {clincher_names} takes the season, {extra_names} ({_why(extra_promoted[0])}) would also earn promotion to Division I!")
+                            div2_warnings.append(f"Promotion: if {clincher_names} takes the season, {_names_with_reasons(extra_promoted)} would also earn promotion to Division I!")
                     else:
-                        extra_names = ' and '.join(r[0] for r in remaining)
-                        div2_warnings.append(f"Promotion: if {clincher_names} takes the season, {extra_names} would also earn promotion to Division I!")
+                        div2_warnings.append(f"Promotion: if {clincher_names} takes the season, {_names_with_reasons(remaining)} would also earn promotion to Division I!")
 
     except Exception as e:
         logging.warning(f"Error checking relegation/promotion ties: {e}")
@@ -632,6 +621,32 @@ def check_relegation_promotion_ties(league_id, div1_season_info, div2_season_inf
 def _win_ordinal(n):
     """'1st', '2nd', '3rd', '4th'... for win counts stated in scenario text."""
     return {1: '1st', 2: '2nd', 3: '3rd'}.get(n, f'{n}th')
+
+
+def _standing_reason(total, missed):
+    """Why a player sits where they do, for relegation/promotion lines.
+
+    ALWAYS state this. Season Total alone makes a player who missed a week look
+    like the leader: a short week contributes fewer scores, so missing games
+    LOWERS your total. Missed weeks rank above total in relegation_sort_key
+    precisely to undo that, and the message has to say so or it reads as a flat
+    contradiction of the league page (league 7, week 1927: "Dave would be
+    relegated" with no reason given, while the page's Season Total column showed
+    Dave on the best score in the division).
+    """
+    if missed:
+        return f"{total} total, {missed} missed wk{'s' if missed != 1 else ''}"
+    return f"Season Total {total}"
+
+
+def _names_with_reasons(entries):
+    """'Dave (63 total, 1 missed wk) and Sam (Season Total 70)'.
+
+    `entries` are (name, total, missed, wins) tuples. Every name carries its own
+    reason — earlier versions attached only the first player's, and attached
+    none at all when more than one player was going down or coming up.
+    """
+    return ' and '.join(f"{e[0]} ({_standing_reason(e[1], e[2])})" for e in entries)
 
 
 def build_division_scenario(div_standings, div_num, div_weekly_wins, div_current_season, min_scores=5, wins_for_season=DIVISION_WINS_FOR_SEASON):
@@ -968,10 +983,22 @@ def send_sunday_race_update(league_id, force_season_image=False):
                 div1_has_stakes=div1_has_stakes, div2_has_stakes=div2_has_stakes
             ) or {}
 
+            # These lines are appended to the final message VERBATIM and are
+            # deliberately kept OUT of the AI prompt. The model paraphrased them
+            # and dropped the reason — "Dave would be relegated to Division II"
+            # with no mention of his missed week, which reads as a flat
+            # contradiction of the league page, where the Season Total column
+            # showed Dave on the division's best score (league 7, week 1927).
+            # The sentences are already complete and factual; letting the model
+            # rewrite them can only lose information. Each carries its own
+            # division label so it cannot be misattributed, which is what went
+            # wrong when both were appended as one blob.
+            movement_lines = []
             if tie_warnings.get(1):
-                div1_scenario = f"{div1_scenario} {tie_warnings[1]}"
+                movement_lines.append(f"Division I — {tie_warnings[1]}")
             if tie_warnings.get(2):
-                div2_scenario = f"{div2_scenario} {tie_warnings[2]}"
+                movement_lines.append(f"Division II — {tie_warnings[2]}")
+            movement_block = ("\n\n" + "\n".join(movement_lines)) if movement_lines else ""
 
             scenario_text = f"{div1_scenario}\n\n{div2_scenario}"
 
@@ -1019,15 +1046,12 @@ DIVISION II SEASON {div2_season_info['current_season']} WINS (need {div_wins_nee
 RACE ANALYSIS:
 {scenario_text}"""
 
+            # No movement-stakes prompt variant any more: the relegation/promotion
+            # outlook is appended verbatim and never reaches the AI prompt.
             has_season_stakes = div1_has_stakes or div2_has_stakes
-            has_movement_stakes = "Relegation:" in scenario_text or "Promotion:" in scenario_text or "Relegation drama:" in scenario_text or "Promotion alert:" in scenario_text
-            
-            if has_season_stakes and has_movement_stakes:
-                prompt = f"It's Sunday morning Wordle race update for a league with DIVISIONS! Give a brief update for EACH division separately. {div_context} THIS IS HUGE - MENTION THE SEASON STAKES AND THE RELEGATION/PROMOTION STAKES! Make it exciting with emojis! Keep it under 500 characters. Lower scores are better in Wordle."
-            elif has_season_stakes:
-                prompt = f"It's Sunday morning Wordle race update for a league with DIVISIONS! Give a brief update for EACH division separately. {div_context} THIS IS HUGE - MENTION THE SEASON STAKES! Make it exciting with emojis! Keep it under 500 characters. Lower scores are better in Wordle."
-            elif has_movement_stakes:
-                prompt = f"It's Sunday morning Wordle race update for a league with DIVISIONS! Give a brief update for EACH division separately. {div_context} MENTION THE RELEGATION/PROMOTION STAKES! Make it exciting with emojis! Keep it under 500 characters. Lower scores are better in Wordle."
+
+            if has_season_stakes:
+                prompt = f"It's Sunday morning Wordle race update for a league with DIVISIONS! Give a brief update for EACH division separately. {div_context} THIS IS HUGE - MENTION THE SEASON STAKES! Make it exciting with emojis! Keep it under 450 characters. Lower scores are better in Wordle."
             else:
                 prompt = f"It's Sunday morning Wordle race update for a league with DIVISIONS! Give a brief update for EACH division separately. {div_context} Make it exciting with emojis! Keep it under 400 characters. Lower scores are better in Wordle."
             
@@ -1050,9 +1074,8 @@ ACCURACY RULES:
 6. When stating a player's win count or "their Nth win", use ONLY the exact number/ordinal written in the RACE ANALYSIS or SEASON WINS data. Do NOT infer or inflate.
 7. Use emojis for excitement!
 8. Division I first, then Division II. Line break between them.
-9. Promotion/relegation mechanics exist in this league, but only ever reference them when rule 4 permits (the exact words appear in RACE ANALYSIS). Do not explain or apply the mechanics on your own.
-10. If "Relegation:" or "Promotion:" text appears in RACE ANALYSIS, mention it! These are the STAKES. Convey who's in line and why. Attribute it to the division whose paragraph it appears in — relegation text sits inside the Division I paragraph, promotion text inside the Division II paragraph.
-10a. RELEGATION ONLY EXISTS IN DIVISION I and PROMOTION ONLY EXISTS IN DIVISION II. Division II is the bottom division — nobody can be relegated from it, so NEVER write anything about relegation for Division II, not even a vague tease like "relegation stakes loom". Likewise never mention promotion for Division I. The phrase "relegated to Division II" describes where a Division I player is going; it is not a Division II storyline.
+9. Do NOT write a relegation or promotion OUTLOOK — who would go down or come up if the season ended today, who is in the drop zone, who is on the bubble. Not even a tease like "relegation stakes loom". Those lines are appended to your message automatically, word for word, with each player's reason. Anything you write about it is duplicated and probably wrong.
+10. The one exception to rule 9: if RACE ANALYSIS contains "SEASON CLINCH" text that itself mentions earning a PROMOTION, convey that clinch exactly as written. That is a stated result, not an outlook.
 11. FORBIDDEN PHRASES (unless explicitly in RACE ANALYSIS): "locked", "out of contention", "eliminated", "in the hunt", "hail mary" (only if score of 1 needed).
 12. If two players are tied and one hasn't posted and "could improve", the race is NOT over — say they could break the tie."""
             
@@ -1070,6 +1093,9 @@ ACCURACY RULES:
             logging.info(f"Generated division Sunday race update for league {league_id}: {race_message}")
             raw_ai_message = race_message
             race_message = _apply_race_guard(race_message, scenario_text, openai_client, sunday_system_msg, prompt, league_id, 400)
+            # Verbatim, after the guard — these are facts, not narration, and the
+            # guard has no business rewording them either.
+            race_message = f"{race_message}{movement_block}"
         
         # ============================================================
         # STANDARD MODE: single league analysis (existing logic)

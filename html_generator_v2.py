@@ -848,6 +848,7 @@ def generate_division_weekly_totals_html(league_data):
         div_color = "#00E8DA" if div_num == 1 else "#FFA64D"
         season_totals = div_info.get('season_totals', {})
         missed_weeks_data = div_info.get('missed_weeks', {})
+        weekly_wins_data = div_info.get('weekly_wins', {})
         div_players_list = div_info.get('players', [])
         div_player_names = {p['name'] for p in div_players_list}
         immune_players = {p['name'] for p in div_players_list if p.get('immunity')}
@@ -869,6 +870,13 @@ def generate_division_weekly_totals_html(league_data):
         html += f'    <option value="season">Season Total</option>\n'
         html += f'  </select>\n'
         html += f'</div>\n'
+        # Shown only in Season Total mode. Without it the ranking looks arbitrary:
+        # a player with a missed week sits below someone on a worse total.
+        html += (f'<p class="season-note-{div_num}" style="display:none; margin:0 0 8px 0; '
+                 f'font-size:0.82em; color:#818384; font-style:italic;">'
+                 f'Ranked by weeks missed first, then Season Total, then weekly wins &mdash; '
+                 f'the same order used for promotion and relegation. '
+                 f'A missed week leaves an unfairly low total, so it outweighs the score.</p>\n')
         html += f'''<div class="table-container" style="overflow-x: auto;">
 <table id="div-table-{div_num}">
 <thead>
@@ -914,7 +922,7 @@ def generate_division_weekly_totals_html(league_data):
             
             # Highlight immune player names with division color
             name_style = f' style="color: {div_color};"' if player_name in immune_players else ''
-            html += f'<tr{row_style}>\n'
+            html += f'<tr{row_style} data-wins="{weekly_wins_data.get(player_name, 0)}">\n'
             html += f'    <td class="sticky-column"><strong{name_style}>{player_name}</strong></td>\n'
             
             weekly_display = str(stats["best_5_total"]) if stats["used_scores"] > 0 else "-"
@@ -935,10 +943,10 @@ def generate_division_weekly_totals_html(league_data):
             
             pw_missed = missed_weeks_data.get(player_name, 0)
             if pw_missed > 0:
-                html += f'    <td style="color: #ff5c5c; font-weight: bold;">{pw_missed}</td>\n'
+                html += f'    <td class="wks-missed-{div_num}" style="color: #ff5c5c; font-weight: bold;">{pw_missed}</td>\n'
             else:
-                html += f'    <td>-</td>\n'
-            
+                html += f'    <td class="wks-missed-{div_num}">-</td>\n'
+
             for wordle_num in week_wordles:
                 if wordle_num in stats['daily_scores']:
                     score = stats['daily_scores'][wordle_num]['score']
@@ -959,15 +967,15 @@ def generate_division_weekly_totals_html(league_data):
                 else:
                     season_total_display = str(st_val) if st_val else "-"
                 name_style = f' style="color: {div_color};"' if p['name'] in immune_players else ''
-                html += f'<tr>\n'
+                html += f'<tr data-wins="{weekly_wins_data.get(p["name"], 0)}">\n'
                 html += f'    <td class="sticky-column"><strong{name_style}>{p["name"]}</strong></td>\n'
                 html += f'    <td class="score-col-weekly-{div_num}">-</td>\n'
                 html += f'    <td class="score-col-season-{div_num}" style="display:none;">{season_total_display}</td>\n'
                 pw_missed = missed_weeks_data.get(p['name'], 0)
                 if pw_missed > 0:
-                    missed_td = f'<td style="color: #ff5c5c; font-weight: bold;">{pw_missed}</td>'
+                    missed_td = f'<td class="wks-missed-{div_num}" style="color: #ff5c5c; font-weight: bold;">{pw_missed}</td>'
                 else:
-                    missed_td = '<td>-</td>'
+                    missed_td = f'<td class="wks-missed-{div_num}">-</td>'
                 html += f'    <td>0</td><td>-</td><td>-</td>{missed_td}\n'
                 for _ in week_wordles:
                     html += '<td>-</td>\n'
@@ -999,34 +1007,54 @@ function toggleScoreView(divNum) {
     var tbody = table.querySelector('tbody');
     var rows = Array.from(tbody.querySelectorAll('tr'));
     
+    var seasonNotes = document.querySelectorAll('.season-note-' + divNum);
+
     if (mode === 'season') {
         weeklyCols.forEach(function(el) { el.style.display = 'none'; });
         seasonCols.forEach(function(el) { el.style.display = ''; });
+        seasonNotes.forEach(function(el) { el.style.display = ''; });
         // Save original order if not saved
         if (!originalOrder[divNum]) {
             originalOrder[divNum] = rows.map(function(r) { return r; });
         }
-        // Sort by season total: numeric ascending (lower=better), Immune/Relegated and - go to bottom
+        // Order by actual standing: MISSED WEEKS first, then season total.
+        // Sorting on total alone is actively misleading — a missed week
+        // contributes fewer scores, so skipping games LOWERS your total and
+        // floats you to the top. That is exactly why relegation ranks missed
+        // weeks above total, and why Dave (63, 1 missed week) appeared to be
+        // leading Belly Up Div I while being the one in the drop zone.
         var statusLabels = ['Immune', 'Relegated'];
+        function readRow(r) {
+            var sCell = r.querySelector('.score-col-season-' + divNum);
+            var mCell = r.querySelector('.wks-missed-' + divNum);
+            var sVal = sCell ? sCell.textContent.trim() : '-';
+            var mVal = mCell ? mCell.textContent.trim() : '-';
+            var isStatus = statusLabels.indexOf(sVal) >= 0;
+            var blank = isStatus || sVal === '-' || sVal === '0';
+            return {
+                isStatus: isStatus,
+                blank: blank,
+                total: blank ? 99999 : parseInt(sVal, 10),
+                missed: (mVal === '-' || mVal === '') ? 0 : (parseInt(mVal, 10) || 0),
+                wins: parseInt(r.getAttribute('data-wins') || '0', 10) || 0
+            };
+        }
         rows.sort(function(a, b) {
-            var aCell = a.querySelector('.score-col-season-' + divNum);
-            var bCell = b.querySelector('.score-col-season-' + divNum);
-            var aVal = aCell ? aCell.textContent.trim() : '-';
-            var bVal = bCell ? bCell.textContent.trim() : '-';
-            var aIsStatus = statusLabels.indexOf(aVal) >= 0;
-            var bIsStatus = statusLabels.indexOf(bVal) >= 0;
-            var aNum = (aIsStatus || aVal === '-' || aVal === '0') ? 99999 : parseInt(aVal);
-            var bNum = (bIsStatus || bVal === '-' || bVal === '0') ? 99999 : parseInt(bVal);
-            if (aIsStatus && !bIsStatus) return 1;
-            if (bIsStatus && !aIsStatus) return -1;
-            if (aVal === '-' && bVal !== '-') return 1;
-            if (bVal === '-' && aVal !== '-') return -1;
-            return aNum - bNum;
+            var x = readRow(a), y = readRow(b);
+            // Immune/Relegated and players with no season score sink to the bottom.
+            if (x.isStatus !== y.isStatus) return x.isStatus ? 1 : -1;
+            if (x.blank !== y.blank) return x.blank ? 1 : -1;
+            // Mirrors division_manager.promotion_sort_key exactly:
+            // fewest missed weeks, then best total, then MOST weekly wins.
+            if (x.missed !== y.missed) return x.missed - y.missed;
+            if (x.total !== y.total) return x.total - y.total;
+            return y.wins - x.wins;
         });
         rows.forEach(function(r) { tbody.appendChild(r); });
     } else {
         weeklyCols.forEach(function(el) { el.style.display = ''; });
         seasonCols.forEach(function(el) { el.style.display = 'none'; });
+        seasonNotes.forEach(function(el) { el.style.display = 'none'; });
         // Restore original order
         if (originalOrder[divNum]) {
             originalOrder[divNum].forEach(function(r) { tbody.appendChild(r); });

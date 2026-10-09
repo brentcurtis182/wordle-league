@@ -1340,6 +1340,50 @@ def save_score_to_db(player_name, wordle_num, score, emoji_pattern, league_id, c
         conn.rollback()
         return "error"
 
+# Carrier-mandated consent keywords. Twilio intercepts these at the Messaging
+# Service layer: it auto-replies to the sender and adds/removes them on its OWN
+# opt-out list without telling us. The message still reaches /webhook (it lands
+# in the conversation), so that is the only chance we get to keep our records in
+# step with Twilio's.
+#
+# Miss it and the player stays 'IN' in our UI forever while Twilio silently
+# refuses every send to them with error 21610 — they look like an active member
+# who mysteriously receives nothing. Exactly what happened to league 45's manager
+# on 2026-10-09: he texted STOP into his own group thread and our DB never noticed.
+CARRIER_OPT_OUT_KEYWORDS = {'STOP', 'STOPALL', 'UNSUBSCRIBE', 'CANCEL', 'END',
+                            'QUIT', 'REVOKE', 'OPTOUT'}
+# Deliberately NOT including 'YES' (also a Twilio resubscribe keyword): in a group
+# thread "yes" is ordinary conversation, and treating it as consent could opt in
+# someone who never agreed. START/UNSTOP are unambiguous.
+CARRIER_OPT_IN_KEYWORDS = {'START', 'UNSTOP'}
+
+
+def classify_opt_keyword(message_body):
+    """Map an inbound message to a consent intent.
+
+    Returns (intent, is_carrier_keyword):
+      intent             -- 'OPT IN', 'OPT OUT', or None if not a consent message
+      is_carrier_keyword -- True for STOP/START-style keywords Twilio handles
+                            itself, False for our own "OPT IN"/"OPT OUT"
+
+    Callers need the second value for two reasons: Twilio has already replied to
+    the sender (so we must not send a duplicate, and on an opt-out ours would be
+    rejected with 21610), and a carrier resubscribe is not consent from someone
+    who never opted in.
+
+    Case, hyphens and internal whitespace are all normalised, so "Opt In",
+    "opt-in" and "OPT  IN" are equivalent. Trailing punctuation is not accepted.
+    """
+    normalized = re.sub(r'[\s\-]+', ' ', (message_body or '').strip().upper())
+    if normalized in CARRIER_OPT_OUT_KEYWORDS:
+        return 'OPT OUT', True
+    if normalized in CARRIER_OPT_IN_KEYWORDS:
+        return 'OPT IN', True
+    if normalized in ('OPT IN', 'OPT OUT'):
+        return normalized, False
+    return None, False
+
+
 @app.route('/webhook', methods=['POST'])
 def webhook():
     """Handle incoming messages from Twilio Conversations - SILENT MODE (no SMS responses)"""
@@ -1580,7 +1624,9 @@ def webhook():
         # Normalize case, hyphens, and internal whitespace so every variant is
         # accepted: "Opt In", "opt in", "Opt-In", "opt-in", "OPT  IN", etc.
         normalized_opt = re.sub(r'[\s\-]+', ' ', message_body.strip().upper())
-        if normalized_opt in ('OPT IN', 'OPT OUT'):
+        opt_intent, carrier_keyword = classify_opt_keyword(message_body)
+
+        if opt_intent:
             conv_sid_opt = None
             if request.is_json:
                 conv_sid_opt = request.get_json().get('ConversationSid')
@@ -1613,9 +1659,18 @@ def webhook():
 
                         if player_row_opt:
                             player_id_opt, player_name_opt, current_status = player_row_opt
-                            new_status = 'IN' if normalized_opt == 'OPT IN' else 'OUT'
+                            new_status = 'IN' if opt_intent == 'OPT IN' else 'OUT'
 
-                            if current_status == new_status:
+                            # A carrier resubscribe (START/UNSTOP) restores someone
+                            # who opted OUT; it is not consent from a player who has
+                            # never opted in. Leave WAITING players alone so the
+                            # explicit "OPT IN" stays the only way to join.
+                            if (carrier_keyword and new_status == 'IN'
+                                    and current_status != 'OUT'):
+                                logging.info(
+                                    f"[OPT] {player_name_opt} sent '{normalized_opt}' but is "
+                                    f"{current_status}, not OUT — ignoring (not consent to join)")
+                            elif current_status == new_status:
                                 # Already in this state — do nothing. Avoids
                                 # redundant confirmation messages (spam + wasted
                                 # SMS cost) when players re-send "opt in" while
@@ -1630,7 +1685,16 @@ def webhook():
                                 logging.info(f"[OPT] {player_name_opt} (player {player_id_opt}) -> {new_status} in league {opt_league_id}")
 
                                 from message_router import send_league_message
-                                if new_status == 'IN':
+                                if carrier_keyword:
+                                    # Twilio already auto-replied to the sender for
+                                    # STOP/START. A second message from us is noise,
+                                    # and on an opt-out it would be rejected with
+                                    # error 21610 anyway. Record it and stay quiet.
+                                    logging.info(
+                                        f"[OPT] {player_name_opt} -> {new_status} via carrier "
+                                        f"keyword '{normalized_opt}'; suppressing our own "
+                                        f"confirmation (Twilio already replied)")
+                                elif new_status == 'IN':
                                     league_url = f"{APP_BASE_URL}/leagues/{opt_league_slug}"
                                     send_league_message(
                                         opt_league_id,

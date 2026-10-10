@@ -6275,10 +6275,47 @@ def render_admin_league_detail(user, league):
     type_colors = {'sms': '#4CAF50', 'slack': '#E01E5A', 'discord': '#5865F2'}
     type_color = type_colors.get(channel_type, COLORS['text_muted'])
     
-    # Build player rows
+    # Build player rows.
+    #
+    # Status shows OPT-IN state, not `active`. Every player in a league is
+    # `active` unless they've been removed, so "Active" told you nothing — while
+    # a player sitting on WAITING receives nothing and has their scores silently
+    # discarded, and one on OUT has been blocked by the carrier. That is the
+    # distinction worth seeing at a glance.
+    #
+    # Opt-in is an SMS concept: non-SMS players are created as 'IN' and never
+    # change, so showing it for Slack/Discord would imply a check that isn't
+    # happening. Those fall back to plain Active.
+    _OPT_BADGES = {
+        'IN':      ('Opted In',  COLORS['success']),
+        'WAITING': ('Waiting',   COLORS['accent_orange']),
+        'OUT':     ('Opted Out', COLORS['error']),
+    }
+
+    def _status_badge(p):
+        if not p.get('active'):
+            return f'<span style="color: {COLORS["error"]};">Removed</span>'
+        if channel_type != 'sms':
+            return f'<span style="color: {COLORS["success"]};">Active</span>'
+        status = p.get('sms_opt_in_status')
+        label, colour = _OPT_BADGES.get(
+            status, (f'Unknown ({status})' if status else 'Unknown', COLORS['text_muted']))
+        return f'<span style="color: {colour}; font-weight: 600;">{label}</span>'
+
+    # Lead with opted-in vs active for SMS — that gap is the thing worth noticing.
+    _active_n = league.get('player_count', 0)
+    _total_n = len(league.get('players', []))
+    if channel_type == 'sms':
+        _in_n = league.get('opted_in_count', 0)
+        player_summary = f'{_in_n} of {_active_n} opted in, {_total_n} total'
+        if _in_n < _active_n:
+            player_summary += f' — {_active_n - _in_n} not receiving'
+    else:
+        player_summary = f'{_active_n} active, {_total_n} total'
+
     player_rows = ''
     for p in league.get('players', []):
-        active_badge = f'<span style="color: {COLORS["success"]};">Active</span>' if p['active'] else f'<span style="color: {COLORS["error"]};">Removed</span>'
+        active_badge = _status_badge(p)
         identifier = p.get('phone') or p.get('slack_user_id') or p.get('discord_user_id') or '-'
         player_rows += f'''
             <tr>
@@ -6465,7 +6502,7 @@ def render_admin_league_detail(user, league):
             <!-- Players -->
             <div class="card" style="padding: 0; overflow-x: auto;">
                 <div style="padding: 16px 16px 0 16px;">
-                    <h3 style="color: {COLORS['accent']}; margin-bottom: 4px;">Players ({league.get('player_count', 0)} active, {len(league.get('players', []))} total)</h3>
+                    <h3 style="color: {COLORS['accent']}; margin-bottom: 4px;">Players ({player_summary})</h3>
                 </div>
                 <table class="admin-table">
                     <thead>

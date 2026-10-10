@@ -7429,7 +7429,8 @@ def admin_league_detail(league_id):
         
         # Get players
         cursor.execute("""
-            SELECT id, name, phone_number, slack_user_id, discord_user_id, active
+            SELECT id, name, phone_number, slack_user_id, discord_user_id, active,
+                   sms_opt_in_status
             FROM players
             WHERE league_id = %s
             ORDER BY active DESC, name ASC
@@ -7443,9 +7444,15 @@ def admin_league_detail(league_id):
                 'slack_user_id': p[3],
                 'discord_user_id': p[4],
                 'active': p[5],
+                'sms_opt_in_status': p[6],
             })
         league['players'] = players
         league['player_count'] = len([p for p in players if p['active']])
+        # Opted-in count is the number that actually matters for an SMS league: a
+        # player who has not opted in receives nothing and their scores are
+        # discarded, while still looking like a normal active member.
+        league['opted_in_count'] = len([p for p in players
+                                        if p['active'] and p['sms_opt_in_status'] == 'IN'])
         
         # Determine active status
         ct = league['channel_type']

@@ -153,10 +153,19 @@ def set_security_headers(response):
     response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
     response.headers['Permissions-Policy'] = 'camera=(), microphone=(), geolocation=()'
 
-    # Allow embed routes to be iframed by our Wix site
+    # Allow embed routes to be iframed by our own marketing site.
+    # Wix entries stay until the Cloudflare cutover; the pages.dev entries let
+    # the new site be reviewed before it owns the domain.
+    #
+    # Deliberately scoped to our project rather than https://*.pages.dev —
+    # anyone can create a site on that shared domain, and a wildcard there
+    # would let any of them frame our embeds.
     if request.path.startswith('/embed/'):
         response.headers['Content-Security-Policy'] = (
-            "frame-ancestors 'self' https://wordplayleague.com https://www.wordplayleague.com https://*.wix.com https://*.wixsite.com;"
+            "frame-ancestors 'self' "
+            "https://wordplayleague.com https://www.wordplayleague.com "
+            "https://wordplayleague-site.pages.dev https://*.wordplayleague-site.pages.dev "
+            "https://*.wix.com https://*.wixsite.com;"
         )
         # These widgets show live, frequently-changing data — never let the
         # browser/Wix/CDN serve a stale copy (caused a player to look "missing").

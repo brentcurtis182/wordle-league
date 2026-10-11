@@ -2157,7 +2157,7 @@ def _render_players_section(league, players, player_rows, channel_type, identifi
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
             <h2 style="margin: 0;">👥 Players ({len(players)})</h2>
             <div style="display: flex; align-items: center; gap: 12px;">
-                <form method="POST" action="/dashboard/league/{league_id}/division-toggle" id="divisionToggleForm" style="display: inline;">
+                <form method="POST" action="/dashboard/league/{league_id}/division-toggle" id="divisionToggleForm" data-scroll-to="#division-1" style="display: inline;">
                     <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
                         <span style="font-size: 0.85em; color: {COLORS['text_muted']};">Division Mode</span>
                         <div class="{toggle_class}" onclick="{toggle_onclick}">
@@ -2272,17 +2272,17 @@ def _render_division_players(league, players, is_chat_platform):
             </p>
         </div>'''
     
-    # Confirm button (only show before confirmation)
-    confirm_btn = ""
-    if not division_confirmed:
-        confirm_btn = f'''<div style="margin-top: 16px; text-align: center;">
-            <button type="button" class="btn btn-primary" onclick="showFinalizeConfirmModal()" style="padding: 10px 24px;">
-                Confirm Division Mode
-            </button>
-        </div>'''
-    
     # Unified button bar for division management (same size, black text)
     btn_style = f'padding: 8px 16px; font-size: 0.85em; font-weight: 600; border: none; border-radius: 6px; cursor: pointer; color: #000; min-width: 140px; text-align: center;'
+
+    # Confirm button (only show before confirmation). Sits in the button bar
+    # ABOVE the divisions, not under them — at the bottom of a long drag-and-drop
+    # list it was easy to miss, and finalising is the whole point of this screen.
+    confirm_btn = ""
+    if not division_confirmed:
+        confirm_btn = f'''<button type="button" id="confirmDivisionModeBtn" class="btn btn-primary"
+            style="background: {COLORS['accent']}; {btn_style}"
+            onclick="showFinalizeConfirmModal()">Confirm Division Mode</button>'''
     
     # Newly-added players (not yet through a completed week) can still be moved
     # even after the league locks, so surface Edit Divisions when any exist.
@@ -2308,6 +2308,7 @@ def _render_division_players(league, players, is_chat_platform):
     return f'''
     {locked_msg}
     <div style="display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
+        {confirm_btn}
         {edit_divisions_btn}
         {done_editing_btn}
         {reset_btn}
@@ -2367,7 +2368,6 @@ def _render_division_players(league, players, is_chat_platform):
             </div>
         </div>
     </div>
-    {confirm_btn}
     '''
 
 
@@ -2947,7 +2947,10 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                     {f'<button type="button" class="btn" style="background: {COLORS["accent"]}; color: #000; padding: 10px 24px; border-radius: 8px; font-size: 1em; font-weight: 700; cursor: pointer; border: none;" onclick="handleActivateClick()">🚀 {"Activate" if channel_type == "sms" else "Connect Channel"}</button>' if not (league.get('conversation_sid') if channel_type == 'sms' else league.get('slack_channel_id') if channel_type == 'slack' else league.get('discord_channel_id')) else ''}
                     {f'<div onclick="showInfoModal(\'optin\')" title="Who still needs to opt in?" style="background: {COLORS["accent_orange"]}; color: #000; padding: 8px 14px; border-radius: 8px; font-size: 0.8em; font-weight: 600; text-align: center; line-height: 1.4; cursor: pointer;"><div>{_waiting_opt_in_count} Waiting</div><div>OPT-IN ⓘ</div></div>' if _waiting_opt_in_count > 0 else ''}
                 </div>
-                {f'<div style="margin-top: 8px;"><a href="{APP_BASE_URL}/leagues/{league["slug"]}" target="_blank" style="color: {COLORS["accent"]}; font-size: 0.9em;">{os.environ.get("APP_DOMAIN", "app.wordplayleague.com")}/leagues/{league["slug"]}</a></div>' if league.get('slug') else ''}
+                {f"""<div style="margin-top: 8px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                    <a href="{APP_BASE_URL}/leagues/{league['slug']}" target="_blank" style="color: {COLORS['accent']}; font-size: 0.9em; word-break: break-all;">{os.environ.get('APP_DOMAIN', 'app.wordplayleague.com')}/leagues/{league['slug']}</a>
+                    <button type="button" onclick="copyToClipboard('{APP_BASE_URL}/leagues/{league['slug']}', this)" title="Copy the league link to share" style="background: {COLORS['bg_card']}; border: 1px solid {COLORS['border']}; color: {COLORS['text']}; border-radius: 6px; padding: 4px 10px; cursor: pointer; font-size: 0.8em; white-space: nowrap;">&#128203; Copy</button>
+                </div>""" if league.get('slug') else ''}
                 {f"""
                 <div style="margin-top: 16px; padding: 12px; background: {COLORS['bg_dark']}; border-radius: 8px; border-left: 3px solid {COLORS['accent']};">
                     <p style="margin: 0 0 8px 0; color: {COLORS['text']}; font-weight: 600;">📋 How to Submit Scores</p>
@@ -4428,6 +4431,83 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                 }});
             }}
             
+            // ============================================================
+            // Keep the manager's place across saves
+            // ============================================================
+            // Every settings form on this page POSTs and redirects, so the
+            // browser lands back at the top of a long page and the row you were
+            // working on is gone. Worst with Division Mode, where the next step
+            // is to arrange players you can no longer see.
+            (function() {{
+                var KEY = 'wplScroll:' + location.pathname;
+
+                function remember(form) {{
+                    try {{
+                        sessionStorage.setItem(KEY, JSON.stringify({{
+                            y: window.scrollY,
+                            to: (form && form.getAttribute) ? form.getAttribute('data-scroll-to') : null,
+                            t: Date.now()
+                        }}));
+                    }} catch (err) {{}}
+                }}
+
+                // User-initiated submits.
+                document.addEventListener('submit', function(e) {{
+                    if (e.target && e.target.tagName === 'FORM') remember(e.target);
+                }}, true);
+
+                // Programmatic submits. confirmReset() and friends call
+                // form.submit() directly, which does NOT fire a submit event —
+                // without this patch every modal-confirmed save still jumps.
+                var nativeSubmit = HTMLFormElement.prototype.submit;
+                HTMLFormElement.prototype.submit = function() {{
+                    remember(this);
+                    return nativeSubmit.apply(this, arguments);
+                }};
+
+                window.addEventListener('DOMContentLoaded', function() {{
+                    var raw = null;
+                    try {{
+                        raw = sessionStorage.getItem(KEY);
+                        sessionStorage.removeItem(KEY);
+                    }} catch (err) {{}}
+                    if (!raw) return;
+
+                    var saved;
+                    try {{ saved = JSON.parse(raw); }} catch (err) {{ return; }}
+
+                    // A save that redirects somewhere else (an error bounce to
+                    // /dashboard) leaves this entry behind under a path we never
+                    // loaded. Ignore anything stale so it cannot fire a stray
+                    // scroll on some later visit.
+                    if (!saved.t || (Date.now() - saved.t) > 30000) return;
+
+                    var moved = false;
+                    if (saved.to) {{
+                        var el = document.querySelector(saved.to);
+                        if (el) {{
+                            el.scrollIntoView({{ block: 'center' }});
+                            moved = true;
+                        }}
+                    }}
+                    if (!moved && saved.y > 0) {{
+                        window.scrollTo(0, saved.y);
+                        moved = saved.y > 40;
+                    }}
+
+                    // The success banner sits at the very top, so once we have
+                    // scrolled away from it, repeat it as a toast where the user
+                    // actually is — otherwise a save looks like it did nothing.
+                    if (moved) {{
+                        var banner = document.querySelector('.alert-success, .alert-error');
+                        if (banner && banner.textContent.trim()) {{
+                            showToast(banner.textContent.trim());
+                            banner.style.display = 'none';
+                        }}
+                    }}
+                }});
+            }})();
+
             function checkActivationStatus() {{
                 fetch('/dashboard/league/{league['id']}/check-status')
                 .then(response => response.json())

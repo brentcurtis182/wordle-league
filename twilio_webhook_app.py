@@ -3875,6 +3875,41 @@ def _embed_starry_background():
         else if(!running){running=true;requestAnimationFrame(draw);}
     });
 })();
+</script>
+<script>
+/* Tell a hosting page how tall this embed actually is.
+ *
+ * Every one of these is iframed somewhere, and a fixed iframe height means
+ * choosing between an inner scrollbar — a scroll inside a scroll, which is
+ * poor on a phone — and a block of dead space under short content.
+ *
+ * Measures the bottom of the real content rather than document height: body
+ * carries min-height:100vh for the background, which equals the iframe
+ * height, so document height could only ever ratchet upward.
+ *
+ * Height is the only thing sent. A listener must still check event.origin.
+ */
+(function(){
+    if(window.parent===window)return;
+    var last=0;
+    function measure(){
+        var m=0;
+        for(var i=0;i<document.body.children.length;i++){
+            var el=document.body.children[i];
+            if(getComputedStyle(el).position==='fixed')continue;
+            m=Math.max(m, el.getBoundingClientRect().bottom+window.scrollY);
+        }
+        return Math.ceil(m+parseFloat(getComputedStyle(document.body).paddingBottom||0));
+    }
+    function send(){
+        var h=measure();
+        if(h&&Math.abs(h-last)>2){last=h;window.parent.postMessage({wpl:'embed-height',height:h},'*');}
+    }
+    send();
+    window.addEventListener('load',send);
+    document.addEventListener('click',function(){setTimeout(send,60);});
+    if('ResizeObserver' in window)new ResizeObserver(send).observe(document.body);
+})();
 </script>'''
     return css, body_prefix, body_suffix
 

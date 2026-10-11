@@ -1,0 +1,134 @@
+-->
+
+ Privacy Policy | WordPlayLeague 
+
+ top of page WordPlayLeague.com Home Leagues Rules App for Slack Message Board Blog More Use tab to navigate through the menu items. Login/Register 
+
+ Privacy Policy Privacy Policy 
+
+ ​ 
+
+ Last updated: March 2026 
+
+ ​ 
+
+ WordPlayLeague respects your privacy and is committed to protecting personal information used within the WordPlayLeague service. 
+
+ ​ 
+
+ This Privacy Policy explains what information we collect, how it is used, and how users can request access to or deletion of their data. 
+
+ ​ 
+
+ Information We Collect 
+
+ ​ 
+
+ WordPlayLeague collects only the information necessary to operate puzzle leagues and track scores. 
+
+ This may include: 
+
+ ​ 
+
+ • Slack workspace identifiers 
+• Slack display names or usernames 
+• Player names entered during league setup 
+• Puzzle scores submitted by users 
+• League configuration settings 
+• Basic technical logs used for system reliability and troubleshooting 
+
+ WordPlayLeague does not collect private Slack messages or unrelated workspace data. 
+
+ ​ 
+
+ How We Use Information 
+
+ ​ 
+
+ Information collected by WordPlayLeague is used only to provide the core functionality of the service, including: 
+
+ Recording puzzle scores submitted by players• 
+
+ Generating league standings and leaderboards 
+
+ Displaying statistics and historical results 
+
+ Sending automated league updates within Slack 
+
+ Supporting troubleshooting and system maintenance 
+
+ ​ 
+
+ We do not sell, rent, or share personal data with third parties for marketing purposes. 
+
+ ​ 
+
+ Data Retention 
+
+ ​ 
+
+ WordPlayLeague retains league data and player score history for as long as a league remains active in order to provide standings, statistics, and historical records. 
+
+ ​ 
+
+ If a league is deleted or a workspace removes the WordPlayLeague app, associated league data may be removed from our systems within a reasonable period of time. 
+
+ ​ 
+
+ Technical logs may be retained temporarily for security, operational, or troubleshooting purposes. 
+
+ ​ 
+
+ Data Access, Export, and Deletion Requests 
+
+ ​ 
+
+ Users may request access to, export of, or deletion of their personal data. 
+
+ To submit a request, contact: 
+
+ wordplayleague@gmail.com 
+
+ ​ 
+
+ Please include the Slack workspace name and league name associated with the request so we can locate the relevant data. 
+
+ ​ 
+
+ We will review and respond to requests within a reasonable timeframe. 
+
+ ​ 
+
+ Third-Party Services 
+
+ ​ 
+
+ WordPlayLeague integrates with third-party platforms such as Slack in order to operate league functionality. These services may collect data according to their own privacy policies. 
+
+ Users should review the privacy policies of those services for more information. 
+
+ ​ 
+
+ Changes to This Policy 
+
+ ​ 
+
+ This Privacy Policy may be updated periodically to reflect changes to the service or legal requirements. Updates will be posted on this page. 
+
+ ​ 
+
+ Contact 
+
+ ​ 
+
+ If you have any questions about this Privacy Policy or your data, please contact: 
+
+ wordplayleague@gmail.com   
+
+ © 2025 WordPlayLeague™. All rights reserved. 
+
+ WordPlayLeague is not affiliated with or endorsed by Slack, The New York Times, or any puzzle publisher. Users voluntarily submit their own puzzle results. 
+
+   Support 
+
+ bottom of page

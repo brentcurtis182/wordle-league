@@ -1,0 +1,41 @@
+Terms of Service Last updated: May 8, 2026
+1. Acceptance of Terms
+By accessing or using WordPlayLeague ("the Service"), you agree to be bound by these Terms of Service. If you do not agree, do
+not use the Service.
+2. Description of Service
+WordPlayLeague is a platform that tracks Wordle scores submitted via SMS or Slack, organizes players into leagues, and provides
+statistics, leaderboards, and optional AI-generated content such as weekly recaps and player messages.
+3. Account Registration
+You must provide accurate information when creating an account. You are responsible for maintaining the security of your account
+credentials and for all activity under your account.
+4. Acceptable Use
+You agree not to:
+(a) use the Service for any unlawful purpose;
+(b) submit false or misleading score data;
+(c) attempt to gain unauthorized access to the Service or its systems; (d) interfere with other users' enjoyment of the Service.
+5. Subscriptions and Payments
+Certain features require a paid subscription processed through Stripe. Subscription fees are billed monthly. You may cancel at any time; cancellation takes effect at the end of your current billing period. Refunds are not provided for partial billing periods.
+6. AI-Generated Content
+The Service may generate content using artificial intelligence, including league summaries, player messages, and recaps.
+AI-generated content may occasionally contain inaccuracies and is provided for entertainment purposes. WordPlayLeague is not
+responsible for the accuracy of AI-generated content.
+7. Third-Party Integrations
+The Service integrates with third-party platforms including Slack, Twilio, and Stripe. Your use of these integrations is also subject
+to those platforms' respective terms of service.
+8. Intellectual Property
+WordPlayLeague and its original content, features, and functionality are owned by WordPlayLeague. "Wordle"
+is a trademark of The New York Times Company. WordPlayLeague is not affiliated with or endorsed by The New York Times.
+9. Privacy
+Your use of the Service is also governed by our Privacy Policy. By using the Service, you consent to the collection and use of
+information as described therein.
+10. Limitation of Liability
+The Service is provided "as is" without warranties of any kind. WordPlayLeague shall not be liable for any indirect, incidental, or
+consequential damages arising from your use of the Service.
+11. Termination
+We reserve the right to suspend or terminate your account at our discretion, with or without notice, for conduct that violates these
+Terms or is otherwise harmful to other users or the Service.
+12. Changes to Terms
+We may update these Terms from time to time. Continued use of the Service after changes constitutes acceptance of the
+updated Terms.
+13. Contact
+Questions about these Terms may be directed to support@wordplayleague.com.

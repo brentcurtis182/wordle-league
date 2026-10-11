@@ -1167,17 +1167,27 @@ def render_profile_page(user, user_details, leagues, active_sessions, message=No
             }}
             .toast {{
                 position: fixed;
-                bottom: 20px;
+                top: 20px;
                 left: 50%;
-                transform: translateX(-50%) translateY(100px);
-                background: {COLORS['success']};
-                color: #000;
-                padding: 12px 24px;
-                border-radius: 8px;
+                transform: translateX(-50%) translateY(-24px);
+                background: rgba(20, 20, 42, 0.96);
+                -webkit-backdrop-filter: blur(10px);
+                backdrop-filter: blur(10px);
+                color: {COLORS['text']};
+                border: 1px solid {COLORS['border']};
+                border-left: 3px solid {COLORS['accent']};
+                padding: 12px 20px;
+                border-radius: 10px;
                 font-weight: 600;
+                font-size: 0.9em;
+                max-width: calc(100vw - 32px);
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
                 opacity: 0;
-                transition: all 0.3s ease;
+                transition: opacity 0.25s ease, transform 0.25s ease;
                 z-index: 10000;
+            }}
+            .toast.error {{
+                border-left-color: {COLORS['error']};
             }}
             .toast.show {{
                 transform: translateX(-50%) translateY(0);
@@ -1401,8 +1411,7 @@ def render_profile_page(user, user_details, leagues, active_sessions, message=No
             
             function showToast(message, isError) {{
                 const toast = document.createElement('div');
-                toast.className = 'toast';
-                if (isError) toast.style.background = '{COLORS["error"]}';
+                toast.className = isError ? 'toast error' : 'toast';
                 toast.textContent = message;
                 document.body.appendChild(toast);
                 setTimeout(() => toast.classList.add('show'), 10);
@@ -2884,17 +2893,27 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
             }}
             .toast {{
                 position: fixed;
-                bottom: 20px;
+                top: 20px;
                 left: 50%;
-                transform: translateX(-50%) translateY(100px);
-                background: {COLORS['success']};
-                color: #000;
-                padding: 12px 24px;
-                border-radius: 8px;
+                transform: translateX(-50%) translateY(-24px);
+                background: rgba(20, 20, 42, 0.96);
+                -webkit-backdrop-filter: blur(10px);
+                backdrop-filter: blur(10px);
+                color: {COLORS['text']};
+                border: 1px solid {COLORS['border']};
+                border-left: 3px solid {COLORS['accent']};
+                padding: 12px 20px;
+                border-radius: 10px;
                 font-weight: 600;
+                font-size: 0.9em;
+                max-width: calc(100vw - 32px);
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
                 opacity: 0;
-                transition: all 0.3s ease;
+                transition: opacity 0.25s ease, transform 0.25s ease;
                 z-index: 10000;
+            }}
+            .toast.error {{
+                border-left-color: {COLORS['error']};
             }}
             .toast.show {{
                 transform: translateX(-50%) translateY(0);
@@ -4482,29 +4501,28 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                     // scroll on some later visit.
                     if (!saved.t || (Date.now() - saved.t) > 30000) return;
 
-                    var moved = false;
+                    var wantsMove = !!saved.to || saved.y > 40;
+                    if (!wantsMove) return;
+
+                    // Deal with the success banner BEFORE restoring the offset.
+                    // It sits at the very top, so leaving it in place shifts
+                    // everything down and we land short of where the user was.
+                    // Repeat it as a toast so a save never looks like a no-op.
+                    var banner = document.querySelector('.alert-success, .alert-error');
+                    if (banner && banner.textContent.trim()) {{
+                        showToast(banner.textContent.trim(),
+                                  banner.classList.contains('alert-error'));
+                        banner.style.display = 'none';
+                    }}
+
                     if (saved.to) {{
                         var el = document.querySelector(saved.to);
                         if (el) {{
                             el.scrollIntoView({{ block: 'center' }});
-                            moved = true;
+                            return;
                         }}
                     }}
-                    if (!moved && saved.y > 0) {{
-                        window.scrollTo(0, saved.y);
-                        moved = saved.y > 40;
-                    }}
-
-                    // The success banner sits at the very top, so once we have
-                    // scrolled away from it, repeat it as a toast where the user
-                    // actually is — otherwise a save looks like it did nothing.
-                    if (moved) {{
-                        var banner = document.querySelector('.alert-success, .alert-error');
-                        if (banner && banner.textContent.trim()) {{
-                            showToast(banner.textContent.trim());
-                            banner.style.display = 'none';
-                        }}
-                    }}
+                    window.scrollTo(0, saved.y);
                 }});
             }})();
 
@@ -4903,9 +4921,9 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                 }});
             }}
             
-            function showToast(message) {{
+            function showToast(message, isError) {{
                 const toast = document.createElement('div');
-                toast.className = 'toast';
+                toast.className = isError ? 'toast error' : 'toast';
                 toast.textContent = message;
                 document.body.appendChild(toast);
                 setTimeout(() => toast.classList.add('show'), 10);

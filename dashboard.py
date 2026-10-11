@@ -1182,16 +1182,12 @@ def render_profile_page(user, user_details, leagues, active_sessions, message=No
                 pointer-events: none;
             }}
             .toast {{
-                background: rgba(20, 20, 42, 0.96);
-                -webkit-backdrop-filter: blur(10px);
-                backdrop-filter: blur(10px);
-                color: {COLORS['text']};
-                border: 1px solid {COLORS['border']};
-                border-left: 3px solid {COLORS['accent']};
-                padding: 11px 16px;
+                background: {COLORS['accent']};
+                color: #000;
+                padding: 12px 18px;
                 border-radius: 10px;
-                font-weight: 600;
-                font-size: 0.88em;
+                font-weight: 700;
+                font-size: 0.9em;
                 line-height: 1.4;
                 text-align: left;
                 /* Wide enough that a normal confirmation lands in one or two
@@ -1206,7 +1202,8 @@ def render_profile_page(user, user_details, leagues, active_sessions, message=No
                 transition: opacity 0.25s ease, transform 0.25s ease;
             }}
             .toast.error {{
-                border-left-color: {COLORS['error']};
+                background: {COLORS['error']};
+                color: #fff;
             }}
             .toast.show {{
                 transform: translateY(0);
@@ -2940,16 +2937,12 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                 pointer-events: none;
             }}
             .toast {{
-                background: rgba(20, 20, 42, 0.96);
-                -webkit-backdrop-filter: blur(10px);
-                backdrop-filter: blur(10px);
-                color: {COLORS['text']};
-                border: 1px solid {COLORS['border']};
-                border-left: 3px solid {COLORS['accent']};
-                padding: 11px 16px;
+                background: {COLORS['accent']};
+                color: #000;
+                padding: 12px 18px;
                 border-radius: 10px;
-                font-weight: 600;
-                font-size: 0.88em;
+                font-weight: 700;
+                font-size: 0.9em;
                 line-height: 1.4;
                 text-align: left;
                 /* Wide enough that a normal confirmation lands in one or two
@@ -2964,7 +2957,8 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                 transition: opacity 0.25s ease, transform 0.25s ease;
             }}
             .toast.error {{
-                border-left-color: {COLORS['error']};
+                background: {COLORS['error']};
+                color: #fff;
             }}
             .toast.show {{
                 transform: translateY(0);

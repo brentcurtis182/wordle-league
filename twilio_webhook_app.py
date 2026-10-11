@@ -3893,13 +3893,20 @@ def _embed_starry_background():
     if(window.parent===window)return;
     var last=0;
     function measure(){
-        var m=0;
-        for(var i=0;i<document.body.children.length;i++){
-            var el=document.body.children[i];
-            if(getComputedStyle(el).position==='fixed')continue;
-            m=Math.max(m, el.getBoundingClientRect().bottom+window.scrollY);
-        }
-        return Math.ceil(m+parseFloat(getComputedStyle(document.body).paddingBottom||0));
+        /* documentElement.scrollHeight is the only measure that accounts for
+           everything -- including the last child's bottom margin, which summing
+           child boxes misses and which was leaving us ~11px short, i.e. exactly
+           enough to keep a scrollbar.
+           It cannot be read directly because body carries min-height:100vh for
+           the background, which equals the current iframe height and so would
+           ratchet: the reported height could grow but never shrink. Dropping
+           that for the read gives the true content height. Nothing paints
+           between the two statements, so there is no flicker. */
+        var b=document.body, prev=b.style.minHeight;
+        b.style.minHeight='0';
+        var h=document.documentElement.scrollHeight;
+        b.style.minHeight=prev;
+        return Math.ceil(h);
     }
     function send(){
         var h=measure();

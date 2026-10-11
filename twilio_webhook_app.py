@@ -3897,14 +3897,16 @@ def _embed_starry_background():
            everything -- including the last child's bottom margin, which summing
            child boxes misses and which was leaving us ~11px short, i.e. exactly
            enough to keep a scrollbar.
-           It cannot be read directly because body carries min-height:100vh for
-           the background, which equals the current iframe height and so would
-           ratchet: the reported height could grow but never shrink. Dropping
-           that for the read gives the true content height. Nothing paints
+           body.scrollHeight rather than documentElement.scrollHeight: the
+           latter is floored at the viewport, so inside an iframe it just
+           returns the frame's own height.
+           min-height:100vh is cleared for the read -- it is there for the
+           starfield, equals the current iframe height, and would otherwise
+           ratchet the value so it could grow but never shrink. Nothing paints
            between the two statements, so there is no flicker. */
         var b=document.body, prev=b.style.minHeight;
         b.style.minHeight='0';
-        var h=document.documentElement.scrollHeight;
+        var h=b.scrollHeight;
         b.style.minHeight=prev;
         return Math.ceil(h);
     }

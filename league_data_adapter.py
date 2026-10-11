@@ -218,6 +218,68 @@ def get_min_scores_for_week(league_id, week_wordle, conn=None, _cache={}):
     return threshold
 
 
+def get_player_join_week(player_id, week_anchor, conn=None, _cache={}):
+    """Week-start wordle of the week a player was ADDED to their league.
+
+    A player's own first week never counts as a missed week: they joined
+    partway through it, so a full week's scores were never available to them.
+    Without this, every brand-new league shows a red missed week for every
+    player in week one, and so does anyone added to an existing league.
+
+    Keyed on players.created_at, NOT on their first score, so a player who was
+    added but has not posted yet is still covered for that first week. Falls
+    back to their first score only when created_at is missing.
+
+    week_anchor is the season start the caller buckets weeks from, so the
+    returned value lines up with that caller's week boundaries.
+    """
+    if player_id is None:
+        return None
+    joined = _cache.get(player_id)
+    if joined is None:
+        own_conn = conn is None
+        if own_conn:
+            conn = get_db_connection()
+        try:
+            cursor = conn.cursor()
+            cursor.execute("""
+                SELECT p.created_at, MIN(s.wordle_number)
+                FROM players p
+                LEFT JOIN scores s ON s.player_id = p.id
+                WHERE p.id = %s
+                GROUP BY p.created_at
+            """, (player_id,))
+            row = cursor.fetchone()
+            cursor.close()
+            if row and row[0]:
+                joined = calculate_wordle_number(row[0].date())
+            elif row and row[1]:
+                joined = row[1]  # no created_at: fall back to first score
+            else:
+                joined = None
+        except Exception as e:
+            logging.warning(f"join week lookup failed for player {player_id}: {e}")
+            return None
+        finally:
+            if own_conn:
+                conn.close()
+        # Only cache a real result, so a player with neither signal yet is
+        # re-checked rather than being stuck at None in a long-running process.
+        if joined is None:
+            return None
+        _cache[player_id] = joined
+    return joined - ((joined - week_anchor) % 7)
+
+
+def clear_player_join_cache(player_id=None):
+    """Clear the per-player join-week cache."""
+    cache = get_player_join_week.__defaults__[-1]  # _cache={} is last default
+    if player_id:
+        cache.pop(player_id, None)
+    else:
+        cache.clear()
+
+
 def clear_min_scores_cache(league_id=None):
     """Clear the per-league min_scores history cache."""
     cache = get_min_scores_for_week.__defaults__[-1]  # _cache={} is last default
@@ -672,13 +734,17 @@ def get_complete_league_data(league_id):
                     week_scores[ws].append(sc)
 
                 player_missed = 0
+                # The week a player joined is never a missed week
+                join_week = get_player_join_week(
+                    player_id, season_start_for_missed, conn=conn)
                 w = season_start_for_missed
                 while w < current_week_start:
                     scores_in_week = week_scores.get(w, [])
                     valid_count = len([s for s in scores_in_week if s < 7])
                     # Look up the threshold that was in effect for this specific week
                     threshold = get_min_scores_for_week(league_id, w, conn=conn)
-                    if valid_count < threshold:
+                    # Nothing before a player joined counts against them
+                    if valid_count < threshold and (join_week is None or w > join_week):
                         player_missed += 1
                     w += 7
 
@@ -1089,6 +1155,8 @@ def get_division_season_data(league_id, weekly_stats=None, conn=None, min_scores
                 # Use default (5) for weeks before min_weekly_scores was changed
                 past_total = 0
                 player_missed = 0
+                # The week a player joined is never a missed week
+                join_week = get_player_join_week(p['id'], season_start, conn=conn)
                 for ws_start, scores in week_scores.items():
                     if current_week_start and ws_start >= current_week_start:
                         continue  # Skip current week, handled via weekly_stats
@@ -1096,15 +1164,17 @@ def get_division_season_data(league_id, weekly_stats=None, conn=None, min_scores
                     valid = sorted([s for s in scores if s < 7])
                     best5 = sum(valid[:min_scores]) if len(valid) >= min_scores else sum(valid)
                     past_total += best5
-                    if len(valid) < threshold:
+                    # Nothing before a player joined counts against them
+                    if len(valid) < threshold and (join_week is None or ws_start > join_week):
                         player_missed += 1
 
                 # Also check past weeks where the player had zero scores
-                # (they won't appear in week_scores at all)
+                # (they won't appear in week_scores at all). The join week can
+                # land here too, for someone who was added but never posted.
                 if current_week_start and season_start < current_week_start:
                     w = season_start
                     while w < current_week_start:
-                        if w not in week_scores:
+                        if w not in week_scores and (join_week is None or w > join_week):
                             player_missed += 1
                         w += 7
                 

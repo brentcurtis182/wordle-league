@@ -11,7 +11,7 @@ import logging
 import random
 from datetime import datetime
 import pytz
-from league_data_adapter import get_db_connection, calculate_wordle_number, get_week_start_date, get_league_min_scores, get_league_season_wins
+from league_data_adapter import get_db_connection, calculate_wordle_number, get_week_start_date, get_league_min_scores, get_league_season_wins, get_player_join_week
 
 DIVISION_WINS_FOR_SEASON = 3  # Wins needed to win a division season (vs 4 for normal)
 
@@ -1081,14 +1081,18 @@ def check_division1_relegation(league_id):
                 week_scores[ws].append(sc)
             
             # Count missed weeks AND calculate true season total (best-N per week, ALL weeks)
+            # The week a player joined is never a missed week, and this must agree
+            # with the standings display or the page and relegation would disagree.
             missed = 0
             total = 0
+            join_week = get_player_join_week(player_id, season_start, conn=conn)
             w = season_start
             while w <= season_end:
                 scores_in_week = week_scores.get(w, [])
                 valid = sorted([s for s in scores_in_week if s < 7])
                 valid_count = len(valid)
-                if valid_count < min_scores:
+                # Nothing before a player joined counts against them
+                if valid_count < min_scores and (join_week is None or w > join_week):
                     missed += 1
                 # Season total = sum of best-N from each week (even partial weeks count)
                 best_n = sum(valid[:min_scores]) if valid else 0

@@ -1165,32 +1165,51 @@ def render_profile_page(user, user_details, leagues, active_sessions, message=No
             .edit-form-section.active {{
                 display: block;
             }}
-            .toast {{
+            /* Toasts stack in a column container. Pinning each one to the same
+               fixed offset made two at once sit on top of each other. */
+            .toast-container {{
                 position: fixed;
                 top: 20px;
                 left: 50%;
-                transform: translateX(-50%) translateY(-24px);
+                transform: translateX(-50%);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+                width: max-content;
+                max-width: calc(100vw - 32px);
+                z-index: 10000;
+                pointer-events: none;
+            }}
+            .toast {{
                 background: rgba(20, 20, 42, 0.96);
                 -webkit-backdrop-filter: blur(10px);
                 backdrop-filter: blur(10px);
                 color: {COLORS['text']};
                 border: 1px solid {COLORS['border']};
                 border-left: 3px solid {COLORS['accent']};
-                padding: 12px 20px;
+                padding: 11px 16px;
                 border-radius: 10px;
                 font-weight: 600;
-                font-size: 0.9em;
-                max-width: calc(100vw - 32px);
+                font-size: 0.88em;
+                line-height: 1.4;
+                text-align: left;
+                /* Wide enough that a normal confirmation lands in one or two
+                   full lines; balance evens out the break instead of leaving a
+                   short orphan on a third line. */
+                max-width: 560px;
+                text-wrap: balance;
+                overflow-wrap: break-word;
                 box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
                 opacity: 0;
+                transform: translateY(-10px);
                 transition: opacity 0.25s ease, transform 0.25s ease;
-                z-index: 10000;
             }}
             .toast.error {{
                 border-left-color: {COLORS['error']};
             }}
             .toast.show {{
-                transform: translateX(-50%) translateY(0);
+                transform: translateY(0);
                 opacity: 1;
             }}
         </style>
@@ -1409,11 +1428,24 @@ def render_profile_page(user, user_details, leagues, active_sessions, message=No
                 }});
             }}, 5000);
             
+            function toastContainer() {{
+                var c = document.getElementById('toastContainer');
+                if (!c) {{
+                    c = document.createElement('div');
+                    c.id = 'toastContainer';
+                    c.className = 'toast-container';
+                    document.body.appendChild(c);
+                }}
+                return c;
+            }}
+
             function showToast(message, isError) {{
                 const toast = document.createElement('div');
                 toast.className = isError ? 'toast error' : 'toast';
-                toast.textContent = message;
-                document.body.appendChild(toast);
+                // Collapse stray newlines and runs of spaces from server-rendered
+                // text, which otherwise wrap into a ragged, staggered block.
+                toast.textContent = String(message).replace(/\\s+/g, ' ').trim();
+                toastContainer().appendChild(toast);
                 setTimeout(() => toast.classList.add('show'), 10);
                 setTimeout(() => {{
                     toast.classList.remove('show');
@@ -2891,32 +2923,51 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                 gap: 12px;
                 justify-content: flex-end;
             }}
-            .toast {{
+            /* Toasts stack in a column container. Pinning each one to the same
+               fixed offset made two at once sit on top of each other. */
+            .toast-container {{
                 position: fixed;
                 top: 20px;
                 left: 50%;
-                transform: translateX(-50%) translateY(-24px);
+                transform: translateX(-50%);
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 8px;
+                width: max-content;
+                max-width: calc(100vw - 32px);
+                z-index: 10000;
+                pointer-events: none;
+            }}
+            .toast {{
                 background: rgba(20, 20, 42, 0.96);
                 -webkit-backdrop-filter: blur(10px);
                 backdrop-filter: blur(10px);
                 color: {COLORS['text']};
                 border: 1px solid {COLORS['border']};
                 border-left: 3px solid {COLORS['accent']};
-                padding: 12px 20px;
+                padding: 11px 16px;
                 border-radius: 10px;
                 font-weight: 600;
-                font-size: 0.9em;
-                max-width: calc(100vw - 32px);
+                font-size: 0.88em;
+                line-height: 1.4;
+                text-align: left;
+                /* Wide enough that a normal confirmation lands in one or two
+                   full lines; balance evens out the break instead of leaving a
+                   short orphan on a third line. */
+                max-width: 560px;
+                text-wrap: balance;
+                overflow-wrap: break-word;
                 box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
                 opacity: 0;
+                transform: translateY(-10px);
                 transition: opacity 0.25s ease, transform 0.25s ease;
-                z-index: 10000;
             }}
             .toast.error {{
                 border-left-color: {COLORS['error']};
             }}
             .toast.show {{
-                transform: translateX(-50%) translateY(0);
+                transform: translateY(0);
                 opacity: 1;
             }}
         </style>
@@ -4921,11 +4972,24 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                 }});
             }}
             
+            function toastContainer() {{
+                var c = document.getElementById('toastContainer');
+                if (!c) {{
+                    c = document.createElement('div');
+                    c.id = 'toastContainer';
+                    c.className = 'toast-container';
+                    document.body.appendChild(c);
+                }}
+                return c;
+            }}
+
             function showToast(message, isError) {{
                 const toast = document.createElement('div');
                 toast.className = isError ? 'toast error' : 'toast';
-                toast.textContent = message;
-                document.body.appendChild(toast);
+                // Collapse stray newlines and runs of spaces from server-rendered
+                // text, which otherwise wrap into a ragged, staggered block.
+                toast.textContent = String(message).replace(/\\s+/g, ' ').trim();
+                toastContainer().appendChild(toast);
                 setTimeout(() => toast.classList.add('show'), 10);
                 setTimeout(() => {{
                     toast.classList.remove('show');

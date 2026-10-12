@@ -124,11 +124,28 @@ button{{width:100%;margin-top:22px;padding:13px;border:0;border-radius:10px;back
 button:hover{{opacity:.9}}
 .hp,.vh{{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}}
 .note{{margin-top:16px;font-size:.78rem;color:#6f6f88;line-height:1.55}}
+.back{{margin:0 0 14px}}
+.back a{{color:#8a8aa5;text-decoration:none;font-size:.86rem;font-weight:600}}
+.back a:hover{{color:{CYAN}}}
+.btn-back{{display:block;margin-top:20px;padding:12px;border-radius:10px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);color:#e9ecef;text-decoration:none;font-weight:700;text-align:center}}
+.btn-back:hover{{border-color:{CYAN};color:{CYAN}}}
 .err{{background:rgba(255,92,92,.12);border:1px solid rgba(255,92,92,.4);color:#ff9b9b;
  border-radius:9px;padding:10px 12px;font-size:.88rem;margin-bottom:16px}}
 .ok{{font-size:2.6rem;margin-bottom:10px}}
 a{{color:{CYAN}}}
 </style></head><body><div class="card">{inner}</div></body></html>"""
+
+
+def _back_link(slug, league_name):
+    """The review page is reached from a league page and has no nav of its own,
+    so without this it is a dead end — the only way out is the browser's back
+    button or closing the tab."""
+    if not slug:
+        return ''
+    host = os.environ.get('APP_DOMAIN', 'app.wordplayleague.com')
+    where = html.escape(league_name) if league_name else 'the league'
+    return (f'<p class="back"><a href="https://{host}/leagues/{slug}">'
+            f'&larr; Back to {where}</a></p>')
 
 
 def _form(slug, league_name, error=None, name='', body=''):
@@ -142,6 +159,7 @@ def _form(slug, league_name, error=None, name='', body=''):
         f'<span class="vh">{n} out of 5</span>&#11088;</label>'
         for n in range(5, 0, -1))
     return _page("Leave a review", f"""
+{_back_link(slug, league_name)}
 <h1>How's your league going?</h1>
 <p class="sub">You're playing{where}. Tell us what it's like — a sentence is plenty.
  No account needed, and we'll only put it on the site if you're happy for us to.</p>
@@ -192,7 +210,7 @@ def leave_review(slug):
         # cannot tell the submission failed and retry differently.
         if _clean(request.form.get('website'), 40):
             logging.info(f"Review honeypot tripped for {slug}")
-            return _thanks(league_name)
+            return _thanks(slug, league_name)
 
         body = _clean(request.form.get('body'), MAX_BODY)
         if len(body) < 10:
@@ -222,7 +240,7 @@ def leave_review(slug):
         new_id = cursor.fetchone()[0]
         conn.commit()
         logging.info(f"Review #{new_id} submitted for league {league_id} ({slug})")
-        return _thanks(league_name)
+        return _thanks(slug, league_name)
 
     except Exception as e:
         if conn:
@@ -241,12 +259,20 @@ def _page_or_form(slug, league_name):
     return _form(slug, league_name)
 
 
-def _thanks(league_name):
-    return _page("Thanks", """
+def _thanks(slug, league_name):
+    """Sends them back where they came from. A thank-you page with no way back
+    to the league is the same dead end as the form was — and after submitting,
+    returning to the standings is what someone actually wants to do next."""
+    host = os.environ.get('APP_DOMAIN', 'app.wordplayleague.com')
+    back = (f'<a class="btn-back" href="https://{host}/leagues/{slug}">'
+            f'&larr; Back to {html.escape(league_name or "the league")}</a>'
+            if slug else '')
+    return _page("Thanks", f"""
 <div class="ok">&#127881;</div>
 <h1>Thanks — got it.</h1>
 <p class="sub">We read every one. If we use it on the site it'll show with your
  first name and your league, nothing else.</p>
+{back}
 <p class="note"><a href="https://wordplayleague.com/">wordplayleague.com</a></p>
 """)
 

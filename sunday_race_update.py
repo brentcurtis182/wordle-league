@@ -1515,8 +1515,30 @@ ACCURACY RULES:
                 body=race_message_with_url,
                 author=twilio_phone
             )
+        elif channel_type == 'slack' and image_bytes_list:
+            # Slack cannot be sent bytes. Uploading needs files:write, which the
+            # published Slack app does not request, so every workspace that
+            # installed from the Marketplace returns missing_scope and the
+            # sender quietly falls back to text with no image. That is why the
+            # Alchemer league got a scoreboard-less Sunday post on 2026-10-12
+            # while the older dev-installed workspaces were fine.
+            #
+            # Same fix the /wordplay score command already uses: post the
+            # public scoreboard URL as an image block, which needs only
+            # chat:write. The route renders the same image this job just
+            # built, so nothing about the picture changes.
+            import time as _t
+            scoreboard_url = (
+                f"https://{os.environ.get('APP_DOMAIN', 'app.wordplayleague.com')}"
+                f"/leagues/{league_slug}/scoreboard.png?t={int(_t.time())}"
+            )
+            # Slack caches images by URL, so the timestamp is what stops it
+            # re-showing last week's render on this week's post.
+            send_league_message(league_id, race_message_with_url,
+                                media_url=scoreboard_url)
         elif image_bytes_list:
-            # Slack/Discord - send images as bytes via message router
+            # Discord uploads bytes directly through the bot API - no scope
+            # involved - so it keeps the attachment path.
             send_league_message(league_id, race_message_with_url, media_bytes=image_bytes_list[0])
             for extra_bytes in image_bytes_list[1:]:
                 send_league_message(league_id, "", media_bytes=extra_bytes)

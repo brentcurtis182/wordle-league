@@ -5842,7 +5842,7 @@ def public_league_page(slug):
 
         # Generate the leaderboard HTML using existing pipeline
         from update_pipeline import generate_league_html
-        html_content = generate_league_html(league_id)
+        html_content = generate_league_html(league_id, slug=slug)
         
         if html_content:
             # Inline the CSS and JS files so the page works standalone

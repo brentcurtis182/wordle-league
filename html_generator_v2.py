@@ -1630,8 +1630,12 @@ def generate_rules_html(league_data):
     return html
 
 
-def generate_full_html(league_data, league_name="League 6 Beta"):
-    """Generate complete HTML page"""
+def generate_full_html(league_data, league_name="League 6 Beta", slug=None):
+    """Generate complete HTML page.
+
+    `slug` is optional. When given the page gets a canonical URL and structured
+    data; without it both are omitted rather than guessed at.
+    """
     latest_html = generate_latest_scores_html(league_data)
     rules_html = generate_rules_html(league_data)
 
@@ -1668,6 +1672,45 @@ def generate_full_html(league_data, league_name="League 6 Beta"):
     # Absolute, because a preview scraper resolves it outside any page context.
     _og_image = f"https://app.wordplayleague.com/app-icons/{_icon_dir}/icon-512.png"
 
+    # --- Canonical + structured data ---------------------------------------
+    # PUBLIC_DOMAIN is deliberately its own variable. APP_DOMAIN also builds
+    # password-reset links, email-verification links and Stripe return URLs,
+    # which must keep pointing at the app; this one only ever names the host
+    # that serves public league pages. At cutover it becomes the apex and
+    # nothing else has to move.
+    _public_host = os.environ.get('PUBLIC_DOMAIN') or os.environ.get(
+        'APP_DOMAIN', 'app.wordplayleague.com')
+    _canonical = f"https://{_public_host}/leagues/{slug}" if slug else None
+
+    # The same HTML is served at /leagues/<slug> AND /embed/leagues/<slug>,
+    # so the canonical always names the public path whichever one was asked
+    # for -- otherwise those two are a duplicate pair with no winner declared.
+    if _canonical:
+        import json as _json
+        _ld = _json.dumps({
+            "@context": "https://schema.org",
+            "@graph": [
+                {"@type": "BreadcrumbList", "itemListElement": [
+                    {"@type": "ListItem", "position": 1, "name": "Home",
+                     "item": "https://wordplayleague.com/"},
+                    {"@type": "ListItem", "position": 2, "name": "Live leagues",
+                     "item": "https://wordplayleague.com/leagues"},
+                    {"@type": "ListItem", "position": 3, "name": league_name,
+                     "item": _canonical}]},
+                {"@type": "WebPage", "url": _canonical,
+                 "name": f"{league_name} - Wordle League Standings",
+                 "description": _meta_desc,
+                 "isPartOf": {"@type": "WebSite", "name": "WordPlayLeague",
+                              "url": "https://wordplayleague.com/"}},
+            ]}, indent=2, ensure_ascii=False)
+        _head_extra = (
+            '<link rel="canonical" href="' + _canonical + '"/>' + chr(10)
+            + '<meta property="og:url" content="' + _canonical + '"/>' + chr(10)
+            + '<script type="application/ld+json">' + chr(10)
+            + _ld + chr(10) + '</script>' + chr(10))
+    else:
+        _head_extra = ''
+
     html = f'''<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1675,7 +1718,7 @@ def generate_full_html(league_data, league_name="League 6 Beta"):
 <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=5.0, user-scalable=yes"/>
 <title>{league_name} - Wordle League</title>
 <meta name="description" content="{_og_desc}"/>
-<meta property="og:type" content="website"/>
+{_head_extra}<meta property="og:type" content="website"/>
 <meta property="og:site_name" content="WordPlayLeague"/>
 <meta property="og:title" content="{_og_title}"/>
 <meta property="og:description" content="{_og_desc}"/>

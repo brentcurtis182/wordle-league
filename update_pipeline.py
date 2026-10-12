@@ -183,14 +183,17 @@ def run_update_pipeline(league_id=6, league_name="League 6 Beta"):
     
     return status
 
-def generate_league_html(league_id):
+def generate_league_html(league_id, slug=None):
     """Generate HTML for a league without publishing to GitHub.
     Used for serving public league pages directly from Railway.
+
+    `slug` is what lets the page carry a canonical URL. The caller has it
+    from the route, and it is not on league_data, so it is passed in.
     """
     try:
         league_display_name = get_league_display_name(league_id)
         league_data = get_complete_league_data(league_id)
-        html_content = generate_full_html(league_data, league_display_name)
+        html_content = generate_full_html(league_data, league_display_name, slug=slug)
         return html_content
     except Exception as e:
         logging.error(f"Error generating league HTML: {e}")

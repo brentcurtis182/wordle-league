@@ -107,15 +107,22 @@ input[type=text],textarea{{width:100%;background:#0d0d18;border:1px solid rgba(2
  border-radius:10px;padding:11px 13px;color:#e9ecef;font:inherit;font-size:.98rem}}
 input[type=text]:focus,textarea:focus{{outline:none;border-color:{CYAN}}}
 textarea{{min-height:130px;resize:vertical;line-height:1.55}}
-.stars{{display:flex;gap:8px;margin-top:4px}}
+/* Stars fill cumulatively: picking 3 lights 1-3, not just the third.
+   CSS can only style siblings that come AFTER an element, so the inputs are
+   written 5..1 and the row is reversed to display 1..5 left to right. Then
+   "checked ~ label" reaches every star to its visual left. */
+.stars{{display:flex;flex-direction:row-reverse;justify-content:flex-end;gap:8px;margin-top:4px}}
 .stars input{{position:absolute;opacity:0;width:0;height:0}}
-.stars label{{margin:0;cursor:pointer;font-size:1.5rem;line-height:1;filter:grayscale(1);opacity:.45;
+.stars label{{margin:0;cursor:pointer;font-size:1.6rem;line-height:1;filter:grayscale(1);opacity:.4;
  transition:filter .12s,opacity .12s;text-transform:none;letter-spacing:0}}
-.stars input:checked + label,.stars label:hover{{filter:none;opacity:1}}
+.stars input:checked ~ label{{filter:none;opacity:1}}
+.stars:hover label{{filter:grayscale(1);opacity:.4}}
+.stars label:hover,.stars label:hover ~ label{{filter:none;opacity:1}}
+.stars input:focus-visible + label{{outline:2px solid {CYAN};outline-offset:3px;border-radius:4px}}
 button{{width:100%;margin-top:22px;padding:13px;border:0;border-radius:10px;background:{CYAN};
  color:#06060e;font:inherit;font-weight:800;font-size:1rem;cursor:pointer}}
 button:hover{{opacity:.9}}
-.hp{{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}}
+.hp,.vh{{position:absolute;left:-9999px;width:1px;height:1px;overflow:hidden}}
 .note{{margin-top:16px;font-size:.78rem;color:#6f6f88;line-height:1.55}}
 .err{{background:rgba(255,92,92,.12);border:1px solid rgba(255,92,92,.4);color:#ff9b9b;
  border-radius:9px;padding:10px 12px;font-size:.88rem;margin-bottom:16px}}
@@ -127,10 +134,13 @@ a{{color:{CYAN}}}
 def _form(slug, league_name, error=None, name='', body=''):
     err = f'<div class="err">{html.escape(error)}</div>' if error else ''
     where = f" in <b>{html.escape(league_name)}</b>" if league_name else ""
+    # 5 down to 1 — see the .stars comment in the stylesheet; the row is
+    # reversed in CSS so this still reads 1..5 on screen.
     stars = ''.join(
         f'<input type="radio" id="r{n}" name="rating" value="{n}">'
-        f'<label for="r{n}" title="{n} out of 5">&#11088;</label>'
-        for n in range(1, 6))
+        f'<label for="r{n}" title="{n} out of 5">'
+        f'<span class="vh">{n} out of 5</span>&#11088;</label>'
+        for n in range(5, 0, -1))
     return _page("Leave a review", f"""
 <h1>How's your league going?</h1>
 <p class="sub">You're playing{where}. Tell us what it's like — a sentence is plenty.

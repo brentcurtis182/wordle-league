@@ -5764,9 +5764,15 @@ def _render_reviews_panel():
             inner += f'<h3 style="color:{COLORS["text"]};margin:0 0 10px;font-size:1em;">Waiting on you ({len(pending)})</h3>'
             inner += ''.join(card(r) for r in pending)
         if live:
-            inner += (f'<h3 style="color:{COLORS["text"]};margin:18px 0 10px;font-size:1em;">'
-                      f'Approved ({len(live)}) — these are what the generator publishes</h3>')
-            inner += ''.join(card(r) for r in live)
+            # Pending is the queue you must read, so it is always open. Approved
+            # only grows, so it collapses — otherwise this panel pushes the
+            # Leagues table further down the page every week.
+            shown = ''.join(card(r) for r in live)
+            inner += (f'<details style="margin-top:18px;">'
+                      f'<summary style="cursor:pointer;color:{COLORS["text"]};font-size:1em;'
+                      f'font-weight:600;padding:8px 0;">'
+                      f'Approved ({len(live)}) — these are what the generator publishes'
+                      f'</summary><div style="margin-top:10px;">{shown}</div></details>')
 
     badge = f' <span style="color:#FFA64D;">({len(pending)} new)</span>' if pending else ''
     return f'''

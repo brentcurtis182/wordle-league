@@ -5700,11 +5700,88 @@ def get_league_info(league_id, conn=None):
             conn.close()
 
 
+def _render_reviews_panel():
+    """Pending and approved player reviews, with approve/hide controls.
+
+    Pending first and counted in the heading, because the whole point is that
+    nothing reaches the site until it is read here. Fails soft: if the table
+    does not exist yet, or the query breaks, the admin dashboard still loads
+    without a reviews section rather than 500ing.
+    """
+    try:
+        from auth import get_db_connection
+        from reviews import fetch_for_admin
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            rows = fetch_for_admin(cursor)
+            conn.commit()
+        finally:
+            cursor.close()
+            conn.close()
+    except Exception as e:
+        import logging
+        logging.error(f"Reviews panel failed to load: {e}")
+        return ''
+
+    pending = [r for r in rows if not r[4]]
+    live = [r for r in rows if r[4]]
+
+    def card(r):
+        rid, name, body, rating, approved, created, league = r
+        stars = ('⭐' * rating) if rating else '—'
+        when = created.strftime('%b %d, %Y') if created else ''
+        who = (name or 'Anonymous')
+        if approved:
+            actions = (f'<form method="post" action="/admin/reviews/{rid}/hide" style="display:inline">'
+                       f'<button type="submit" class="btn btn-secondary btn-small">Hide</button></form>')
+            tag = f'<span style="color:{COLORS["accent"]};font-weight:700;font-size:0.8em;">LIVE</span>'
+        else:
+            actions = (f'<form method="post" action="/admin/reviews/{rid}/approve" style="display:inline">'
+                       f'<button type="submit" class="btn btn-small">Approve</button></form> '
+                       f'<form method="post" action="/admin/reviews/{rid}/delete" style="display:inline" '
+                       f'onsubmit="return confirm(\'Delete this review permanently?\')">'
+                       f'<button type="submit" class="btn btn-secondary btn-small">Delete</button></form>')
+            tag = '<span style="color:#FFA64D;font-weight:700;font-size:0.8em;">PENDING</span>'
+        safe = (body or '').replace('<', '&lt;').replace('>', '&gt;')
+        return f'''
+            <div style="border:1px solid {COLORS['border']};border-radius:10px;padding:14px 16px;margin-bottom:10px;background:{COLORS['bg_card']};">
+              <div style="display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap;">
+                <div><strong style="color:{COLORS['text']}">{who}</strong>
+                  <span style="color:{COLORS['text_muted']};font-size:0.85em;"> · {league} · {when}</span></div>
+                <div>{stars} &nbsp; {tag}</div>
+              </div>
+              <p style="color:{COLORS['text']};margin:10px 0 12px;line-height:1.55;">{safe}</p>
+              <div>{actions}</div>
+            </div>'''
+
+    if not rows:
+        inner = (f'<p style="color:{COLORS["text_muted"]};margin:0;">No reviews yet. '
+                 f'Players can leave one from the link at the bottom of any league page.</p>')
+    else:
+        inner = ''
+        if pending:
+            inner += f'<h3 style="color:{COLORS["text"]};margin:0 0 10px;font-size:1em;">Waiting on you ({len(pending)})</h3>'
+            inner += ''.join(card(r) for r in pending)
+        if live:
+            inner += (f'<h3 style="color:{COLORS["text"]};margin:18px 0 10px;font-size:1em;">'
+                      f'Approved ({len(live)}) — these are what the generator publishes</h3>')
+            inner += ''.join(card(r) for r in live)
+
+    badge = f' <span style="color:#FFA64D;">({len(pending)} new)</span>' if pending else ''
+    return f'''
+        <h2 id="reviews" style="color: {COLORS['text']}; margin-bottom: 16px;">Player reviews{badge}</h2>
+        <div class="card" style="padding: 16px;">{inner}</div>
+        <div style="height:28px"></div>'''
+
+
 def render_admin_dashboard(user, leagues, config=None):
     """Render the admin dashboard showing all leagues across all users"""
     if config is None:
         config = {}
-    
+
+    reviews_panel = _render_reviews_panel()
+
     # Build league rows with data attributes for sorting
     league_rows = ''
     for lg in leagues:
@@ -5942,6 +6019,9 @@ def render_admin_dashboard(user, leagues, config=None):
                     <div class="stat-label" style="font-size: 0.75em;">🎮 Discord</div>
                 </div>
             </div>
+
+            <!-- Player reviews -->
+            {reviews_panel}
 
             <!-- Leagues Table -->
             <h2 style="color: {COLORS['text']}; margin-bottom: 16px;">Leagues</h2>

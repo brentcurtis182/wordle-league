@@ -1711,6 +1711,17 @@ def generate_full_html(league_data, league_name="League 6 Beta", slug=None):
     else:
         _head_extra = ''
 
+    # The review ask needs the slug to build its link, so it only renders when
+    # the page knows one. Emitting it with an empty slug would be a link to
+    # /review/ , which 404s.
+    if slug:
+        _review_host = os.environ.get('APP_DOMAIN', 'app.wordplayleague.com')
+        _review_link = (
+            '<p class="wpl-review">Already playing? '
+            f'<a href="https://{_review_host}/review/{slug}">Leave a quick review &rarr;</a></p>')
+    else:
+        _review_link = ''
+
     html = f'''<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1897,6 +1908,11 @@ def generate_full_html(league_data, league_name="League 6 Beta", slug=None):
 .wpl-footer a.wpl-cta-btn{{display:inline-block;margin:4px 0;padding:12px 26px;border-radius:10px;background:linear-gradient(145deg,#00E8DA,#00c4b8);color:#06060e;font-weight:800;font-size:14px;line-height:1.2;text-decoration:none;}}
 .wpl-footer a.wpl-cta-btn:hover{{opacity:.88;color:#06060e;}}
 .wpl-cta .wpl-cta-sub{{margin:16px 0 0;font-size:12px;color:#9a9ab0;line-height:1.5;}}
+/* Quiet on purpose: the review ask sits under the signup CTA and must not
+   compete with it. Only rendered when the page knows its own slug. */
+.wpl-review{{margin:14px 0 0;font-size:12.5px;color:#8a8aa5;}}
+.wpl-review a{{color:#00E8DA;text-decoration:none;font-weight:600;}}
+.wpl-review a:hover{{text-decoration:underline;}}
 /* Scoped past `.wpl-footer p` in styles.css, which sets margin:0 and would
    otherwise kill the auto-centering and the smaller size. */
 .wpl-footer p.wpl-legal{{margin:34px auto 0;max-width:460px;font-size:10px;line-height:1.65;color:#6a6a80;text-align:center;}}
@@ -1918,6 +1934,7 @@ def generate_full_html(league_data, league_name="League 6 Beta", slug=None):
 <a class="wpl-cta-btn" href="https://{os.environ.get('APP_DOMAIN', 'app.wordplayleague.com')}/auth/register">Start your own league &rarr;</a>
 <p class="wpl-cta-sub">Works in your group text, Slack or Discord. Free trial on Slack &amp; Discord.</p>
 </div>
+{_review_link}
 <p class="wpl-legal">WordPlayLeague is not affiliated with or endorsed by Slack, Discord, The New York Times, or any puzzle publisher. Wordle is a trademark of The New York Times Company.<br><a href="https://www.wordplayleague.com/terms-of-service">Terms</a> · <a href="https://www.wordplayleague.com/privacy-policy">Privacy</a> · <a href="https://www.wordplayleague.com/sms-terms">SMS Terms</a></p>
 </div>
 </footer>

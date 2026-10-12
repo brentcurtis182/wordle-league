@@ -28,6 +28,11 @@ if not app.secret_key:
     app.secret_key = _secrets.token_hex(32)
     logging.warning('SECRET_KEY not set — using random key (sessions will not persist across restarts)')
 
+# Player reviews live in their own Blueprint rather than another 200 lines in
+# here. Gives /review/<slug> (public, no login) and the admin approve routes.
+from reviews import reviews_bp
+app.register_blueprint(reviews_bp)
+
 # ---------------------------------------------------------------------------
 # Rate Limiting (Item #9)
 # ---------------------------------------------------------------------------

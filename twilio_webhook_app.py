@@ -5806,6 +5806,32 @@ def public_league_page(slug):
     everything else is X-Frame-Options: SAMEORIGIN and silently fails to render
     in an iframe. Same HTML either way — the prefix only changes the headers.
     """
+    # --- Phase 06: send the public page to its home on the apex ------------
+    # Inert until PUBLIC_DOMAIN is set and differs from the host being asked.
+    # That is the whole safety design: this ships dormant, one variable turns
+    # it on, and clearing the variable turns it off again with no deploy.
+    #
+    # Scoped tightly on purpose:
+    #   - /embed/leagues/<slug> is NEVER redirected. It is iframed by the
+    #     marketing site, and a cross-origin redirect inside an iframe is a
+    #     good way to break an embed silently.
+    #   - scoreboard.png is NOT redirected either (it is a different route).
+    #     Slack fetches those URLs from its own servers and I am not willing
+    #     to bet the Sunday post on its redirect handling. An image is not
+    #     indexable, so there is no duplicate-content reason to move it.
+    #   - GET only. Nothing else should reach a read-only page.
+    _public = os.environ.get('PUBLIC_DOMAIN')
+    if (_public
+            and request.method == 'GET'
+            and request.path.startswith('/leagues/')
+            and request.host.split(':')[0].lower() != _public.lower()):
+        _dest = f"https://{_public}/leagues/{slug}"
+        if request.query_string:
+            _dest += '?' + request.query_string.decode('utf-8', 'ignore')
+        # 301, not 302: this is permanent, and it is what passes the ranking
+        # signal to the apex rather than leaving it stranded on app.*.
+        return redirect(_dest, code=301)
+
     try:
         # Look up the league AND its content marker on one connection: the
         # cache-hit path should cost a single round trip, not two.
@@ -5850,8 +5876,12 @@ def public_league_page(slug):
         html_content = generate_league_html(league_id, slug=slug)
         
         if html_content:
-            # Inline the CSS and JS files so the page works standalone
-            import os
+            # Inline the CSS and JS files so the page works standalone.
+            # NB: no local `import os` here. os is already imported at module
+            # level, and importing it again inside this function makes `os`
+            # function-local for the WHOLE scope — including the redirect
+            # block at the top, which then raises UnboundLocalError and 500s
+            # every league page. Caught in testing; do not reintroduce.
             base_dir = os.path.dirname(os.path.abspath(__file__))
             
             with open(os.path.join(base_dir, 'styles.css'), 'r', encoding='utf-8') as f:

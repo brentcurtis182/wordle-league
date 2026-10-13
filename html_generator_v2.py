@@ -1670,7 +1670,14 @@ def generate_full_html(league_data, league_name="League 6 Beta", slug=None):
     _icon_dir = 'staging_env' if (os.environ.get('FLASK_ENV') == 'staging'
                                   or 'staging' in (os.environ.get('GITHUB_REPO_NAME') or '')) else 'prod'
     # Absolute, because a preview scraper resolves it outside any page context.
-    _og_image = f"https://app.wordplayleague.com/app-icons/{_icon_dir}/icon-512.png"
+    # Icons are served by the app, so every reference to them must be absolute.
+    # Root-relative paths break the moment this HTML is served from another
+    # host — which is exactly what Phase 06 does, proxying league pages onto
+    # the apex. There they would resolve to wordplayleague.com/app-icons/… and
+    # 404.
+    _icon_host = os.environ.get('APP_DOMAIN', 'app.wordplayleague.com')
+    _icon_base = f"https://{_icon_host}/app-icons/{_icon_dir}"
+    _og_image = f"{_icon_base}/icon-512.png"
 
     # --- Canonical + structured data ---------------------------------------
     # PUBLIC_DOMAIN is deliberately its own variable. APP_DOMAIN also builds
@@ -1738,10 +1745,10 @@ def generate_full_html(league_data, league_name="League 6 Beta", slug=None):
 <meta name="twitter:title" content="{_og_title}"/>
 <meta name="twitter:description" content="{_og_desc}"/>
 <meta name="twitter:image" content="{_og_image}"/>
-<link rel="apple-touch-icon" href="/app-icons/{_icon_dir}/apple-touch-icon.png"/>
-<link rel="icon" type="image/png" sizes="32x32" href="/app-icons/{_icon_dir}/favicon-32.png"/>
-<link rel="icon" type="image/png" sizes="192x192" href="/app-icons/{_icon_dir}/icon-192.png"/>
-<link rel="icon" type="image/png" sizes="512x512" href="/app-icons/{_icon_dir}/icon-512.png"/>
+<link rel="apple-touch-icon" href="{_icon_base}/apple-touch-icon.png"/>
+<link rel="icon" type="image/png" sizes="32x32" href="{_icon_base}/favicon-32.png"/>
+<link rel="icon" type="image/png" sizes="192x192" href="{_icon_base}/icon-192.png"/>
+<link rel="icon" type="image/png" sizes="512x512" href="{_icon_base}/icon-512.png"/>
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
 <meta http-equiv="Pragma" content="no-cache"/>
 <meta http-equiv="Expires" content="0"/>

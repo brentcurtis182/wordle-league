@@ -168,7 +168,7 @@ def set_security_headers(response):
     if request.path.startswith('/embed/'):
         response.headers['Content-Security-Policy'] = (
             "frame-ancestors 'self' "
-            "https://wordplayleague.com https://www.wordplayleague.com "
+            "https://wordplayleague.com https://wordplayleague.com "
             "https://wordplayleague-site.pages.dev https://*.wordplayleague-site.pages.dev "
             "https://*.wix.com https://*.wixsite.com;"
         )
@@ -1590,8 +1590,8 @@ def webhook():
 
                             _sms_disclaimer = (
                                 f"Msg frequency varies. Msg & data rates may apply. Reply HELP for help, "
-                                f"STOP or OPT OUT to opt out. Terms: https://www.wordplayleague.com/sms-terms "
-                                f"Privacy: https://www.wordplayleague.com/privacy-policy"
+                                f"STOP or OPT OUT to opt out. Terms: https://wordplayleague.com/sms-terms "
+                                f"Privacy: https://wordplayleague.com/privacy-policy"
                             )
                             if is_new_league:
                                 body = (
@@ -1714,7 +1714,7 @@ def webhook():
                                         opt_league_id,
                                         f"Welcome to WordPlay League! You're opted in, {player_name_opt} — your Wordle scores will be tracked and posted here: {league_url}\n\n"
                                         f"Msg frequency varies. Msg & data rates may apply. Reply HELP for help, STOP to opt out. "
-                                        f"Terms: https://www.wordplayleague.com/sms-terms Privacy: https://www.wordplayleague.com/privacy-policy",
+                                        f"Terms: https://wordplayleague.com/sms-terms Privacy: https://wordplayleague.com/privacy-policy",
                                         db_connection=conn_opt
                                     )
                                 else:

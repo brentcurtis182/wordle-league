@@ -612,7 +612,7 @@ def render_login_page(error=None, success=None):
         {get_loading_screen_top()}
         <div class="auth-container">
             <div class="auth-card">
-                <h1><a href="https://www.wordplayleague.com" style="text-decoration: none; color: inherit;">WordPlay<span class="orange">League.com</span></a></h1>
+                <h1><a href="https://wordplayleague.com" style="text-decoration: none; color: inherit;">WordPlay<span class="orange">League.com</span></a></h1>
                 <p class="subtitle">Sign in to manage your leagues</p>
                 
                 {'<div class="alert alert-error">' + error + '</div>' if error else ''}
@@ -701,7 +701,7 @@ def render_forgot_password_page(error=None, success=None):
     <body style="background:#06060e;">
         <div class="auth-container">
             <div class="auth-card">
-                <h1><a href="https://www.wordplayleague.com" style="text-decoration: none; color: inherit;">WordPlay<span class="orange">League.com</span></a></h1>
+                <h1><a href="https://wordplayleague.com" style="text-decoration: none; color: inherit;">WordPlay<span class="orange">League.com</span></a></h1>
                 <p class="subtitle">Reset your password</p>
                 
                 {'<div class="alert alert-error">' + error + '</div>' if error else ''}
@@ -772,7 +772,7 @@ def render_reset_password_page(token, email=None, error=None, success=None):
     <body style="background:#06060e;">
         <div class="auth-container">
             <div class="auth-card">
-                <h1><a href="https://www.wordplayleague.com" style="text-decoration: none; color: inherit;">WordPlay<span class="orange">League.com</span></a></h1>
+                <h1><a href="https://wordplayleague.com" style="text-decoration: none; color: inherit;">WordPlay<span class="orange">League.com</span></a></h1>
                 <p class="subtitle">Create a new password</p>
                 
                 {'<div class="alert alert-error">' + error + '</div>' if error else ''}
@@ -856,7 +856,7 @@ def render_verify_email_page(success=False, error=None):
     <body style="background:#06060e;">
         <div class="auth-container">
             <div class="auth-card">
-                <h1><a href="https://www.wordplayleague.com" style="text-decoration: none; color: inherit;">WordPlay<span class="orange">League.com</span></a></h1>
+                <h1><a href="https://wordplayleague.com" style="text-decoration: none; color: inherit;">WordPlay<span class="orange">League.com</span></a></h1>
                 {message_html}
             </div>
         </div>
@@ -905,7 +905,7 @@ def render_unverified_email_page(email):
     <body style="background:#06060e;">
         <div class="auth-container">
             <div class="auth-card">
-                <h1><a href="https://www.wordplayleague.com" style="text-decoration: none; color: inherit;">WordPlay<span class="orange">League.com</span></a></h1>
+                <h1><a href="https://wordplayleague.com" style="text-decoration: none; color: inherit;">WordPlay<span class="orange">League.com</span></a></h1>
                 
                 <div style="text-align: center;">
                     <div style="font-size: 3em; margin-bottom: 16px;">📧</div>
@@ -1017,7 +1017,7 @@ def render_register_page(error=None):
         {get_loading_screen_top()}
         <div class="auth-container">
             <div class="auth-card">
-                <h1><a href="https://www.wordplayleague.com" style="text-decoration: none; color: inherit;">WordPlay<span class="orange">League.com</span></a></h1>
+                <h1><a href="https://wordplayleague.com" style="text-decoration: none; color: inherit;">WordPlay<span class="orange">League.com</span></a></h1>
                 <p class="subtitle">Sign Up</p>
                 
                 {'<div class="alert alert-error">' + error + '</div>' if error else ''}
@@ -1067,7 +1067,7 @@ def render_register_page(error=None):
                             automated text messages from Wordplay League at the number you provide. These messages 
                             may include score confirmations, league standings, and other information related to your 
                             Wordplay League participation. Message and data rates may apply. Reply STOP to cancel, 
-                            HELP for help. See our <a href="https://www.wordplayleague.com/sms-terms" target="_blank">Text Messaging Terms</a> and <a href="https://www.wordplayleague.com/privacy-policy" target="_blank">Privacy Policy</a>.
+                            HELP for help. See our <a href="https://wordplayleague.com/sms-terms" target="_blank">Text Messaging Terms</a> and <a href="https://wordplayleague.com/privacy-policy" target="_blank">Privacy Policy</a>.
                         </p>
                         <div class="checkbox-wrapper">
                             <input type="checkbox" name="sms_consent" id="sms_consent" value="1">
@@ -1215,7 +1215,7 @@ def render_profile_page(user, user_details, leagues, active_sessions, message=No
         <div class="container">
             <div class="header">
                 <div class="header-logo-row">
-                    <a href="https://www.wordplayleague.com" class="logo" style="text-decoration: none;">WordPlay<span class="orange">League.com</span></a>
+                    <a href="https://wordplayleague.com" class="logo" style="text-decoration: none;">WordPlay<span class="orange">League.com</span></a>
                 </div>
                 <div class="header-nav-row">
                     {get_user_menu_html(user['name'], user['email'], show_dashboard_link=True, user_role=user.get('role', 'user'))}
@@ -1836,7 +1836,7 @@ def render_dashboard(user, leagues, shared_leagues=None, message=None, error=Non
         <div class="container">
             <div class="header">
                 <div class="header-logo-row">
-                    <a href="https://www.wordplayleague.com" class="logo" style="text-decoration: none;">WordPlay<span class="orange">League.com</span></a>
+                    <a href="https://wordplayleague.com" class="logo" style="text-decoration: none;">WordPlay<span class="orange">League.com</span></a>
                 </div>
                 <div class="header-nav-row">
                     {get_user_menu_html(user['name'], user['email'], user_role=user.get('role', 'user'))}
@@ -2039,7 +2039,7 @@ def render_create_league(user, error=None, config=None):
         <div class="container">
             <div class="header">
                 <div class="header-logo-row">
-                    <a href="https://www.wordplayleague.com" class="logo" style="text-decoration: none;">WordPlay<span class="orange">League.com</span></a>
+                    <a href="https://wordplayleague.com" class="logo" style="text-decoration: none;">WordPlay<span class="orange">League.com</span></a>
                 </div>
                 <div class="header-nav-row">
                     {get_user_menu_html(user['name'], user['email'], show_dashboard_link=True, user_role=user.get('role', 'user'))}
@@ -2971,7 +2971,7 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
         <div class="container">
             <div class="header">
                 <div class="header-logo-row">
-                    <a href="https://www.wordplayleague.com" class="logo" style="text-decoration: none;">WordPlay<span class="orange">League.com</span></a>
+                    <a href="https://wordplayleague.com" class="logo" style="text-decoration: none;">WordPlay<span class="orange">League.com</span></a>
                 </div>
                 <div class="header-nav-row">
                     {get_user_menu_html(user['name'], user['email'], show_dashboard_link=True, user_role=user.get('role', 'user'))}
@@ -5980,7 +5980,7 @@ def render_admin_dashboard(user, leagues, config=None):
         <div class="container">
             <div class="header">
                 <div class="header-logo-row">
-                    <a href="https://www.wordplayleague.com" class="logo" style="text-decoration: none;">WordPlay<span class="orange">League.com</span></a>
+                    <a href="https://wordplayleague.com" class="logo" style="text-decoration: none;">WordPlay<span class="orange">League.com</span></a>
                 </div>
                 <div class="header-nav-row">
                     {get_user_menu_html(user['name'], user['email'], show_dashboard_link=True, user_role=user.get('role', 'user'))}
@@ -6666,7 +6666,7 @@ def render_admin_league_detail(user, league):
         <div class="container">
             <div class="header">
                 <div class="header-logo-row">
-                    <a href="https://www.wordplayleague.com" class="logo" style="text-decoration: none;">WordPlay<span class="orange">League.com</span></a>
+                    <a href="https://wordplayleague.com" class="logo" style="text-decoration: none;">WordPlay<span class="orange">League.com</span></a>
                 </div>
                 <div class="header-nav-row">
                     {get_user_menu_html(user['name'], user['email'], show_dashboard_link=True, user_role=user.get('role', 'user'))}
@@ -6840,7 +6840,7 @@ def render_admin_newsletter(user, templates, recipients, selected_template='', s
         <div class="container">
             <div class="header">
                 <div class="header-logo-row">
-                    <a href="https://www.wordplayleague.com" class="logo" style="text-decoration: none;">WordPlay<span class="orange">League.com</span></a>
+                    <a href="https://wordplayleague.com" class="logo" style="text-decoration: none;">WordPlay<span class="orange">League.com</span></a>
                 </div>
                 <div class="header-nav-row">
                     {get_user_menu_html(user['name'], user['email'], show_dashboard_link=True, user_role=user.get('role', 'user'))}
@@ -7035,7 +7035,7 @@ def render_admin_twilio_reports(user, monthly_data):
         <div class="container">
             <div class="header">
                 <div class="header-logo-row">
-                    <a href="https://www.wordplayleague.com" class="logo" style="text-decoration: none;">WordPlay<span class="orange">League.com</span></a>
+                    <a href="https://wordplayleague.com" class="logo" style="text-decoration: none;">WordPlay<span class="orange">League.com</span></a>
                 </div>
                 <div class="header-nav-row">
                     {get_user_menu_html(user['name'], user['email'], show_dashboard_link=True, user_role=user.get('role', 'user'))}
@@ -7573,7 +7573,7 @@ def render_membership_page(user, subscriptions, message=None, error=None):
         <div class="container">
             <div class="header">
                 <div class="header-logo-row">
-                    <a href="https://www.wordplayleague.com" class="logo" style="text-decoration: none;">WordPlay<span class="orange">League.com</span></a>
+                    <a href="https://wordplayleague.com" class="logo" style="text-decoration: none;">WordPlay<span class="orange">League.com</span></a>
                 </div>
                 <div class="header-nav-row">
                     {user_menu}

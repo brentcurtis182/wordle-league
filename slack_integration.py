@@ -756,7 +756,11 @@ def handle_slack_message(event: dict, team_id: str, db_connection) -> dict:
             db_connection.commit()
             
             # Build public page URL
-            public_url = f"https://{os.environ.get('APP_DOMAIN', 'app.wordplayleague.com')}/leagues/{slug}" if slug else f"https://www.wordplayleague.com/league-{league_id}"
+            # No slug means there is no league page to link to. The old fallback
+            # pointed at /league-<id>, a Wix URL pattern that no longer exists,
+            # so it always 404'd — the public directory is the honest answer.
+            public_url = (f"https://{os.environ.get('APP_DOMAIN', 'app.wordplayleague.com')}/leagues/{slug}"
+                          if slug else "https://wordplayleague.com/leagues")
             
             # Send confirmation message with public page link
             send_slack_message(

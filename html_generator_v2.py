@@ -1873,7 +1873,7 @@ def generate_full_html(league_data, league_name="League 6 Beta", slug=None):
 <div class="container" style="text-align: center;">
 {f'<div class="header-mascot">{league_data["header_emoji"]}</div>' if league_data.get("header_emoji") else ''}
 <h1 class="title">{league_name}</h1>
-<a class="wpl-brand" href="https://www.wordplayleague.com">WordPlayLeague</a>
+<a class="wpl-brand" href="https://wordplayleague.com">WordPlayLeague</a>
 </div>
 </header>
 <div class="container">
@@ -1928,14 +1928,14 @@ def generate_full_html(league_data, league_name="League 6 Beta", slug=None):
 <div class="footer-tile"></div>
 <div class="footer-tile"></div>
 </div>
-<p>{league_name} · <a href="https://www.wordplayleague.com">WordPlayLeague</a></p>
+<p>{league_name} · <a href="https://wordplayleague.com">WordPlayLeague</a></p>
 <div class="wpl-cta">
 <p class="wpl-cta-line">Want this for your own group?</p>
 <a class="wpl-cta-btn" href="https://{os.environ.get('APP_DOMAIN', 'app.wordplayleague.com')}/auth/register">Start your own league &rarr;</a>
 <p class="wpl-cta-sub">Works in your group text, Slack or Discord. Free trial on Slack &amp; Discord.</p>
 </div>
 {_review_link}
-<p class="wpl-legal">WordPlayLeague is not affiliated with or endorsed by Slack, Discord, The New York Times, or any puzzle publisher. Wordle is a trademark of The New York Times Company.<br><a href="https://www.wordplayleague.com/terms-of-service">Terms</a> · <a href="https://www.wordplayleague.com/privacy-policy">Privacy</a> · <a href="https://www.wordplayleague.com/sms-terms">SMS Terms</a></p>
+<p class="wpl-legal">WordPlayLeague is not affiliated with or endorsed by Slack, Discord, The New York Times, or any puzzle publisher. Wordle is a trademark of The New York Times Company.<br><a href="https://wordplayleague.com/terms-of-service">Terms</a> · <a href="https://wordplayleague.com/privacy-policy">Privacy</a> · <a href="https://wordplayleague.com/sms-terms">SMS Terms</a></p>
 </div>
 </footer>
 <script>

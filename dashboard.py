@@ -1906,7 +1906,7 @@ def render_create_league(user, error=None, config=None):
     discord_enabled = config.get('discord_enabled', 'true') == 'true'
 
     # Only advertise the trial to users who can actually get one. Showing
-    # "2 WEEKS FREE" to someone who already used theirs promises something
+    # "4 WEEKS FREE" to someone who already used theirs promises something
     # checkout won't honour.
     try:
         from billing import is_trial_eligible
@@ -1916,9 +1916,9 @@ def render_create_league(user, error=None, config=None):
     _trial_ribbon = (
         f'<div style="position: absolute; top: -8px; right: -6px; background: {COLORS["accent_orange"]}; '
         f'color: #000; font-size: 0.6em; font-weight: 800; padding: 2px 6px; border-radius: 8px; '
-        f'letter-spacing: .03em;">2 WEEKS FREE</div>'
+        f'letter-spacing: .03em;">4 WEEKS FREE</div>'
     ) if trial_available else ''
-    _trial_hint = ('Starts with a 14-day free trial - card required, nothing charged until it ends. '
+    _trial_hint = ('Starts with a 28-day free trial - card required, nothing charged until it ends. '
                    if trial_available else '')
 
     return f"""
@@ -6445,7 +6445,7 @@ def render_admin_dashboard(user, leagues, config=None):
                     off: ['Disable Slack Payment?', 'New Slack leagues can be activated without a subscription.']
                 }},
                 'payment_required_discord': {{
-                    on: ['Require Payment for Discord?', 'New Discord league activations will require a subscription (with the 14-day free trial). Existing active Discord leagues are not affected.'],
+                    on: ['Require Payment for Discord?', 'New Discord league activations will require a subscription (with the 28-day free trial). Existing active Discord leagues are not affected.'],
                     off: ['Disable Discord Payment?', 'New Discord leagues can be activated without a subscription.']
                 }}
             }};
@@ -7233,11 +7233,11 @@ def render_membership_page(user, subscriptions, message=None, error=None):
     _trial_pill = (
         f'<span style="background: {COLORS["accent_orange"]}; color: #000; font-size: 0.62em; '
         f'font-weight: 800; padding: 3px 9px; border-radius: 10px; letter-spacing: .03em; '
-        f'vertical-align: middle; margin-left: 6px;">14-DAY FREE TRIAL</span> '
+        f'vertical-align: middle; margin-left: 6px;">28-DAY FREE TRIAL</span> '
     ) if trial_available else ''
     _trial_feature = (
         f'<span style="color: {COLORS["accent_orange"]}; font-weight: 700;">'
-        f'✨ 14-day free trial</span><br>'
+        f'✨ 28-day free trial</span><br>'
     ) if trial_available else ''
 
     user_menu = get_user_menu_html(user.get('name', user.get('email', '')), user.get('email', ''), show_dashboard_link=True, user_role=user.get('role', 'user'))

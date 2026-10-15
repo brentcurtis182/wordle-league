@@ -28,7 +28,14 @@ SMS_BUNDLES = {
 # message, so a trial is just compute. SMS is deliberately excluded: every
 # message on a trial SMS league is a real Twilio charge we would eat, which
 # adds up fast and is trivially abusable.
-TRIAL_DAYS = 14
+# 28, not 14. A fortnight yields only ONE full weekly cycle for anyone who
+# signs up mid-week — their first partial week usually fails min_weekly_scores,
+# so they see a single weekly winner and no season race at all before the trial
+# ends. Four weeks gives three full cycles: three winners and a visible title
+# race, which is the thing people actually get hooked on. Slack/Discord trials
+# cost us almost nothing (no carrier fees), and is_trial_eligible already gates
+# this to a user's first subscription, so it cannot be farmed.
+TRIAL_DAYS = 28
 
 # Slack tiers
 SLACK_TIERS = {

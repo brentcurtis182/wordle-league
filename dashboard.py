@@ -7883,14 +7883,14 @@ def render_billing_success_page(user, session_id, pending_league=None):
             f'and hit {_strong}Activate</strong> to link this plan and connect your channel.</p>'
             f'<a href="/dashboard/league/{pending_league["id"]}" class="btn btn-primary">'
             f'Finish setting up {_name}</a>'
-            f'<a href="/dashboard/membership" class="btn btn-secondary">League Membership</a>'
+            f'\n                <a href="/dashboard/membership" class="btn btn-secondary">League Membership</a>'
         )
     else:
         next_step_html = (
             f'<p>Your subscription is now active. To put it to work, open the league you want '
             f'it on and hit {_strong}Activate</strong> — that is where you link a plan to a league.</p>'
             f'<a href="/dashboard" class="btn btn-primary">Go to My Leagues</a>'
-            f'<a href="/dashboard/membership" class="btn btn-secondary">League Membership</a>'
+            f'\n                <a href="/dashboard/membership" class="btn btn-secondary">League Membership</a>'
         )
 
     return f"""

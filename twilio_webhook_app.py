@@ -7471,15 +7471,20 @@ def billing_success():
               AND l.slack_channel_id IS NULL
               AND l.discord_channel_id IS NULL
             ORDER BY l.id DESC
-            LIMIT 2
+            LIMIT 1
         """, (user['id'],))
-        rows = cursor.fetchall()
+        row = cursor.fetchone()
         cursor.close()
         conn.close()
-        # Only name it when there is exactly one candidate; with several we
-        # cannot guess which they meant, so fall back to the generic copy.
-        if len(rows) == 1:
-            pending_league = {'id': rows[0][0], 'display_name': rows[0][1]}
+        # Newest unconnected league, not "only if there is exactly one". An
+        # existing manager can easily have several sitting unconnected — the
+        # staging copy blanks channel columns and shows 8 for some accounts —
+        # and requiring exactly one meant everyone but a brand-new user got
+        # the generic copy. The newest is nearly always the one they just
+        # built before buying, and the button only navigates, so guessing
+        # wrong costs a click rather than breaking anything.
+        if row:
+            pending_league = {'id': row[0], 'display_name': row[1]}
     except Exception as e:
         logging.warning(f"Could not resolve pending league for billing success: {e}")
 

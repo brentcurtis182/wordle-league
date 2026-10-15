@@ -5996,6 +5996,7 @@ def render_admin_dashboard(user, leagues, config=None):
                     <button onclick="document.getElementById('configModal').style.display='flex'" style="background: {COLORS['bg_dark']}; color: {COLORS['text']}; border: 1px solid {COLORS['border']}; padding: 12px 20px; border-radius: 8px; font-weight: 600; font-size: 0.9em; cursor: pointer; text-align: left;">⚙️ Configuration</button>
                     <a href="/admin/newsletter" style="display: block; background: {COLORS['bg_dark']}; color: {COLORS['text']}; border: 1px solid {COLORS['border']}; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.9em;">📰 Newsletter</a>
                     <a href="/admin/twilio-reports" style="display: block; background: {COLORS['bg_dark']}; color: {COLORS['text']}; border: 1px solid {COLORS['border']}; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.9em;">📊 Twilio Monthly Reports</a>
+                    <a href="/admin/subscriptions" style="display: block; background: {COLORS['bg_dark']}; color: {COLORS['text']}; border: 1px solid {COLORS['border']}; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 0.9em;">💳 Subscriptions</a>
                 </div>
             </div>
 
@@ -8025,6 +8026,136 @@ def render_billing_cancel_page(user):
                 <p>No worries — no charge was made. You can try again anytime from League Membership.</p>
                 <a href="/dashboard/membership" class="btn btn-primary">Back to League Membership</a>
                 <a href="/dashboard" class="btn btn-secondary">Back to Dashboard</a>
+            </div>
+        </div>
+        <script>{get_user_menu_script()}</script>
+    </body>
+    </html>
+    """
+
+
+def render_admin_subscriptions(user, subs):
+    """Admin view: who is paying, who is trialing, what is about to end.
+
+    The "next" column reads BOTH cancellation fields. Stripe sets cancel_at
+    (a date) when you schedule a cancellation from its dashboard and leaves
+    cancel_at_period_end False, so checking only the boolean reports "renews"
+    for a subscription that is actually ending. That exact mismatch is why
+    this page exists.
+    """
+    user_menu = get_user_menu_html(user.get('name', user.get('email', '')),
+                                   user.get('email', ''), show_dashboard_link=True,
+                                   user_role=user.get('role', 'user'))
+
+    def _d(v):
+        # Not %-d: that directive is glibc-only and raises on Windows, where
+        # this gets rendered during local testing.
+        return f"{v.strftime('%b')} {v.day}, {v.year}" if v else '—'
+
+    badge = {
+        'active':   (COLORS['success'], 'ACTIVE'),
+        'trialing': (COLORS['accent_orange'], 'TRIALING'),
+        'past_due': (COLORS['error'], 'PAST DUE'),
+    }
+
+    live = sum(1 for s in subs if s['status'] in ('active', 'trialing'))
+    paying = sum(1 for s in subs if s['status'] == 'active')
+    trialing = sum(1 for s in subs if s['status'] == 'trialing')
+    ending = sum(1 for s in subs
+                 if s['status'] in ('active', 'trialing')
+                 and (s.get('cancel_at') or s.get('cancel_at_period_end')))
+
+    rows = ''
+    for s in subs:
+        colour, label = badge.get(s['status'], (COLORS['text_muted'], s['status'].upper()))
+        # What actually happens next, not merely when the period ends.
+        if s['status'] in ('active', 'trialing'):
+            if s.get('cancel_at'):
+                nxt = f"<span style=\"color:{COLORS['error']};\">Ends {_d(s['cancel_at'])}</span>"
+            elif s.get('cancel_at_period_end'):
+                nxt = f"<span style=\"color:{COLORS['error']};\">Ends {_d(s['current_period_end'])}</span>"
+            else:
+                nxt = f"<span style=\"color:{COLORS['text_muted']};\">Renews {_d(s['current_period_end'])}</span>"
+        else:
+            nxt = f"<span style=\"color:{COLORS['text_muted']};\">—</span>"
+
+        leagues = html_escape(s['leagues']) if s['leagues'] else \
+            f"<span style=\"color:{COLORS['error']};\">not linked</span>"
+        ai = '✨' if s.get('ai_messaging_addon') else '—'
+
+        rows += (
+            '<tr>'
+            f'<td class="c">{html_escape(s["email"] or "—")}</td>'
+            f'<td class="c"><code>{html_escape(s["plan_tier"] or "")}</code></td>'
+            f'<td class="c"><span class="pill" style="background:{colour}22;border:1px solid {colour};color:{colour};">{label}</span></td>'
+            f'<td class="c">{nxt}</td>'
+            f'<td class="c" style="text-align:center;">{ai}</td>'
+            f'<td class="c">{leagues}</td>'
+            f'<td class="c" style="text-align:center;">{s["slots_used"]}</td>'
+            f'<td class="c"><code style="font-size:0.78em;color:{COLORS["text_muted"]};">{html_escape(s["stripe_subscription_id"] or "")}</code></td>'
+            '</tr>'
+        )
+
+    if not rows:
+        rows = f'<tr><td colspan="8" style="padding:28px;text-align:center;color:{COLORS["text_muted"]};">No subscriptions yet.</td></tr>'
+
+    return f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Subscriptions - Admin - WordPlayLeague.com</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>
+            {get_base_styles()}
+            .subs-wrap {{ overflow-x: auto; }}
+            .subs-table {{ width: 100%; border-collapse: collapse; min-width: 900px; }}
+            .subs-table th {{
+                text-align: left; padding: 12px 16px; color: {COLORS['text_muted']};
+                font-size: 0.78em; font-weight: 600; text-transform: uppercase;
+                letter-spacing: 0.5px; border-bottom: 2px solid {COLORS['border']};
+                white-space: nowrap;
+            }}
+            .subs-table td.c {{
+                padding: 14px 16px; border-bottom: 1px solid {COLORS['border']};
+                color: {COLORS['text']}; font-size: 0.92em; white-space: nowrap;
+            }}
+            .subs-table tbody tr:hover {{ background: rgba(255,255,255,0.04); }}
+            .pill {{
+                padding: 3px 10px; border-radius: 10px; font-size: 0.72em;
+                font-weight: 700; letter-spacing: .03em;
+            }}
+            .stats {{ display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 22px; }}
+            .stat {{
+                background: {COLORS['bg_card']}; border: 1px solid {COLORS['border']};
+                border-radius: 12px; padding: 14px 20px; min-width: 120px;
+            }}
+            .stat b {{ display: block; font-size: 1.6em; color: {COLORS['accent']}; }}
+            .stat span {{ color: {COLORS['text_muted']}; font-size: 0.8em; }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            {user_menu}
+            <h1 style="margin-bottom: 6px;">Subscriptions</h1>
+            <p style="color: {COLORS['text_muted']}; margin-bottom: 22px;">
+                Stripe is the system of record — this mirrors it.
+                <a href="/admin/dashboard" style="color: {COLORS['accent']};">Back to admin</a>
+            </p>
+            <div class="stats">
+                <div class="stat"><b>{paying}</b><span>Paying</span></div>
+                <div class="stat"><b>{trialing}</b><span>Trialing</span></div>
+                <div class="stat"><b>{live}</b><span>Live total</span></div>
+                <div class="stat"><b>{ending}</b><span>Set to end</span></div>
+            </div>
+            <div class="subs-wrap">
+              <table class="subs-table">
+                <thead><tr>
+                    <th>Account</th><th>Tier</th><th>Status</th><th>What happens next</th>
+                    <th style="text-align:center;">AI</th><th>Leagues</th>
+                    <th style="text-align:center;">Slots</th><th>Stripe ID</th>
+                </tr></thead>
+                <tbody>{rows}</tbody>
+              </table>
             </div>
         </div>
         <script>{get_user_menu_script()}</script>

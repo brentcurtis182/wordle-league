@@ -187,10 +187,20 @@ def create_billing_tables():
                 status VARCHAR(50) NOT NULL DEFAULT 'active',
                 current_period_end TIMESTAMP,
                 cancel_at_period_end BOOLEAN DEFAULT FALSE,
+                cancel_at TIMESTAMP,
                 ai_messaging_addon BOOLEAN DEFAULT FALSE,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
+        """)
+        # Stripe cancels in TWO ways and we were only mirroring one.
+        # cancel_at_period_end is the boolean; cancel_at is an explicit date,
+        # and the dashboard's "cancel subscription" sets the latter. Jaime's
+        # trial on 2026-10-15 was scheduled to cancel via cancel_at while
+        # cancel_at_period_end stayed False, so our DB read as "renews" when
+        # it was actually set to end. Existing rows need the column added.
+        cursor.execute("""
+            ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS cancel_at TIMESTAMP
         """)
 
         # subscription_leagues mapping table
@@ -1236,9 +1246,28 @@ def _on_subscription_updated(subscription):
         items_data = subscription.get('items', {}).get('data', [])
         price_id = items_data[0]['price']['id'] if items_data else None
 
-        # Safely get current_period_end (can be int timestamp or None)
+        # current_period_end is NOT always on the subscription. Newer Stripe API
+        # versions moved it onto the subscription ITEM, and on a trialing
+        # subscription the meaningful date is trial_end anyway. We used to read
+        # only the top-level field and skip the date entirely when it was
+        # missing — which is how extending Jaime's trial to Nov 12 on
+        # 2026-10-15 left our DB still showing Oct 29, understating her trial
+        # by two weeks in the dashboard. Fall through the three sources.
         period_end = subscription.get('current_period_end')
+        if not period_end:
+            try:
+                items = subscription.get('items', {}).get('data', [])
+                period_end = items[0].get('current_period_end') if items else None
+            except Exception:
+                period_end = None
+        if not period_end:
+            period_end = subscription.get('trial_end')
+
         cancel_at_end = subscription.get('cancel_at_period_end', False)
+        # The other half of the same bug: a cancellation scheduled from the
+        # Stripe dashboard sets cancel_at (a date) and leaves
+        # cancel_at_period_end False. Mirror both or the row reads as renewing.
+        cancel_at = subscription.get('cancel_at')
 
         if period_end:
             cursor.execute("""
@@ -1246,19 +1275,23 @@ def _on_subscription_updated(subscription):
                     status = %s,
                     current_period_end = to_timestamp(%s),
                     cancel_at_period_end = %s,
+                    cancel_at = CASE WHEN %s IS NULL THEN NULL ELSE to_timestamp(%s) END,
                     stripe_price_id = COALESCE(%s, stripe_price_id),
                     updated_at = CURRENT_TIMESTAMP
                 WHERE stripe_subscription_id = %s
-            """, (new_status, period_end, cancel_at_end, price_id, stripe_sub_id))
+            """, (new_status, period_end, cancel_at_end, cancel_at, cancel_at,
+                  price_id, stripe_sub_id))
         else:
             cursor.execute("""
                 UPDATE subscriptions SET
                     status = %s,
                     cancel_at_period_end = %s,
+                    cancel_at = CASE WHEN %s IS NULL THEN NULL ELSE to_timestamp(%s) END,
                     stripe_price_id = COALESCE(%s, stripe_price_id),
                     updated_at = CURRENT_TIMESTAMP
                 WHERE stripe_subscription_id = %s
-            """, (new_status, cancel_at_end, price_id, stripe_sub_id))
+            """, (new_status, cancel_at_end, cancel_at, cancel_at,
+                  price_id, stripe_sub_id))
 
         conn.commit()
         logging.info(f"Subscription updated: {stripe_sub_id} -> status={new_status}")

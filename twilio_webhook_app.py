@@ -6801,6 +6801,70 @@ def dashboard_check_status(league_id):
         logging.error(f"Error checking league status: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/admin/subscriptions')
+def admin_subscriptions():
+    """Who is paying, who is trialing, and what is about to end.
+
+    Added 2026-10-15: there was no way to see this anywhere in the product.
+    Brent went looking for "do I have a trialing subscriber and is it set to
+    cancel" and had to go to Stripe for it.
+
+    Reads cancel_at as well as cancel_at_period_end — a cancellation scheduled
+    from the Stripe dashboard sets the date and leaves the boolean False, so a
+    view that checks only the boolean reports "renews" for a subscription that
+    is actually ending.
+    """
+    from auth import validate_session
+    from dashboard import render_admin_subscriptions
+
+    session_token = request.cookies.get('session_token')
+    user = validate_session(session_token)
+    if not user:
+        return redirect('/auth/login')
+    if user.get('role') != 'admin':
+        return redirect('/dashboard')
+
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        # Idempotent: older deploys predate the column.
+        try:
+            cursor.execute("ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS cancel_at TIMESTAMP")
+            conn.commit()
+        except Exception:
+            conn.rollback()
+
+        cursor.execute("""
+            SELECT s.id, u.email, s.plan_type, s.plan_tier, s.status,
+                   s.current_period_end, s.cancel_at_period_end, s.cancel_at,
+                   s.ai_messaging_addon, s.created_at,
+                   COALESCE(
+                       (SELECT string_agg(l.display_name, ', ' ORDER BY l.id)
+                        FROM subscription_leagues sl
+                        JOIN leagues l ON l.id = sl.league_id
+                        WHERE sl.subscription_id = s.id),
+                       ''
+                   ) AS leagues,
+                   (SELECT COUNT(*) FROM subscription_leagues sl WHERE sl.subscription_id = s.id) AS slots_used,
+                   s.stripe_subscription_id
+            FROM subscriptions s
+            LEFT JOIN users u ON u.id = s.user_id
+            ORDER BY
+                CASE s.status WHEN 'active' THEN 0 WHEN 'trialing' THEN 1
+                              WHEN 'past_due' THEN 2 ELSE 3 END,
+                s.created_at DESC
+        """)
+        cols = [d[0] for d in cursor.description]
+        subs = [dict(zip(cols, r)) for r in cursor.fetchall()]
+        cursor.close()
+        conn.close()
+    except Exception as e:
+        logging.error(f"admin_subscriptions failed: {e}")
+        subs = []
+
+    return render_admin_subscriptions(user, subs)
+
+
 @app.route('/admin/dashboard')
 def admin_dashboard():
     """Admin dashboard - view all leagues across all users"""

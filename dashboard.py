@@ -7861,9 +7861,37 @@ def render_membership_page(user, subscriptions, message=None, error=None):
     </html>
     """
 
-def render_billing_success_page(user, session_id):
-    """Render the post-checkout success page."""
+def render_billing_success_page(user, session_id, pending_league=None):
+    """Render the post-checkout success page.
+
+    pending_league: optional {'id', 'display_name'} for a league of theirs that
+    still has no channel connected. When present the primary button sends them
+    straight back to finish it, because the control that links a subscription to
+    a league lives behind Activate on the league page — NOT on the Membership
+    page this used to point at.
+    """
     user_menu = get_user_menu_html(user.get('name', user.get('email', '')), user.get('email', ''), show_dashboard_link=True, user_role=user.get('role', 'user'))
+
+    # Built outside the template on purpose: nesting an f-string inside the
+    # f-string below only parses on Python 3.12+, and this has to run on
+    # whatever the deploy image ships.
+    _strong = f'<strong style="color: {COLORS["text"]};">'
+    if pending_league:
+        _name = pending_league['display_name']
+        next_step_html = (
+            f'<p>Your subscription is active. One step left — open {_strong}{_name}</strong> '
+            f'and hit {_strong}Activate</strong> to link this plan and connect your channel.</p>'
+            f'<a href="/dashboard/league/{pending_league["id"]}" class="btn btn-primary">'
+            f'Finish setting up {_name}</a>'
+            f'<a href="/dashboard/membership" class="btn btn-secondary">League Membership</a>'
+        )
+    else:
+        next_step_html = (
+            f'<p>Your subscription is now active. To put it to work, open the league you want '
+            f'it on and hit {_strong}Activate</strong> — that is where you link a plan to a league.</p>'
+            f'<a href="/dashboard" class="btn btn-primary">Go to My Leagues</a>'
+            f'<a href="/dashboard/membership" class="btn btn-secondary">League Membership</a>'
+        )
 
     return f"""
     <!DOCTYPE html>
@@ -7923,9 +7951,7 @@ def render_billing_success_page(user, session_id):
             <div class="success-card">
                 <div class="success-icon">✅</div>
                 <h2>Payment Successful!</h2>
-                <p>Your subscription is now active. You can activate your league or manage your plan from League Membership.</p>
-                <a href="/dashboard/membership" class="btn btn-primary">Go to League Membership</a>
-                <a href="/dashboard" class="btn btn-secondary">Back to Dashboard</a>
+                {next_step_html}
             </div>
         </div>
         <script>{get_user_menu_script()}</script>

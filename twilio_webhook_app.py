@@ -2719,17 +2719,45 @@ def _store_pending_slack_install(cursor, user_id, team_id, team_name, bot_token)
     """, (user_id, team_id, team_name, bot_token))
 
 
-def _claim_pending_slack_install(cursor, user_id, league_id):
+def _claim_pending_slack_install(cursor, user_id, league_id, cookie_team_id=None):
     """
     Attach a parked Slack install to a newly created league so the user
     doesn't have to authorize the app a second time. Returns the team_id
     if one was claimed, otherwise None.
+
+    Two sources, in order:
+      1. slack_pending_installs — the installer WAS signed in, so the install
+         is parked against their user_id.
+      2. cookie_team_id + slack_team_installs — the installer was NOT signed
+         in (a Marketplace install by someone with no account yet). There was
+         no user to park against, so the workspace came back in a cookie and
+         the token is read from slack_team_installs instead.
+
+    Path 2 is why a Marketplace installer no longer has to authorize twice.
     """
     _ensure_slack_pending_installs(cursor)
     cursor.execute("""
         SELECT team_id, bot_token FROM slack_pending_installs WHERE user_id = %s
     """, (user_id,))
     row = cursor.fetchone()
+
+    if not row and cookie_team_id:
+        # Only ever claim a workspace that is not already driving a league, so
+        # a shared or recycled cookie cannot hijack someone else's install.
+        cursor.execute("""
+            SELECT ti.team_id, ti.bot_token
+            FROM slack_team_installs ti
+            WHERE ti.team_id = %s
+              AND NOT EXISTS (
+                  SELECT 1 FROM leagues l
+                  WHERE l.slack_team_id = ti.team_id
+                    AND l.slack_channel_id IS NOT NULL
+              )
+        """, (cookie_team_id,))
+        row = cursor.fetchone()
+        if row:
+            logging.info(f"Claiming Marketplace install from cookie (team {cookie_team_id}) for league {league_id}")
+
     if not row:
         return None
 
@@ -2812,6 +2840,10 @@ def slack_oauth_callback():
             # still answer in a workspace that has not set a league up yet.
             _record_slack_team_install(cursor, team_id, team_name, bot_token)
 
+            # Set when a logged-out Marketplace installer needs the workspace
+            # remembered across signup. Written as a cookie on the way out.
+            park_team_cookie = None
+
             if league_id:
                 # Fresh install: league_id was passed in state
                 cursor.execute("""
@@ -2846,14 +2878,34 @@ def slack_oauth_callback():
                         logging.info(f"Slack direct install parked for user {installer['id']} (team {team_id})")
                         redirect_target = "/dashboard?message=Slack workspace connected! Create a league and we'll link it automatically."
                     else:
-                        logging.warning(f"Slack direct install for team {team_id} with nobody signed in — cannot attach")
-                        redirect_target = "/dashboard?message=Slack workspace authorized. Sign in and create your league to finish setup."
+                        # Marketplace install by someone with no account yet.
+                        # The token is already safe in slack_team_installs, but
+                        # there is no user to park it against, so remember the
+                        # workspace in a cookie and send them to signup. League
+                        # creation claims it from slack_team_installs by team.
+                        #
+                        # Before this, they got a one-line "go sign in" message
+                        # and dropped out — the Marketplace listing sends people
+                        # who have never seen the dashboard, so this was the
+                        # single biggest leak in the Slack funnel.
+                        park_team_cookie = team_id
+                        logging.info(f"Slack Marketplace install for team {team_id} with nobody signed in — parked in cookie, sending to signup")
+                        redirect_target = "/auth/register?slack_installed=1"
             
             conn.commit()
             cursor.close()
             conn.close()
             
             logging.info(f"Slack OAuth success: team={team_name}, league_id={league_id or 'reinstall'}")
+            if park_team_cookie:
+                # 7 days is long enough to register and set a league up, short
+                # enough that a stale workspace does not get claimed months
+                # later by whoever next uses the browser.
+                resp = make_response(redirect(redirect_target))
+                resp.set_cookie('pending_slack_team', park_team_cookie,
+                                max_age=7 * 24 * 60 * 60, httponly=True,
+                                secure=True, samesite='Lax')
+                return resp
             return redirect(redirect_target)
         except Exception as e:
             logging.error(f"Error saving Slack credentials: {e}")
@@ -3679,7 +3731,9 @@ def dashboard_create_league():
         # exists, so claim any parked install here instead of sending the
         # user through the Add to Slack step a second time.
         if channel_type == 'slack':
-            _claim_pending_slack_install(cursor, user['id'], league_id)
+            _claim_pending_slack_install(
+                cursor, user['id'], league_id,
+                cookie_team_id=request.cookies.get('pending_slack_team'))
 
         # Initialize league_seasons with proper season_start_week
         from league_data_adapter import calculate_wordle_number, get_week_start_date
@@ -7398,7 +7452,38 @@ def billing_success():
         return redirect('/auth/login')
 
     session_id = request.args.get('session_id', '')
-    return render_billing_success_page(user, session_id)
+
+    # Find a league this purchase was probably for, so the page can point at it
+    # by name. Buying from the Membership page carries no league_id, so nothing
+    # auto-links and the old page just said "go to League Membership" — which is
+    # not where the link control lives. It is behind Activate on the league
+    # page, and people who could not find it assumed they had paid for nothing.
+    pending_league = None
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT l.id, l.display_name
+            FROM leagues l
+            JOIN user_leagues ul ON ul.league_id = l.id
+            WHERE ul.user_id = %s
+              AND l.twilio_conversation_sid IS NULL
+              AND l.slack_channel_id IS NULL
+              AND l.discord_channel_id IS NULL
+            ORDER BY l.id DESC
+            LIMIT 2
+        """, (user['id'],))
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+        # Only name it when there is exactly one candidate; with several we
+        # cannot guess which they meant, so fall back to the generic copy.
+        if len(rows) == 1:
+            pending_league = {'id': rows[0][0], 'display_name': rows[0][1]}
+    except Exception as e:
+        logging.warning(f"Could not resolve pending league for billing success: {e}")
+
+    return render_billing_success_page(user, session_id, pending_league=pending_league)
 
 
 @app.route('/billing/cancel')

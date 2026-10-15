@@ -65,6 +65,7 @@ def get_user_menu_html(user_name, user_email, show_dashboard_link=False, user_ro
                 {admin_link}
                 {membership_link}
                 <a href="/dashboard/profile">Profile</a>
+                <a href="mailto:wordplayleague@gmail.com?subject=Support%20WordPlayLeague">Support</a>
                 <a href="/auth/logout" class="logout-link">Logout</a>
             </div>
         </div>
@@ -3543,6 +3544,12 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                     <p style="color: {COLORS['text_muted']}; margin: 0;">The bot will respond once connected. Click "Check Status" below to verify.</p>
                 </div>
                 
+                <p style="margin: 0 0 16px 0; text-align: center; color: {COLORS['text_muted']}; font-size: 0.85em;">
+                    Stuck on any of this?
+                    <a href="mailto:wordplayleague@gmail.com?subject=Help%20connecting%20my%20league" style="color: {COLORS['accent']};">Email us</a>
+                    and we'll set it up with you.
+                </p>
+
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" onclick="closeActivateModal()">Close</button>
                     <button type="button" class="btn btn-primary" onclick="checkActivationStatus()">Check Status</button>

@@ -5472,6 +5472,62 @@ function deletePost(postId) {{
         return "<p style='color:#f44336;text-align:center;padding:40px;'>Unable to load post.</p>", 500
 
 
+@app.route('/embed/message-board/api/posts', methods=['GET'])
+def embed_message_board_list_posts():
+    """Public, read-only feed of board posts as JSON.
+
+    Exists so the apex can render the board as a real page in the marketing
+    site's own design instead of iframing this app. Reading needs no session,
+    which is what makes that possible — posting still happens here, because
+    the session cookie is scoped to app.wordplayleague.com.
+
+    CORS is wide open deliberately: this is already-public content, there is
+    no auth on it, and the caller is our own static site on another hostname.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM board_posts")
+        total = cursor.fetchone()[0]
+        cursor.execute("""
+            SELECT bp.id, bp.subject, bp.body, bp.is_pinned, bp.is_faq, bp.created_at,
+                   u.nickname,
+                   (SELECT COUNT(*) FROM board_replies br WHERE br.post_id = bp.id),
+                   (SELECT COUNT(*) FROM board_likes bl WHERE bl.post_id = bp.id)
+            FROM board_posts bp
+            JOIN users u ON bp.user_id = u.id
+            ORDER BY bp.is_pinned DESC, bp.created_at DESC
+            LIMIT 50
+        """)
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        posts = [{
+            'id': r[0],
+            'subject': r[1],
+            'body': r[2] or '',
+            'is_pinned': bool(r[3]),
+            'is_faq': bool(r[4]),
+            'created_at': r[5].isoformat() if r[5] else None,
+            'time_ago': _time_ago(r[5]) if r[5] else '',
+            'author': _board_display_name(r[6]),
+            'reply_count': r[7],
+            'like_count': r[8],
+            'url': f"{APP_BASE_URL}/embed/message-board/post/{r[0]}",
+        } for r in rows]
+
+        resp = jsonify({'success': True, 'total': total, 'posts': posts})
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        resp.headers['Cache-Control'] = 'public, max-age=60'
+        return resp
+    except Exception as e:
+        logging.error(f"Error listing board posts: {e}", exc_info=True)
+        resp = jsonify({'success': False, 'posts': [], 'total': 0})
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp, 500
+
+
 @app.route('/embed/message-board/api/post', methods=['POST'])
 def embed_message_board_create_post():
     """Create a new message board post."""

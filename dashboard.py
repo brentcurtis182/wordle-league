@@ -65,6 +65,7 @@ def get_user_menu_html(user_name, user_email, show_dashboard_link=False, user_ro
                 {admin_link}
                 {membership_link}
                 <a href="/dashboard/profile">Profile</a>
+                <a href="/embed/message-board">Community board</a>
                 <a href="mailto:wordplayleague@gmail.com?subject=Support%20WordPlayLeague">Support</a>
                 <a href="/auth/logout" class="logout-link">Logout</a>
             </div>
@@ -3547,7 +3548,8 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                 <p style="margin: 0 0 16px 0; text-align: center; color: {COLORS['text_muted']}; font-size: 0.85em;">
                     Stuck on any of this?
                     <a href="mailto:wordplayleague@gmail.com?subject=Help%20connecting%20my%20league" style="color: {COLORS['accent']};">Email us</a>
-                    and we'll set it up with you.
+                    and we'll set it up with you, or
+                    <a href="/embed/message-board" style="color: {COLORS['accent']};">ask on the board</a>.
                 </p>
 
                 <div class="modal-actions">

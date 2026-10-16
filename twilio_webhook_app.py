@@ -4361,6 +4361,96 @@ body{{font-family:'Inter',sans-serif;background-color:#06060e;background-image:r
         return "<p style='color:#f44336;text-align:center;padding:40px;'>Unable to load stats.</p>", 500
 
 
+# How recently a league must have scored to appear in the PUBLIC directory.
+#
+# A visitor who clicks through to a dormant league lands on a page whose Latest
+# tab is empty, which reads as a dead product. Dormancy is therefore handled
+# automatically here rather than relying on a manager remembering to flip
+# `public_listed` off.
+#
+# This governs the DIRECTORY ONLY. The all-time record boards
+# (/embed/best-average, /embed/most-perfect) are deliberately unfiltered —
+# all-time means all-time, and an unlisted league's history still counts.
+#
+# 7 days: every genuinely live league scores most days, so nothing real comes
+# close to this, while a league that quietly stops drops out within a week.
+PUBLIC_DIRECTORY_ACTIVE_DAYS = 7
+
+
+@app.route('/api/public-leagues')
+def api_public_leagues():
+    """Machine-readable form of the public directory.
+
+    Exists so the marketing site can build its own markup (and its sitemap)
+    from live data instead of a committed snapshot. Same filter as
+    /embed/leagues, so the two can never disagree.
+
+    `last_score` is the real date of the league's most recent score, which is
+    what a sitemap <lastmod> should carry — far better than stamping every
+    entry with today's date and claiming a freshness we cannot back up.
+
+    Public and unauthenticated by design: it exposes only what the directory
+    page already shows. No phone numbers, no player names, no channel IDs.
+    """
+    try:
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT l.slug, COALESCE(l.display_name, l.name), l.channel_type,
+                   (SELECT COUNT(*) FROM players p
+                     WHERE p.league_id = l.id AND p.active = TRUE),
+                   (SELECT MAX(s.date) FROM scores s
+                     JOIN players p2 ON p2.id = s.player_id
+                     WHERE p2.league_id = l.id),
+                   l.header_emoji, COALESCE(l.division_mode, FALSE),
+                   (SELECT COUNT(*) FROM scores s2
+                     JOIN players p4 ON p4.id = s2.player_id
+                     WHERE p4.league_id = l.id)
+            FROM leagues l
+            WHERE (l.twilio_conversation_sid IS NOT NULL
+                   OR l.slack_channel_id IS NOT NULL
+                   OR l.discord_channel_id IS NOT NULL)
+              AND COALESCE(l.public_listed, TRUE) = TRUE
+              AND l.slug IS NOT NULL AND l.slug <> ''
+              AND EXISTS (
+                    SELECT 1 FROM scores s
+                    JOIN players p3 ON p3.id = s.player_id
+                    WHERE p3.league_id = l.id
+                      AND s.date >= CURRENT_DATE - (%s || ' days')::interval
+                  )
+            -- Column 8 is the total score count: busiest league first, which
+            -- is the order the marketing directory has always shown and the
+            -- most useful default for any other consumer. `l.id` only breaks
+            -- ties, so the order is stable between requests.
+            ORDER BY 8 DESC, l.id ASC
+        """, (PUBLIC_DIRECTORY_ACTIVE_DAYS,))
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        leagues = [{
+            'slug': r[0],
+            'name': r[1],
+            'channel_type': r[2] or 'sms',
+            'player_count': r[3],
+            'last_score': r[4].isoformat() if r[4] else None,
+            'emoji': r[5] or '',
+            'division_mode': bool(r[6]),
+            'score_count': r[7],
+        } for r in rows]
+
+        resp = jsonify({'leagues': leagues, 'count': len(leagues),
+                        'active_window_days': PUBLIC_DIRECTORY_ACTIVE_DAYS})
+        # Short shared cache: the set changes at most a few times a month, but a
+        # consumer should never be more than a few minutes stale.
+        resp.headers['Cache-Control'] = 'public, max-age=60, s-maxage=300'
+        resp.headers['Access-Control-Allow-Origin'] = '*'
+        return resp
+    except Exception as e:
+        logging.error(f"Error building public leagues feed: {e}", exc_info=True)
+        return jsonify({'error': 'unavailable'}), 503
+
+
 @app.route('/embed/leagues')
 @app.route('/leagues-directory')
 def embed_leagues_directory():
@@ -4377,8 +4467,14 @@ def embed_leagues_directory():
                 FROM leagues l
                 WHERE (l.twilio_conversation_sid IS NOT NULL OR l.slack_channel_id IS NOT NULL OR l.discord_channel_id IS NOT NULL)
                   AND COALESCE(l.public_listed, TRUE) = TRUE
+                  AND EXISTS (
+                        SELECT 1 FROM scores s
+                        JOIN players p2 ON p2.id = s.player_id
+                        WHERE p2.league_id = l.id
+                          AND s.date >= CURRENT_DATE - (%s || ' days')::interval
+                      )
                 ORDER BY l.id ASC
-            """)
+            """, (PUBLIC_DIRECTORY_ACTIVE_DAYS,))
         except Exception:
             conn.rollback()
             cursor.execute("""
@@ -4388,8 +4484,14 @@ def embed_leagues_directory():
                        l.division_mode
                 FROM leagues l
                 WHERE (l.twilio_conversation_sid IS NOT NULL OR l.slack_channel_id IS NOT NULL OR l.discord_channel_id IS NOT NULL)
+                  AND EXISTS (
+                        SELECT 1 FROM scores s
+                        JOIN players p2 ON p2.id = s.player_id
+                        WHERE p2.league_id = l.id
+                          AND s.date >= CURRENT_DATE - (%s || ' days')::interval
+                      )
                 ORDER BY l.id ASC
-            """)
+            """, (PUBLIC_DIRECTORY_ACTIVE_DAYS,))
         leagues = cursor.fetchall()
         cursor.close()
         conn.close()

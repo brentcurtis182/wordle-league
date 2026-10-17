@@ -5602,6 +5602,34 @@ def embed_message_board_list_posts():
             LIMIT 50
         """)
         rows = cursor.fetchall()
+
+        # Reply BODIES, not just the count.
+        #
+        # The apex renders each post as an accordion that expands in place, so
+        # the replies have to arrive with the post — otherwise reading a thread
+        # means a hop to app.wordplayleague.com/embed/message-board, which has
+        # no nav and strands people. That dead end is why the board was pulled.
+        #
+        # One grouped query for every post on the page rather than one per
+        # post: 50 posts would otherwise be 51 round trips.
+        replies_by_post = {}
+        post_ids = [r[0] for r in rows]
+        if post_ids:
+            cursor.execute("""
+                SELECT br.post_id, br.body, br.created_at, u.nickname
+                FROM board_replies br
+                JOIN users u ON br.user_id = u.id
+                WHERE br.post_id = ANY(%s)
+                ORDER BY br.created_at ASC
+            """, (post_ids,))
+            for post_id, body, created, nickname in cursor.fetchall():
+                replies_by_post.setdefault(post_id, []).append({
+                    'body': body or '',
+                    'author': _board_display_name(nickname),
+                    'created_at': created.isoformat() if created else None,
+                    'time_ago': _time_ago(created) if created else '',
+                })
+
         cursor.close()
         conn.close()
 
@@ -5616,6 +5644,7 @@ def embed_message_board_list_posts():
             'author': _board_display_name(r[6]),
             'reply_count': r[7],
             'like_count': r[8],
+            'replies': replies_by_post.get(r[0], []),
             'url': f"{APP_BASE_URL}/embed/message-board/post/{r[0]}",
         } for r in rows]
 

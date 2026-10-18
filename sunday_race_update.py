@@ -210,6 +210,38 @@ def calculate_what_they_need(leader_best_5, player_best_5, player_days_posted, m
         'to_win': diff + 1  # Need to beat by 1
     }
 
+def _eliminated_phrase(names):
+    """Name who is out of contention instead of saying so anonymously.
+
+    These names were computed and then thrown away in favour of a bare
+    "No one else can catch up", which left the AI to work out who was out
+    from the standings alone. It does that by GAME COUNT, and game count is
+    the wrong test for anyone sitting one score short of qualifying.
+
+    League 1, week 1947: Joanna had 4 of the required 5 games and a best-4 of
+    18 against a leader on 16 — posting today would have qualified her and
+    changed nothing, because even a 1 puts her at 19. She was correctly marked
+    eliminated here, then described to the AI as nobody in particular, so it
+    grouped her with two players who had not played at all ("Joanna, Evan and
+    Malia need more games") rather than with the players who were genuinely
+    out. Brent's point: she belonged with them.
+
+    Names only, never scores — the screenshot carries those and the prompt
+    forbids repeating them. Putting "out of contention" here is also what
+    licenses the AI to use the phrase at all; it is on the forbidden list
+    unless it appears in RACE ANALYSIS.
+    """
+    if not names:
+        return ""
+    if len(names) == 1:
+        return f"No one else can catch up — {names[0]} is out of contention"
+    if len(names) == 2:
+        who = f"{names[0]} and {names[1]}"
+    else:
+        who = ", ".join(names[:-1]) + f" and {names[-1]}"
+    return f"No one else can catch up — {who} are out of contention"
+
+
 def compute_player_scenario(player, leader_total, leader_names, min_scores=5):
     """Compute catch-up/improvement scenario for a player who hasn't posted today.
 
@@ -748,7 +780,7 @@ def build_division_scenario(div_standings, div_num, div_weekly_wins, div_current
         elif all_eligible_posted:
             parts = [f"{leader_names[0]} is the clear winner at {leader_total}!"]
         if eliminated:
-            parts.append("No one else can catch up")
+            parts.append(_eliminated_phrase(eliminated))
         scenarios.append(". ".join(parts))
     else:
         leader_text = f"{' and '.join(leader_names)} tied at {leader_total}"
@@ -759,7 +791,7 @@ def build_division_scenario(div_standings, div_num, div_weekly_wins, div_current
         if catch_up_scenarios:
             parts.append(". ".join(catch_up_scenarios[:3]))
         if eliminated:
-            parts.append("No one else can catch up")
+            parts.append(_eliminated_phrase(eliminated))
         scenarios.append(". ".join(parts))
     
     # Season clinch detection for this division (potential_clinchers computed above, pre-increment)
@@ -1317,7 +1349,7 @@ WEEKLY RACE ANALYSIS: {scenario}{season_clinch_text}"""
 
                     # Group eliminated players generically — screenshot shows individual scores
                     if eliminated:
-                        scenario_parts.append("No one else can catch up")
+                        scenario_parts.append(_eliminated_phrase(eliminated))
 
                     scenarios.append(". ".join(scenario_parts))
                 

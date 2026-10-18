@@ -6,6 +6,7 @@ Pure tests — no clock, DB, or OpenAI. They feed the deterministic scenario tex
 from race_message_guard import (
     find_violations, allowed_win_counts, stakes_allowed, build_fallback_message,
     strip_unsupported_sentences,
+    eliminated_names,
 )
 
 
@@ -137,3 +138,57 @@ def test_strip_keeps_supported_counts():
 
 def test_strip_returns_empty_when_nothing_survives():
     assert strip_unsupported_sentences("Their 4th win clinches the season!", None) == ""
+
+
+# --- eliminated players must not be described as merely needing more games ---
+#
+# League 1, week 1947. The scenario had already worked out that Joanna was out
+# (4 of 5 games, best-4 of 18, leader on 16 — even a 1 lands her on 19), but the
+# names were dropped before the AI saw them, so it grouped her by game count
+# with two players who had not played at all.
+
+_ELIM_SCENARIO = (
+    "Tony leads at 16. Nanna (at 17) needs a solid 3 to win or a 4 to tie "
+    "(replacing a 5). No one else can catch up — Brent, Gene and Joanna "
+    "are out of contention"
+)
+
+
+def test_eliminated_names_parsed_from_scenario():
+    assert eliminated_names(_ELIM_SCENARIO) == {"Brent", "Gene", "Joanna"}
+
+
+def test_eliminated_names_handles_single_player():
+    s = "No one else can catch up — Gene is out of contention"
+    assert eliminated_names(s) == {"Gene"}
+
+
+def test_flags_eliminated_player_described_as_needing_games():
+    msg = ("Tony leads with 16, but hasn't posted yet. Brent and Gene are out of "
+           "contention. Joanna, Evan, and Malia need more games.")
+    issues = find_violations(msg, _ELIM_SCENARIO)
+    assert any("Joanna" in i and "out of contention" in i for i in issues)
+
+
+def test_oxford_comma_does_not_hide_the_contradiction():
+    with_oxford = "Joanna, Evan, and Malia need more games."
+    without = "Joanna, Evan and Malia need more games."
+    assert find_violations(with_oxford, _ELIM_SCENARIO)
+    assert find_violations(without, _ELIM_SCENARIO)
+
+
+def test_does_not_flag_players_who_genuinely_need_games():
+    # Evan and Malia have no games at all and are not in the scenario's out list.
+    msg = "Tony leads with 16. Evan and Malia need more games."
+    assert find_violations(msg, _ELIM_SCENARIO) == []
+
+
+def test_correct_grouping_passes_clean():
+    msg = ("Tony leads with 16. Brent, Gene and Joanna are out of contention. "
+           "Evan and Malia need more games.")
+    assert find_violations(msg, _ELIM_SCENARIO) == []
+
+
+def test_silent_when_scenario_names_nobody():
+    # No "out of contention" line means nothing to contradict — stay quiet.
+    assert find_violations("Joanna needs more games.", "Tony leads at 16.") == []

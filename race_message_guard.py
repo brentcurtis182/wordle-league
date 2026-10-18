@@ -26,6 +26,23 @@ _WORD_ORD_RE = re.compile(r'\b(first|second|third|fourth|fifth|sixth|seventh|eig
 # division phrasing "now has 2"
 _NOW_HAS_RE = re.compile(r'now has (\d+)', re.IGNORECASE)
 
+# Players the scenario explicitly declared out: "... — A, B and C are out of
+# contention" or "... — A is out of contention".
+_OUT_OF_CONTENTION_RE = re.compile(
+    r'out of contention', re.IGNORECASE)
+_OUT_NAMES_RE = re.compile(
+    r'No one else can catch up\s*[—\-:]\s*(.+?)\s+(?:is|are)\s+out of contention',
+    re.IGNORECASE)
+# "X needs more games", "X, Y and Z need more games", "needs another game"
+_NAME = r"[A-Z][\w'’-]*"
+# Separator must tolerate the Oxford comma: "Joanna, Evan, and Malia" carries
+# BOTH a comma and an "and" between the last two names.
+_SEP = r"(?:\s*,\s*and\s+|\s*,\s*|\s+and\s+)"
+_NEEDS_GAMES_RE = re.compile(
+    r"(" + _NAME + r"(?:" + _SEP + _NAME + r")*)"
+    r"\s+(?:needs?|need)\s+(?:more|another|\d+\s+more)\s+games?",
+    re.IGNORECASE)
+
 # Season/promotion/relegation language the AI must not use unless the scenario raised it.
 _STAKES_PRESENT_RE = re.compile(r'SEASON STAKES|SEASON CLINCH|Promotion|Relegation', re.IGNORECASE)
 _CLAIMED_STAKES_RE = re.compile(
@@ -48,6 +65,28 @@ def allowed_win_counts(scenario_text):
 def stakes_allowed(scenario_text):
     """True if the scenario legitimately raised season/promotion/relegation stakes."""
     return bool(_STAKES_PRESENT_RE.search(scenario_text or ""))
+
+
+def eliminated_names(scenario_text):
+    """Players the scenario text explicitly declared out of contention."""
+    out = set()
+    for blob in _OUT_NAMES_RE.findall(scenario_text or ""):
+        for name in re.split(_SEP, blob):
+            name = name.strip()
+            if name:
+                out.add(name)
+    return out
+
+
+def _names_needing_games(message):
+    """Players the MESSAGE says merely need more games to qualify."""
+    out = set()
+    for blob in _NEEDS_GAMES_RE.findall(message or ""):
+        for name in re.split(_SEP, blob):
+            name = name.strip()
+            if name:
+                out.add(name)
+    return out
 
 
 def find_violations(message, scenario_text):
@@ -76,6 +115,24 @@ def find_violations(message, scenario_text):
 
     if not stakes_allowed(scenario_text) and _CLAIMED_STAKES_RE.search(message):
         issues.append("mentions clinch/promotion/relegation but the scenario raised no season stakes")
+
+    # A player the scenario marked ELIMINATED must not be described as merely
+    # needing more games. Those read as opposites to a reader: one is "they are
+    # done", the other is "they could still turn up and matter".
+    #
+    # League 1, week 1947: "Joanna, Evan and Malia need more games." Joanna had
+    # 4 of 5 and a best-4 of 18 against a leader on 16 — qualifying would have
+    # changed nothing, and the scenario had already marked her out. Evan and
+    # Malia, with no games at all, genuinely did just need games. Grouping all
+    # three flattened a real distinction.
+    #
+    # Only fires on a direct contradiction of a name the scenario itself named,
+    # so it stays silent on every message that does not make the claim.
+    out = eliminated_names(scenario_text)
+    if out:
+        for name in sorted(out & _names_needing_games(message)):
+            issues.append(
+                f"says {name} needs more games, but the scenario has them out of contention")
 
     return issues
 

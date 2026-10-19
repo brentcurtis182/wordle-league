@@ -3042,6 +3042,27 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                 """ if channel_type == 'discord' and not league.get('discord_channel_id') else ''}
             </div>
             
+
+            <!-- Players Section -->
+            {_render_players_section(league, players, player_rows, channel_type, identifier_label, identifier_placeholder, identifier_empty, is_chat_platform)}
+            
+            <!-- Add Player Section -->
+            <div class="card section">
+                <h2 style="display: flex; align-items: center; gap: 12px;">➕ Add Player <span id="playerCountBadge" style="background: {COLORS['error'] if len(players) > player_limit else COLORS['accent']}20; border: 1px solid {COLORS['error'] if len(players) > player_limit else COLORS['accent']}; padding: 6px 14px; border-radius: 16px; font-size: 0.65em; color: {COLORS['error'] if len(players) > player_limit else COLORS['accent']}; font-weight: 600;">{len(players)}/{player_limit}</span></h2>
+                {f'<div style="background: {COLORS["error"]}20; border: 1px solid {COLORS["error"]}; color: {COLORS["text"]}; padding: 12px; border-radius: 8px; margin-bottom: 16px;"><strong>⚠️ Over Player Limit:</strong> This league has {len(players)} players but your plan supports {player_limit}. Please remove {len(players) - player_limit} player{"s" if len(players) - player_limit > 1 else ""} or <a href="/dashboard/membership" style="color: {COLORS["accent"]};">upgrade your plan</a>.</div>' if len(players) > player_limit else f'<div style="background: {COLORS["accent_orange"]}20; border: 1px solid {COLORS["accent_orange"]}; color: {COLORS["text"]}; padding: 12px; border-radius: 8px; margin-bottom: 16px;"><strong>⚠️ Player Limit Reached:</strong> {"Your plan supports " + str(player_limit) + " players. <a href='/dashboard/membership' style='color:" + COLORS["accent"] + "'>Upgrade your plan</a> or remove a player to add more." if linked_subscription else ("SMS leagues are limited to 9 players (Twilio group MMS maximum). Remove a player before adding a new one." if channel_type == "sms" else "Leagues are limited to " + str(player_limit) + " players. Remove a player before adding a new one.")}</div>' if len(players) >= player_limit else ''}
+                {'<p style="color: ' + COLORS['text_muted'] + '; margin-bottom: 12px; font-size: 0.9em;">Add players by name. Their ' + ('Slack' if channel_type == 'slack' else 'Discord') + ' account will be linked automatically when they post their first score.</p>' if channel_type in ('slack', 'discord') else ''}
+                <form method="POST" action="/dashboard/league/{league['id']}/add-player" id="addPlayerForm" onsubmit="event.preventDefault(); if(!validateAddPlayer()) return false; showLoading('Adding player...'); var f=this; requestAnimationFrame(function(){{requestAnimationFrame(function(){{f.submit();}});}}); return false;" {f'style="opacity: 0.5; pointer-events: none;"' if len(players) >= player_limit else ''}>
+                    {'<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">' if channel_type == 'sms' else '<div style="display: grid; grid-template-columns: 1fr; gap: 16px; max-width: 400px;">'}
+                        <div class="form-group">
+                            <label>Player Name</label>
+                            <input type="text" name="name" required maxlength="25" placeholder="{'John Doe' if channel_type == 'sms' else 'Display Name (must match their ' + ('Slack' if channel_type == 'slack' else 'Discord') + ' name)'}" {f'disabled' if len(players) >= player_limit else ''}>
+                        </div>
+                        {f'<div class="form-group"><label>{identifier_label}</label><input type="tel" name="identifier" id="phoneInput" required placeholder="{identifier_placeholder}" {"disabled" if len(players) >= player_limit else ""}><div id="phoneError" style="display:none; color: {COLORS["error"]}; font-size: 0.8em; margin-top: 4px;"></div></div>' if channel_type == 'sms' else '<input type="hidden" name="identifier" value="">'}
+                    </div>
+                    <button type="submit" class="btn btn-primary" {f'disabled' if len(players) >= player_limit else ''}>Add Player</button>
+                </form>
+            </div>
+
             <!-- League Settings Section -->
             <div class="card section">
                 <h2>📝 League Settings</h2>
@@ -3104,26 +3125,6 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                 <div style="display:flex; justify-content:center;">
                     <button type="button" class="btn btn-primary" style="width:220px; flex-shrink:0;" onclick="showLeagueSettingsModal()">Save Changes</button>
                 </div>
-            </div>
-
-            <!-- Players Section -->
-            {_render_players_section(league, players, player_rows, channel_type, identifier_label, identifier_placeholder, identifier_empty, is_chat_platform)}
-            
-            <!-- Add Player Section -->
-            <div class="card section">
-                <h2 style="display: flex; align-items: center; gap: 12px;">➕ Add Player <span id="playerCountBadge" style="background: {COLORS['error'] if len(players) > player_limit else COLORS['accent']}20; border: 1px solid {COLORS['error'] if len(players) > player_limit else COLORS['accent']}; padding: 6px 14px; border-radius: 16px; font-size: 0.65em; color: {COLORS['error'] if len(players) > player_limit else COLORS['accent']}; font-weight: 600;">{len(players)}/{player_limit}</span></h2>
-                {f'<div style="background: {COLORS["error"]}20; border: 1px solid {COLORS["error"]}; color: {COLORS["text"]}; padding: 12px; border-radius: 8px; margin-bottom: 16px;"><strong>⚠️ Over Player Limit:</strong> This league has {len(players)} players but your plan supports {player_limit}. Please remove {len(players) - player_limit} player{"s" if len(players) - player_limit > 1 else ""} or <a href="/dashboard/membership" style="color: {COLORS["accent"]};">upgrade your plan</a>.</div>' if len(players) > player_limit else f'<div style="background: {COLORS["accent_orange"]}20; border: 1px solid {COLORS["accent_orange"]}; color: {COLORS["text"]}; padding: 12px; border-radius: 8px; margin-bottom: 16px;"><strong>⚠️ Player Limit Reached:</strong> {"Your plan supports " + str(player_limit) + " players. <a href='/dashboard/membership' style='color:" + COLORS["accent"] + "'>Upgrade your plan</a> or remove a player to add more." if linked_subscription else ("SMS leagues are limited to 9 players (Twilio group MMS maximum). Remove a player before adding a new one." if channel_type == "sms" else "Leagues are limited to " + str(player_limit) + " players. Remove a player before adding a new one.")}</div>' if len(players) >= player_limit else ''}
-                {'<p style="color: ' + COLORS['text_muted'] + '; margin-bottom: 12px; font-size: 0.9em;">Add players by name. Their ' + ('Slack' if channel_type == 'slack' else 'Discord') + ' account will be linked automatically when they post their first score.</p>' if channel_type in ('slack', 'discord') else ''}
-                <form method="POST" action="/dashboard/league/{league['id']}/add-player" id="addPlayerForm" onsubmit="event.preventDefault(); if(!validateAddPlayer()) return false; showLoading('Adding player...'); var f=this; requestAnimationFrame(function(){{requestAnimationFrame(function(){{f.submit();}});}}); return false;" {f'style="opacity: 0.5; pointer-events: none;"' if len(players) >= player_limit else ''}>
-                    {'<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">' if channel_type == 'sms' else '<div style="display: grid; grid-template-columns: 1fr; gap: 16px; max-width: 400px;">'}
-                        <div class="form-group">
-                            <label>Player Name</label>
-                            <input type="text" name="name" required maxlength="25" placeholder="{'John Doe' if channel_type == 'sms' else 'Display Name (must match their ' + ('Slack' if channel_type == 'slack' else 'Discord') + ' name)'}" {f'disabled' if len(players) >= player_limit else ''}>
-                        </div>
-                        {f'<div class="form-group"><label>{identifier_label}</label><input type="tel" name="identifier" id="phoneInput" required placeholder="{identifier_placeholder}" {"disabled" if len(players) >= player_limit else ""}><div id="phoneError" style="display:none; color: {COLORS["error"]}; font-size: 0.8em; margin-top: 4px;"></div></div>' if channel_type == 'sms' else '<input type="hidden" name="identifier" value="">'}
-                    </div>
-                    <button type="submit" class="btn btn-primary" {f'disabled' if len(players) >= player_limit else ''}>Add Player</button>
-                </form>
             </div>
             
             <!-- AI Messaging Settings -->

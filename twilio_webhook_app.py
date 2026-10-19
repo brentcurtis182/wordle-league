@@ -812,6 +812,130 @@ def get_all_player_ai_settings(league_id, conn=None):
         if own_conn and conn:
             conn.close()
 
+# ---------------------------------------------------------------------------
+# Comedic ANGLES for the per-score messages.
+#
+# The roast and perfect-score prompts used to be byte-identical on every call
+# — only the player's name changed — so gpt-4o-mini kept returning its few
+# favourite Wordle jokes. Temperature was already 0.9/0.95, which varies the
+# WORDING but not the IDEA, so the messages read as repeats.
+#
+# An angle is a FRAME, not a tone. Severity still decides how mean the message
+# is (see get_severity_prompt); the angle decides what kind of thing it is.
+# The two compose: a brutal weather forecast and a gentle weather forecast are
+# both weather forecasts.
+#
+# The chosen angle is recorded in sent_ai_messages.scenario_text, so the next
+# message for that league can avoid a frame used recently as well as avoiding
+# the text itself.
+ROAST_ANGLES = [
+    "as a breathless sports commentator calling the collapse live",
+    "as a nature documentary narrator observing a creature out of its depth",
+    "as a deadpan weather forecast for their brain",
+    "as a noir detective narrating the case of the unsolved word",
+    "as a breaking-news bulletin interrupting normal programming",
+    "as a solemn eulogy for the streak that just died",
+    "as an over-apologetic customer-service reply",
+    "as a motivational poster whose message has gone badly wrong",
+    "as a horoscope that saw this coming",
+    "as a recipe where every step went wrong",
+    "as an air-traffic-control transcript of a landing gone bad",
+    "as a wine-tasting note describing a deeply unpleasant vintage",
+    "as a sympathetic doctor delivering difficult test results",
+    "as a tech-support diagnosis of a user error",
+]
+
+CONGRATS_ANGLES = [
+    "as a breathless sports commentator calling the moment live",
+    "as an awards-show acceptance speech on their behalf",
+    "as a breaking-news bulletin interrupting normal programming",
+    "as the announcement of a major scientific discovery",
+    "as a conspiracy theorist who has questions about how this happened",
+    "as a wine-tasting note describing something exquisite",
+    "as a scouting report on a generational talent",
+    "as a nature documentary narrator witnessing something rare",
+    "as a fortune cookie that undersells it",
+    "as a courtroom closing argument proving their brilliance",
+    "as a museum plaque describing a priceless artefact",
+    "as a hype man introducing them to a stadium",
+]
+
+# Vary the SHAPE as well as the voice — a page of one-liners reads repetitive
+# even when every joke is different.
+MESSAGE_FORMS = [
+    "Write it as a single punchy line.",
+    "Write it as two short sentences, the second landing the joke.",
+    "Write it as a mock headline followed by a one-line caption.",
+    "Open mid-scene, as though we have walked in on it.",
+]
+
+
+def tidy_short_message(text, limit=160):
+    """Make a generated message safe to send over SMS. Deterministic.
+
+    The comedic angles below produce far better variety, but they also invite
+    elaborate prose: an angle like "a solemn eulogy" reliably talks past 160
+    characters, and a prompt asking nicely for brevity does not stop it. On
+    SMS anything over 160 splits into extra billed segments, and relying on
+    max_tokens to cap it truncates mid-word, which reads as a broken bot.
+
+    So length is enforced here rather than requested:
+      - markdown emphasis is stripped (**bold** renders literally in SMS, and
+        headline-style angles produce a lot of it)
+      - newlines collapse to single spaces
+      - over the limit, trim at the last sentence end that fits, falling back
+        to the last word boundary with an ellipsis
+
+    Returns the tidied string; never raises on empty input.
+    """
+    import re as _re
+    if not text:
+        return ""
+    out = _re.sub(r'\*{1,3}([^*]+)\*{1,3}', r'\1', text)   # unwrap **bold** / *italic*
+    out = _re.sub(r'^#{1,6}\s*', '', out, flags=_re.M)      # stray markdown headings
+    out = " ".join(out.split())
+    if len(out) <= limit:
+        return out
+    # Prefer a clean sentence ending inside the limit. Search to `limit`, not
+    # `limit + 1`: a terminator found at index `limit` would make out[:cut + 1]
+    # exactly one character too long, which is how a 161-character roast got
+    # through the first version of this.
+    cut = max(out.rfind(e, 0, limit) for e in ('. ', '! ', '? ', '.', '!', '?'))
+    if cut >= int(limit * 0.55):
+        return out[:cut + 1].strip()
+    space = out.rfind(' ', 0, limit - 1)
+    return (out[:space] if space > 0 else out[:limit - 1]).rstrip(' ,;:-') + '…'
+
+
+def pick_ai_angle(angles, recent):
+    """Choose an angle, avoiding any used in the recent messages.
+
+    `recent` is the (sent_text, scenario_text) list from
+    recent_sent_messages(); the angle lives in scenario_text. Falls back to
+    the full list once everything has been used recently, so this can never
+    run out of options and block a message.
+    """
+    import random
+    used = {sc for _, sc in recent if sc}
+    fresh = [a for a in angles if a not in used]
+    return random.choice(fresh or angles)
+
+
+def build_variety_instruction(recent, angle, forms=MESSAGE_FORMS):
+    """Prompt fragment carrying the angle, a form, and what NOT to echo."""
+    import random
+    parts = [f"Write this {angle}.", random.choice(forms)]
+    texts = [t for t, _ in recent if t]
+    if texts:
+        previous = " | ".join(" ".join(t.split())[:90] for t in texts[:6])
+        parts.append(
+            "You have ALREADY sent the messages below to this group. Do not reuse "
+            "their jokes, structure, or opening words — say something genuinely "
+            f"different: {previous}"
+        )
+    return " ".join(parts)
+
+
 def get_severity_prompt(severity, message_type):
     """Get the appropriate prompt modifier based on severity level"""
     if message_type == 'roast':
@@ -1020,9 +1144,16 @@ def send_perfect_score_congrats(player_name, score, league_id, player_id=None):
                 logging.info(f"Using player {player_name}'s severity override: {severity}")
         
         severity_instruction = get_severity_prompt(severity, 'congrats')
-        
+
+        # Vary the comedic frame and steer away from what this league has
+        # already been sent — the prompt used to be identical every time.
+        from ai_message_archive import recent_sent_messages
+        recent = recent_sent_messages(league_id, 'perfect_score', limit=8)
+        angle = pick_ai_angle(CONGRATS_ANGLES, recent)
+        variety_instruction = build_variety_instruction(recent, angle)
+
         # Generate AI congratulations message
-        prompt = f"Generate a congratulations message for {player_name} who just got a {score}/6 on Wordle - an incredible score! Celebrate their achievement. Use fun emojis like 🎯🔥⭐🏆. DO NOT reveal the Wordle word. Keep it under 160 characters. {severity_instruction}"
+        prompt = f"Generate a congratulations message for {player_name} who just got a {score}/6 on Wordle - an incredible score! Celebrate their achievement. Use fun emojis like 🎯🔥⭐🏆. DO NOT reveal the Wordle word. {severity_instruction} {variety_instruction} HARD LIMIT: one or two short sentences, under 160 characters total. No markdown, no headings."
         
         response = openai_client.chat.completions.create(
             model="gpt-4o-mini",
@@ -1030,16 +1161,27 @@ def send_perfect_score_congrats(player_name, score, league_id, player_id=None):
                 {"role": "system", "content": f"You are a Wordle league bot. Celebrate amazing scores with fun emojis. {severity_instruction}"},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=100,
+            max_tokens=160,
             temperature=0.9
         )
         
-        congrats_message = response.choices[0].message.content.strip()
-        logging.info(f"Generated perfect score congrats for {player_name}: {congrats_message}")
+        congrats_message = tidy_short_message(response.choices[0].message.content)
+        logging.info(f"Generated perfect score congrats for {player_name} [{angle}]: {congrats_message}")
         
         # Send via message router (supports SMS, Slack, Discord)
         result = send_league_message(league_id, congrats_message)
         logging.info(f"Sent perfect score congrats to league {league_id} for {player_name}: {result}")
+
+        # Record it so the next one can avoid repeating this joke or frame.
+        # scenario_text carries the angle; archiving never raises.
+        try:
+            from ai_message_archive import archive_sent_ai_message
+            from league_data_adapter import calculate_wordle_number
+            archive_sent_ai_message(league_id, 'perfect_score', calculate_wordle_number(),
+                                    angle, congrats_message, congrats_message,
+                                    model='gpt-4o-mini')
+        except Exception as _e:
+            logging.error(f"Could not archive perfect score congrats: {_e}")
         
     except Exception as e:
         logging.error(f"Error sending perfect score congrats: {e}")
@@ -1069,9 +1211,16 @@ def send_failure_roast(player_name, league_id, player_id=None):
                 logging.info(f"Using player {player_name}'s severity override: {severity}")
         
         severity_instruction = get_severity_prompt(severity, 'roast')
-        
+
+        # Vary the comedic frame and steer away from what this league has
+        # already been sent — the prompt used to be identical every time.
+        from ai_message_archive import recent_sent_messages
+        recent = recent_sent_messages(league_id, 'failure_roast', limit=8)
+        angle = pick_ai_angle(ROAST_ANGLES, recent)
+        variety_instruction = build_variety_instruction(recent, angle)
+
         # Generate AI roast message
-        prompt = f"Roast {player_name} who just FAILED today's Wordle (X/6 - couldn't solve it in 6 tries!). Use creative wordplay and emojis. Keep it under 160 characters. DO NOT mention the actual Wordle word. {severity_instruction}"
+        prompt = f"Roast {player_name} who just FAILED today's Wordle (X/6 - couldn't solve it in 6 tries!). Use creative wordplay and emojis. DO NOT mention the actual Wordle word. {severity_instruction} {variety_instruction} HARD LIMIT: one or two short sentences, under 160 characters total. No markdown, no headings."
         
         response = openai_client.chat.completions.create(
             model="gpt-4o-mini",
@@ -1079,16 +1228,27 @@ def send_failure_roast(player_name, league_id, player_id=None):
                 {"role": "system", "content": f"You are a Wordle roast bot. Use puns, wordplay, and humor. Use emojis for emphasis. {severity_instruction}"},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=100,
+            max_tokens=160,
             temperature=0.95  # Maximum creativity
         )
         
-        roast_message = response.choices[0].message.content.strip()
-        logging.info(f"Generated roast for {player_name}: {roast_message}")
+        roast_message = tidy_short_message(response.choices[0].message.content)
+        logging.info(f"Generated roast for {player_name} [{angle}]: {roast_message}")
         
         # Send via message router (supports SMS, Slack, Discord)
         result = send_league_message(league_id, roast_message)
         logging.info(f"Sent failure roast to league {league_id} for {player_name}: {result}")
+
+        # Record it so the next one can avoid repeating this joke or frame.
+        # scenario_text carries the angle; archiving never raises.
+        try:
+            from ai_message_archive import archive_sent_ai_message
+            from league_data_adapter import calculate_wordle_number
+            archive_sent_ai_message(league_id, 'failure_roast', calculate_wordle_number(),
+                                    angle, roast_message, roast_message,
+                                    model='gpt-4o-mini')
+        except Exception as _e:
+            logging.error(f"Could not archive failure roast: {_e}")
         
     except Exception as e:
         logging.error(f"Error sending failure roast: {e}")

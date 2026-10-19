@@ -6955,9 +6955,35 @@ def dashboard_delete_league(league_id):
         # 3. Delete seasons
         cursor.execute("DELETE FROM seasons WHERE league_id = %s", (league_id,))
         
-        # 4. Delete latest scores  
+        # 4. Delete latest scores
         cursor.execute("DELETE FROM latest_scores WHERE league_id = %s", (league_id,))
-        
+
+        # 4b. Everything else keyed on league_id.
+        #
+        # These were missing, so every league deleted through the dashboard left
+        # rows behind pointing at an id that no longer existed. By 2026-10-19
+        # that had accumulated to 64 orphans across three tables — 41 archived
+        # Sunday messages, 22 stale season-start cache rows and a snapshot —
+        # all from leagues deleted months earlier.
+        #
+        # If a new table gains a league_id column, add it here. The check that
+        # catches a miss is:
+        #   SELECT count(*) FROM <t> x WHERE x.league_id IS NOT NULL
+        #     AND NOT EXISTS (SELECT 1 FROM leagues l WHERE l.id = x.league_id)
+        #
+        # DELIBERATELY NOT CLEANED: twilio_monthly_snapshots. That is cost
+        # accounting — monthly inbound/outbound and carrier fees — and it
+        # stores league_name alongside league_id precisely so a month's spend
+        # still reads correctly after the league is gone. Deleting a league
+        # must not rewrite what it already cost us. ai_player_settings and
+        # scores are handled below, keyed on player_id rather than league_id.
+        cursor.execute("DELETE FROM division_movements WHERE league_id = %s", (league_id,))
+        cursor.execute("DELETE FROM league_seasons WHERE league_id = %s", (league_id,))
+        cursor.execute("DELETE FROM league_min_scores_history WHERE league_id = %s", (league_id,))
+        cursor.execute("DELETE FROM reset_snapshots WHERE league_id = %s", (league_id,))
+        cursor.execute("DELETE FROM reviews WHERE league_id = %s", (league_id,))
+        cursor.execute("DELETE FROM sent_ai_messages WHERE league_id = %s", (league_id,))
+
         # 5. Delete scores and AI settings (via player_ids since these tables don't have league_id)
         if player_ids:
             cursor.execute("DELETE FROM ai_player_settings WHERE player_id = ANY(%s)", (player_ids,))

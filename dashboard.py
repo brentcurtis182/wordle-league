@@ -5280,12 +5280,18 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
             }}
             
             function updateDivisionCounts() {{
-                const div1 = document.querySelectorAll('#div1-players .division-player').length;
-                const div2 = document.querySelectorAll('#div2-players .division-player').length;
-                const div1Label = document.querySelector('#division-1 span:last-child');
-                const div2Label = document.querySelector('#division-2 span:last-child');
-                if (div1Label) div1Label.textContent = '(' + div1 + ' players)';
-                if (div2Label) div2Label.textContent = '(' + div2 + ' players)';
+                // Walks however many zones are on the page rather than naming
+                // two, so a third division's header updates after a drag too.
+                document.querySelectorAll('[id^="division-"]').forEach(function (zone) {{
+                    const n = zone.id.replace('division-', '');
+                    const list = document.getElementById('div' + n + '-players');
+                    if (!list) return;
+                    const label = zone.querySelector('span:last-child');
+                    if (label) {{
+                        const count = list.querySelectorAll('.division-player').length;
+                        label.textContent = '(' + count + ' players)';
+                    }}
+                }});
             }}
             
             var prevPromoted = '{promo_count}';
@@ -5670,7 +5676,8 @@ def get_league_info(league_id, conn=None):
                    COALESCE(public_listed, TRUE),
                    max_players,
                    season_wins,
-                   discord_guild_id
+                   discord_guild_id,
+                   COALESCE(division_count, 2)
             FROM leagues
             WHERE id = %s
         """, (league_id,))
@@ -5710,6 +5717,9 @@ def get_league_info(league_id, conn=None):
                 'max_players': row[29],
                 'season_wins': int(row[30]) if row[30] is not None else None,
                 'discord_guild_id': row[31],
+                # NULL means two divisions — the only value that existed before
+                # 3-division mode — so old leagues need no backfill.
+                'division_count': int(row[32]) if row[32] is not None else 2,
                 'channel_name': None,
                 'workspace_name': None,
             }

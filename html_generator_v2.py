@@ -682,7 +682,9 @@ def generate_season_stats_html(league_data):
 </div>\n'''
                         
                         # Build individual detail views per division
-                        for div_num_check, div_label_check, bk_key in [(1, 'Division I', div1_bk_key), (2, 'Division II', div2_bk_key)]:
+                        for div_num_check in range(1, shown_count + 1):
+                            div_label_check = f'Division {division_numeral(div_num_check)}'
+                            bk_key = bk_by_div.get(div_num_check)
                             if bk_key and bk_key in sdata['breakdowns']:
                                 rows_html = _build_breakdown_rows(sdata['breakdowns'][bk_key])
                                 detail_id = f'fl-div{div_num_check}-{display_num}'
@@ -1304,7 +1306,9 @@ def generate_division_season_stats_html(league_data):
 </div>\n'''
                     
                     # Build individual detail views per division (same layout as standard season breakdowns)
-                    for div_num_check, div_label_check, bk_key in [(1, 'Division I', div1_bk_key), (2, 'Division II', div2_bk_key)]:
+                    for div_num_check in range(1, shown_count + 1):
+                        div_label_check = f'Division {division_numeral(div_num_check)}'
+                        bk_key = bk_by_div.get(div_num_check)
                         if bk_key and bk_key in sdata['breakdowns']:
                             rows_html = _build_breakdown_rows(sdata['breakdowns'][bk_key])
                             detail_id = f'div-fl-d{div_num_check}-{display_num}'

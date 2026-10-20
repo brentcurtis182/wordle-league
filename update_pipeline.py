@@ -48,6 +48,42 @@ def get_league_display_name(league_id):
     }
     return fallback_names.get(league_id, f'League {league_id}')
 
+def get_league_public_slug(league_id):
+    """The league's PUBLIC slug, for the canonical URL.
+
+    Not the same thing as the GitHub path below. `league_slugs` in
+    run_update_pipeline maps a few league ids to directory names on GitHub
+    Pages and falls back to "league<id>"; the canonical has to name the real
+    apex URL, /leagues/<slug>, which only the database knows.
+
+    Returns None when there is no slug, which makes generate_full_html omit
+    the canonical rather than emit a wrong one.
+    """
+    import os
+    import psycopg2
+    try:
+        database_url = os.environ.get('DATABASE_URL')
+        if database_url:
+            conn = psycopg2.connect(database_url)
+        else:
+            conn = psycopg2.connect(
+                host=os.environ.get('PGHOST'),
+                database=os.environ.get('PGDATABASE'),
+                user=os.environ.get('PGUSER'),
+                password=os.environ.get('PGPASSWORD'),
+                port=os.environ.get('PGPORT', 5432)
+            )
+        cursor = conn.cursor()
+        cursor.execute("SELECT slug FROM leagues WHERE id = %s", (league_id,))
+        row = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        return row[0] if row and row[0] else None
+    except Exception as e:
+        logging.error(f"Error fetching league slug for canonical: {e}")
+        return None
+
+
 def run_update_pipeline(league_id=6, league_name="League 6 Beta"):
     """
     Run the complete update pipeline:
@@ -101,7 +137,17 @@ def run_update_pipeline(league_id=6, league_name="League 6 Beta"):
         logging.info(f"[Pipeline] Step 2: Generating HTML")
         step_start = datetime.now()
         
-        html_content = generate_full_html(league_data, league_display_name)
+        # Pass the slug so this copy carries a canonical pointing at the apex.
+        #
+        # It did not, and that was an SEO own-goal: these pages are published
+        # to brentcurtis182.github.io/wordle-league/<path>/ as well as being
+        # served at wordplayleague.com/leagues/<slug>, so without a canonical
+        # the two are duplicates with no winner declared — and the github.io
+        # copies are older, so search engines were surfacing those instead.
+        # The /embed route has always passed the slug; only this path missed it.
+        html_content = generate_full_html(
+            league_data, league_display_name,
+            slug=get_league_public_slug(league_id))
         
         status['steps']['generate_html'] = {
             'success': True,

@@ -2566,10 +2566,14 @@ def build_weekly_scoreboard_png(league_id, league_name, is_division_mode):
         return rows
 
     if is_division_mode:
-        div1 = [s for s in standings if s.get('division') == 1]
-        div2 = [s for s in standings if s.get('division') == 2]
-        img = generate_division_weekly_image(league_name, ranked(div1),
-                                             ranked(div2), week_date_str, show_games=True)
+        from division_manager import get_division_count, ROMAN
+        division_count = get_division_count(league_id)
+        division_data = [
+            (ROMAN[d], ranked([s for s in standings if s.get('division') == d]))
+            for d in range(1, division_count + 1)
+        ]
+        img = generate_division_weekly_image(league_name, division_data,
+                                             week_date_str=week_date_str, show_games=True)
     else:
         img = generate_weekly_image(league_name, ranked(standings), week_date_str,
                                     show_games=True)
@@ -11539,10 +11543,20 @@ def dashboard_division_toggle(league_id):
         status = get_division_status(league_id)
         enable = not (status and status['division_mode'])
         
-        result = toggle_division_mode(league_id, enable)
+        # How many divisions to split into. Only meaningful when enabling; the
+        # form sends 2 unless the manager picked 3 in the modal.
+        try:
+            division_count = int(request.form.get('division_count') or 2)
+        except (TypeError, ValueError):
+            division_count = 2
+        if division_count not in (2, 3):
+            division_count = 2
+
+        result = toggle_division_mode(league_id, enable, division_count=division_count)
         if result['success']:
             if enable:
-                return redirect(f'/dashboard/league/{league_id}?message=Division Mode enabled! Drag players to arrange divisions, then confirm.')
+                _n = 'three' if division_count == 3 else 'two'
+                return redirect(f'/dashboard/league/{league_id}?message=Division Mode enabled with {_n} divisions! Drag players to arrange divisions, then confirm.')
             else:
                 return redirect(f'/dashboard/league/{league_id}?message=Division Mode disabled. Players restored to single league.')
         else:

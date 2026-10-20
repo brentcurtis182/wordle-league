@@ -550,12 +550,13 @@ def generate_season_stats_html(league_data):
         for dw in all_div_winners:
             display_num = dw['season']
             if display_num not in unified_seasons:
-                unified_seasons[display_num] = {'type': 'division', 'div1': [], 'div2': [], 'breakdowns': {}}
-            key = 'div1' if dw['division'] == 1 else 'div2'
-            unified_seasons[display_num][key].append(dw['name'])
+                unified_seasons[display_num] = {'type': 'division', 'divs': {}, 'breakdowns': {}}
+            # Keyed by division NUMBER. This was 'div1'/'div2' string keys, which
+            # silently funnelled a Division III winner into Division II's list.
+            unified_seasons[display_num].setdefault('divs', {}).setdefault(dw['division'], []).append(dw['name'])
             for bk_sn, bk_data in dw['past_season_breakdowns'].items():
                 bk_display = bk_sn
-                unified_seasons.setdefault(bk_display, {'type': 'division', 'div1': [], 'div2': [], 'breakdowns': {}})
+                unified_seasons.setdefault(bk_display, {'type': 'division', 'divs': {}, 'breakdowns': {}})
                 unified_seasons[bk_display]['breakdowns'][(dw['division'], bk_sn)] = bk_data
         
         # Add regular season winners
@@ -576,10 +577,8 @@ def generate_season_stats_html(league_data):
                 """Render a single division winner line with optional breakdown click."""
                 e_html = ''
                 m_html = ''
-                # Styled label: white text with colored numeral (I=cyan, II=orange)
-                numeral_color = '#00E8DA' if div_num_val == 1 else '#FFA64D'
-                numeral = 'I' if div_num_val == 1 else 'II'
-                styled_label = f'Division <span style="color:{numeral_color}">{numeral}</span>'
+                # Styled label: white text with coloured numeral (I=cyan, II=orange, III=violet)
+                styled_label = division_styled_label(div_num_val)
                 if names_str == 'Closed':
                     e_html += f'<p class="season-winner-message" style="color: #d7dadc; font-weight: bold; margin: 0; padding-left: 20px;">{styled_label} Winner: <span style="font-style: italic; opacity: 0.6;">Closed</span></p>\n'
                 else:
@@ -610,19 +609,21 @@ def generate_season_stats_html(league_data):
                 entry_html = ''
                 modal_html = ''
                 if sdata.get('type') == 'division':
-                    div1_names = ', '.join(sdata.get('div1', []))
-                    div2_names = ', '.join(sdata.get('div2', []))
+                    divs = sdata.get('divs', {})
                     entry_html += f'<p class="season-winner-message" style="color: #00E8DA; font-weight: bold; margin-top: 12px; margin-bottom: 0;">Season {display_num}:</p>\n'
-                    if div1_names:
-                        e, m = _render_div_line('Division I', 1, div1_names, display_num, sdata, prefix)
-                        entry_html += e
-                        modal_html += m
-                    if div2_names:
-                        e, m = _render_div_line('Division II', 2, div2_names, display_num, sdata, prefix)
-                        entry_html += e
-                        modal_html += m
-                    elif div1_names:
-                        entry_html += f'<p class="season-winner-message" style="color: #d7dadc; font-weight: bold; margin: 0; padding-left: 20px;">Division <span style="color:#FFA64D">II</span> Winner: <span style="font-style: italic; opacity: 0.6;">In Progress</span></p>\n'
+                    # Show every division this league runs, in order. A division
+                    # with no winner yet reads "In Progress" rather than being
+                    # omitted, so the list length stays stable week to week.
+                    shown_count = max(list(divs.keys()) or [0])
+                    shown_count = max(shown_count, league_data.get('division_count', 2))
+                    for dnum in range(1, shown_count + 1):
+                        dnames = ', '.join(divs.get(dnum, []))
+                        if dnames:
+                            e, m = _render_div_line(f'Division {division_numeral(dnum)}', dnum, dnames, display_num, sdata, prefix)
+                            entry_html += e
+                            modal_html += m
+                        elif divs:
+                            entry_html += f'<p class="season-winner-message" style="color: #d7dadc; font-weight: bold; margin: 0; padding-left: 20px;">{division_styled_label(dnum)} Winner: <span style="font-style: italic; opacity: 0.6;">In Progress</span></p>\n'
                 elif sdata.get('type') == 'regular':
                     regular_names = ', '.join(sdata.get('regular_names', []))
                     real_sn = sdata.get('regular_sn', display_num)
@@ -649,48 +650,35 @@ def generate_season_stats_html(league_data):
                 for display_num in sorted_display_nums:
                     sdata = unified_seasons[display_num]
                     if sdata.get('type') == 'division':
-                        div1_names = ', '.join(sdata.get('div1', []))
-                        div2_names = ', '.join(sdata.get('div2', []))
-                        div1_display = div1_names if div1_names else '<span style="opacity:0.6; font-style:italic;">In Progress</span>'
-                        div2_display = div2_names if div2_names else '<span style="opacity:0.6; font-style:italic;">In Progress</span>'
-                        
-                        # Check which divisions have breakdowns
-                        div1_bk_key = None
-                        div2_bk_key = None
+                        divs = sdata.get('divs', {})
+                        shown_count = max(list(divs.keys()) or [0])
+                        shown_count = max(shown_count, league_data.get('division_count', 2))
+                        bk_by_div = {}
                         for k in sdata.get('breakdowns', {}):
-                            if k[0] == 1:
-                                div1_bk_key = k
-                            elif k[0] == 2:
-                                div2_bk_key = k
-                        
-                        # Div I row: clickable with arrow if has breakdown
-                        if div1_bk_key:
-                            div1_row = f'''<div style="display:flex; padding-left:32px; cursor:pointer;" onclick="event.stopPropagation(); document.getElementById('fl-div1-{display_num}').style.display='block'; document.getElementById('fl-list-view').style.display='none';">
-    <span style="color:#00E8DA; font-weight:600; min-width:58px; text-align:right;">Div I:</span>
-    <span style="color:#d7dadc; font-weight:bold; margin-left:12px;">{div1_display} <span style="font-size:0.8em; opacity:0.7; color:#00E8DA;">&#9656;</span></span>
-  </div>'''
-                        else:
-                            div1_row = f'''<div style="display:flex; padding-left:32px;">
-    <span style="color:#00E8DA; font-weight:600; min-width:58px; text-align:right;">Div I:</span>
-    <span style="color:#d7dadc; font-weight:bold; margin-left:12px;">{div1_display}</span>
-  </div>'''
-                        
-                        # Div II row: clickable with arrow if has breakdown
-                        if div2_bk_key:
-                            div2_row = f'''<div style="display:flex; padding-left:32px; margin-top:2px; cursor:pointer;" onclick="event.stopPropagation(); document.getElementById('fl-div2-{display_num}').style.display='block'; document.getElementById('fl-list-view').style.display='none';">
-    <span style="color:#FFA64D; font-weight:600; min-width:58px; text-align:right;">Div II:</span>
-    <span style="color:#d7dadc; font-weight:bold; margin-left:12px;">{div2_display} <span style="font-size:0.8em; opacity:0.7; color:#00E8DA;">&#9656;</span></span>
-  </div>'''
-                        else:
-                            div2_row = f'''<div style="display:flex; padding-left:32px; margin-top:2px;">
-    <span style="color:#FFA64D; font-weight:600; min-width:58px; text-align:right;">Div II:</span>
-    <span style="color:#d7dadc; font-weight:bold; margin-left:12px;">{div2_display}</span>
-  </div>'''
-                        
+                            bk_by_div[k[0]] = k
+
+                        div_rows = ''
+                        for dnum in range(1, shown_count + 1):
+                            dnames = ', '.join(divs.get(dnum, []))
+                            ddisplay = dnames if dnames else '<span style="opacity:0.6; font-style:italic;">In Progress</span>'
+                            dcolor = division_color(dnum)
+                            dlabel = f'Div {division_numeral(dnum)}:'
+                            mt = '' if dnum == 1 else ' margin-top:2px;'
+                            bk_key = bk_by_div.get(dnum)
+                            if bk_key:
+                                detail_id = f'fl-div{dnum}-{display_num}'
+                                div_rows += f'''<div style="display:flex; padding-left:32px;{mt} cursor:pointer;" onclick="event.stopPropagation(); document.getElementById('{detail_id}').style.display='block'; document.getElementById('fl-list-view').style.display='none';">
+        <span style="color:{dcolor}; font-weight:600; min-width:58px; text-align:right;">{dlabel}</span>
+        <span style="color:#d7dadc; font-weight:bold; margin-left:12px;">{ddisplay} <span style="font-size:0.8em; opacity:0.7; color:#00E8DA;">&#9656;</span></span>
+      </div>'''
+                            else:
+                                div_rows += f'''<div style="display:flex; padding-left:32px;{mt}">
+        <span style="color:{dcolor}; font-weight:600; min-width:58px; text-align:right;">{dlabel}</span>
+        <span style="color:#d7dadc; font-weight:bold; margin-left:12px;">{ddisplay}</span>
+      </div>'''
                         fl_list_items += f'''<div style="padding:12px 0; border-bottom:1px solid #333;">
   <div style="color:#d7dadc; font-weight:600; margin-bottom:4px;">Season {display_num}:</div>
-  {div1_row}
-  {div2_row}
+  {div_rows}
 </div>\n'''
                         
                         # Build individual detail views per division
@@ -832,6 +820,24 @@ function openFullList() {
     
     return html
 
+DIVISION_NUMERALS = {1: 'I', 2: 'II', 3: 'III'}
+# Cyan / orange / violet, matching the scoreboard image headers.
+DIVISION_COLORS = {1: '#00E8DA', 2: '#FFA64D', 3: '#A78BFA'}
+
+
+def division_numeral(div_num):
+    return DIVISION_NUMERALS.get(div_num, str(div_num))
+
+
+def division_color(div_num):
+    return DIVISION_COLORS.get(div_num, '#8a8aa5')
+
+
+def division_styled_label(div_num):
+    """'Division <span>II</span>' - white word, coloured numeral."""
+    return f'Division <span style="color:{division_color(div_num)}">{division_numeral(div_num)}</span>'
+
+
 def generate_division_weekly_totals_html(league_data):
     """Generate Weekly Totals tab with two division tables and a Weekly Score / Season Total dropdown."""
     division_data = league_data.get('division_data', {})
@@ -842,10 +848,11 @@ def generate_division_weekly_totals_html(league_data):
 
     html = ''
     
-    for div_num in (1, 2):
+    division_count = league_data.get('division_count', 2)
+    for div_num in range(1, division_count + 1):
         div_info = division_data.get(div_num, {})
-        div_label = "DIVISION I" if div_num == 1 else "DIVISION II"
-        div_color = "#00E8DA" if div_num == 1 else "#FFA64D"
+        div_label = f"DIVISION {division_numeral(div_num)}"
+        div_color = division_color(div_num)
         season_totals = div_info.get('season_totals', {})
         missed_weeks_data = div_info.get('missed_weeks', {})
         weekly_wins_data = div_info.get('weekly_wins', {})
@@ -1076,10 +1083,11 @@ def generate_division_season_stats_html(league_data):
     all_div_winners = []  # Collect division season winners to show below both tables
 
     # Banner above all season tables (outside card, on background)
+    division_count = league_data.get('division_count', 2)
     div1_wins_needed = division_data.get(1, {}).get('wins_needed', 3)
     html += f'<p style="margin-top: 0; margin-bottom: 15px; font-style: italic;">First player(s) to <strong style="color: #00E8DA;">{div1_wins_needed} weekly wins</strong> is the Season Champion!</p>\n'
 
-    for div_num in (1, 2):
+    for div_num in range(1, division_count + 1):
         div_info = division_data.get(div_num, {})
         div_label = "Division I" if div_num == 1 else "Division II"
         div_color = "#00E8DA" if div_num == 1 else "#FFA64D"
@@ -1155,12 +1163,12 @@ def generate_division_season_stats_html(league_data):
     for dw in all_div_winners:
         display_num = dw['season']
         if display_num not in unified_seasons:
-            unified_seasons[display_num] = {'type': 'division', 'div1': [], 'div2': [], 'breakdowns': {}}
-        key = 'div1' if dw['division'] == 1 else 'div2'
-        unified_seasons[display_num][key].append(dw['name'])
+            unified_seasons[display_num] = {'type': 'division', 'divs': {}, 'breakdowns': {}}
+        # Keyed by division NUMBER - see the note on the other copy of this block.
+        unified_seasons[display_num].setdefault('divs', {}).setdefault(dw['division'], []).append(dw['name'])
         for bk_sn, bk_data in dw['past_season_breakdowns'].items():
             bk_display = bk_sn
-            unified_seasons.setdefault(bk_display, {'type': 'division', 'div1': [], 'div2': [], 'breakdowns': {}})
+            unified_seasons.setdefault(bk_display, {'type': 'division', 'divs': {}, 'breakdowns': {}})
             unified_seasons[bk_display]['breakdowns'][(dw['division'], bk_sn)] = bk_data
     
     # Add regular (pre-division) season winners
@@ -1182,30 +1190,41 @@ def generate_division_season_stats_html(league_data):
         if sdata.get('type') == 'division':
             # "Season N:" header in cyan
             entry_html += f'<p style="color: #00E8DA; font-weight: bold; margin: 12px 0 0 0; font-size: 1em;">Season {display_num}:</p>\n'
-            
-            div1_names = ', '.join(sdata.get('div1', []))
-            div2_names = ', '.join(sdata.get('div2', []))
-            
-            # Division I winner (indented, white with cyan numeral)
-            if div1_names:
-                div1_styled = 'Division <span style="color:#00E8DA">I</span>'
-                if div1_names == 'Closed':
-                    entry_html += f'<p class="season-winner-message" style="color: #d7dadc; font-weight: bold; margin: 0; padding-left: 20px;">{div1_styled} Winner: <span style="font-style: italic; opacity: 0.6;">Closed</span></p>\n'
-                else:
-                    div1_text = f'{div1_styled} Winner: {div1_names}'
-                    div1_bk_key = None
-                    for k in sdata.get('breakdowns', {}):
-                        if k[0] == 1:
-                            div1_bk_key = k
-                            break
-                    if div1_bk_key and div1_bk_key in sdata['breakdowns']:
-                        modal_id = f'div1-season-modal-{display_num}'
-                        entry_html += f'<p class="season-winner-message" style="color: #d7dadc; font-weight: bold; margin: 0; padding-left: 20px; cursor: pointer;" onclick="document.getElementById(\'{modal_id}\').style.display=\'flex\'">{div1_text} <span style="font-size: 0.8em; opacity: 0.7;">&#9656;</span></p>\n'
-                        rows_html = _build_breakdown_rows(sdata['breakdowns'][div1_bk_key])
-                        modal_html += f'''<div id="{modal_id}" class="season-modal-overlay" onclick="if(event.target===this)this.style.display='none'" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
+
+            divs = sdata.get('divs', {})
+            # One block per division, in order. This was two near-identical
+            # copies of the same 35 lines, one per division; a third would have
+            # meant a third copy.
+            shown_count = max(list(divs.keys()) or [0])
+            shown_count = max(shown_count, league_data.get('division_count', 2))
+            for dnum in range(1, shown_count + 1):
+                dnames = ', '.join(divs.get(dnum, []))
+                styled = division_styled_label(dnum)
+                numeral = division_numeral(dnum)
+
+                if not dnames:
+                    if divs:
+                        entry_html += f'<p class="season-winner-message" style="color: #d7dadc; font-weight: bold; margin: 0; padding-left: 20px;">{styled} Winner: <span style="font-style: italic; opacity: 0.6;">In Progress</span></p>\n'
+                    continue
+
+                if dnames == 'Closed':
+                    entry_html += f'<p class="season-winner-message" style="color: #d7dadc; font-weight: bold; margin: 0; padding-left: 20px;">{styled} Winner: <span style="font-style: italic; opacity: 0.6;">Closed</span></p>\n'
+                    continue
+
+                div_text = f'{styled} Winner: {dnames}'
+                bk_key = None
+                for k in sdata.get('breakdowns', {}):
+                    if k[0] == dnum:
+                        bk_key = k
+                        break
+                if bk_key and bk_key in sdata['breakdowns']:
+                    modal_id = f'div{dnum}-season-modal-{display_num}'
+                    entry_html += f'<p class="season-winner-message" style="color: #d7dadc; font-weight: bold; margin: 0; padding-left: 20px; cursor: pointer;" onclick="document.getElementById(\'{modal_id}\').style.display=\'flex\'">{div_text} <span style="font-size: 0.8em; opacity: 0.7;">&#9656;</span></p>\n'
+                    rows_html = _build_breakdown_rows(sdata['breakdowns'][bk_key])
+                    modal_html += f'''<div id="{modal_id}" class="season-modal-overlay" onclick="if(event.target===this)this.style.display='none'" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
   <div style="background:#1a1a1b; border:1px solid #333; border-radius:10px; padding:20px; max-width:320px; width:90%; max-height:80vh; overflow-y:auto;">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-      <h3 style="color:#00E8DA; margin:0; font-size:1.05em;">Season {display_num} - Division I</h3>
+      <h3 style="color:#00E8DA; margin:0; font-size:1.05em;">Season {display_num} - Division {numeral}</h3>
       <span onclick="document.getElementById('{modal_id}').style.display='none'" style="color:#d7dadc; cursor:pointer; font-size:1.5rem; line-height:1; padding:4px 8px;">&times;</span>
     </div>
     <table class="season-table" style="width:100%;">
@@ -1215,44 +1234,9 @@ def generate_division_season_stats_html(league_data):
   </div>
 </div>
 '''
-                    else:
-                        entry_html += f'<p class="season-winner-message" style="color: #d7dadc; font-weight: bold; margin: 0; padding-left: 20px;">{div1_text}</p>\n'
-            
-            # Division II winner (indented, white with orange numeral)
-            if div2_names:
-                div2_styled = 'Division <span style="color:#FFA64D">II</span>'
-                if div2_names == 'Closed':
-                    entry_html += f'<p class="season-winner-message" style="color: #d7dadc; font-weight: bold; margin: 0; padding-left: 20px;">{div2_styled} Winner: <span style="font-style: italic; opacity: 0.6;">Closed</span></p>\n'
                 else:
-                    div2_text = f'{div2_styled} Winner: {div2_names}'
-                    div2_bk_key = None
-                    for k in sdata.get('breakdowns', {}):
-                        if k[0] == 2:
-                            div2_bk_key = k
-                            break
-                    if div2_bk_key and div2_bk_key in sdata['breakdowns']:
-                        modal_id = f'div2-season-modal-{display_num}'
-                        entry_html += f'<p class="season-winner-message" style="color: #d7dadc; font-weight: bold; margin: 0; padding-left: 20px; cursor: pointer;" onclick="document.getElementById(\'{modal_id}\').style.display=\'flex\'">{div2_text} <span style="font-size: 0.8em; opacity: 0.7;">&#9656;</span></p>\n'
-                        rows_html = _build_breakdown_rows(sdata['breakdowns'][div2_bk_key])
-                        modal_html += f'''<div id="{modal_id}" class="season-modal-overlay" onclick="if(event.target===this)this.style.display='none'" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); z-index:1000; justify-content:center; align-items:center;">
-  <div style="background:#1a1a1b; border:1px solid #333; border-radius:10px; padding:20px; max-width:320px; width:90%; max-height:80vh; overflow-y:auto;">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
-      <h3 style="color:#00E8DA; margin:0; font-size:1.05em;">Season {display_num} - Division II</h3>
-      <span onclick="document.getElementById('{modal_id}').style.display='none'" style="color:#d7dadc; cursor:pointer; font-size:1.5rem; line-height:1; padding:4px 8px;">&times;</span>
-    </div>
-    <table class="season-table" style="width:100%;">
-      <thead><tr><th>Player</th><th>Wins</th></tr></thead>
-      <tbody>{rows_html}</tbody>
-    </table>
-  </div>
-</div>
-'''
-                    else:
-                        entry_html += f'<p class="season-winner-message" style="color: #d7dadc; font-weight: bold; margin: 0; padding-left: 20px;">{div2_text}</p>\n'
-            elif sdata.get('div1'):
-                # Div I has winner but Div II doesn't yet
-                entry_html += f'<p class="season-winner-message" style="color: #d7dadc; font-weight: bold; margin: 0; padding-left: 20px;">Division <span style="color:#FFA64D">II</span> Winner: <span style="font-style: italic; opacity: 0.6;">In Progress</span></p>\n'
-        
+                    entry_html += f'<p class="season-winner-message" style="color: #d7dadc; font-weight: bold; margin: 0; padding-left: 20px;">{div_text}</p>\n'
+
         elif sdata.get('type') == 'regular':
             regular_names = ', '.join(sdata.get('regular_names', []))
             real_sn = sdata.get('regular_sn', display_num)
@@ -1288,48 +1272,35 @@ def generate_division_season_stats_html(league_data):
                 div_page_num = idx_div // 8 + 1
                 sdata = unified_seasons[display_num]
                 if sdata.get('type') == 'division':
-                    div1_names = ', '.join(sdata.get('div1', []))
-                    div2_names = ', '.join(sdata.get('div2', []))
-                    div1_display = div1_names if div1_names else '<span style="opacity:0.6; font-style:italic;">In Progress</span>'
-                    div2_display = div2_names if div2_names else '<span style="opacity:0.6; font-style:italic;">In Progress</span>'
-                    
-                    # Check which divisions have breakdowns
-                    div1_bk_key = None
-                    div2_bk_key = None
+                    divs = sdata.get('divs', {})
+                    shown_count = max(list(divs.keys()) or [0])
+                    shown_count = max(shown_count, league_data.get('division_count', 2))
+                    bk_by_div = {}
                     for k in sdata.get('breakdowns', {}):
-                        if k[0] == 1:
-                            div1_bk_key = k
-                        elif k[0] == 2:
-                            div2_bk_key = k
-                    
-                    # Div I row: clickable with arrow if has breakdown
-                    if div1_bk_key:
-                        div1_row = f'''<div style="display:flex; padding-left:32px; cursor:pointer;" onclick="event.stopPropagation(); document.getElementById('div-fl-d1-{display_num}').style.display='block'; document.getElementById('div-fl-list-view').style.display='none';">
-    <span style="color:#00E8DA; font-weight:600; min-width:58px; text-align:right;">Div I:</span>
-    <span style="color:#d7dadc; font-weight:bold; margin-left:12px;">{div1_display} <span style="font-size:0.8em; opacity:0.7; color:#00E8DA;">&#9656;</span></span>
+                        bk_by_div[k[0]] = k
+
+                    div_rows = ''
+                    for dnum in range(1, shown_count + 1):
+                        dnames = ', '.join(divs.get(dnum, []))
+                        ddisplay = dnames if dnames else '<span style="opacity:0.6; font-style:italic;">In Progress</span>'
+                        dcolor = division_color(dnum)
+                        dlabel = f'Div {division_numeral(dnum)}:'
+                        mt = '' if dnum == 1 else ' margin-top:2px;'
+                        bk_key = bk_by_div.get(dnum)
+                        if bk_key:
+                            detail_id = f'div-fl-d{dnum}-{display_num}'
+                            div_rows += f'''<div style="display:flex; padding-left:32px;{mt} cursor:pointer;" onclick="event.stopPropagation(); document.getElementById('{detail_id}').style.display='block'; document.getElementById('div-fl-list-view').style.display='none';">
+    <span style="color:{dcolor}; font-weight:600; min-width:58px; text-align:right;">{dlabel}</span>
+    <span style="color:#d7dadc; font-weight:bold; margin-left:12px;">{ddisplay} <span style="font-size:0.8em; opacity:0.7; color:#00E8DA;">&#9656;</span></span>
   </div>'''
-                    else:
-                        div1_row = f'''<div style="display:flex; padding-left:32px;">
-    <span style="color:#00E8DA; font-weight:600; min-width:58px; text-align:right;">Div I:</span>
-    <span style="color:#d7dadc; font-weight:bold; margin-left:12px;">{div1_display}</span>
+                        else:
+                            div_rows += f'''<div style="display:flex; padding-left:32px;{mt}">
+    <span style="color:{dcolor}; font-weight:600; min-width:58px; text-align:right;">{dlabel}</span>
+    <span style="color:#d7dadc; font-weight:bold; margin-left:12px;">{ddisplay}</span>
   </div>'''
-                    
-                    # Div II row: clickable with arrow if has breakdown
-                    if div2_bk_key:
-                        div2_row = f'''<div style="display:flex; padding-left:32px; margin-top:2px; cursor:pointer;" onclick="event.stopPropagation(); document.getElementById('div-fl-d2-{display_num}').style.display='block'; document.getElementById('div-fl-list-view').style.display='none';">
-    <span style="color:#FFA64D; font-weight:600; min-width:58px; text-align:right;">Div II:</span>
-    <span style="color:#d7dadc; font-weight:bold; margin-left:12px;">{div2_display} <span style="font-size:0.8em; opacity:0.7; color:#00E8DA;">&#9656;</span></span>
-  </div>'''
-                    else:
-                        div2_row = f'''<div style="display:flex; padding-left:32px; margin-top:2px;">
-    <span style="color:#FFA64D; font-weight:600; min-width:58px; text-align:right;">Div II:</span>
-    <span style="color:#d7dadc; font-weight:bold; margin-left:12px;">{div2_display}</span>
-  </div>'''
-                    
                     full_list_items += f'''<div class="div-fl-season-item" data-page="{div_page_num}" style="padding:12px 0; border-bottom:1px solid #333;">
   <div style="color:#d7dadc; font-weight:600; margin-bottom:4px;">Season {display_num}:</div>
-  {div1_row}
-  {div2_row}
+  {div_rows}
 </div>\n'''
                     
                     # Build individual detail views per division (same layout as standard season breakdowns)
@@ -1535,13 +1506,18 @@ def generate_rules_html(league_data):
 '''
 
     if division_active:
+        _dcount = league_data.get('division_count', 2) or 2
+        _dnames = ' and '.join(
+            ['Division ' + DIVISION_NUMERALS.get(i, str(i)) for i in range(1, _dcount)]
+        ) + ' and Division ' + DIVISION_NUMERALS.get(_dcount, str(_dcount)) if _dcount > 1 else 'one division'
+        _bottom = DIVISION_NUMERALS.get(_dcount, str(_dcount))
         html += f'''<div style="{card_style}">
 <h3 style="color:#00E8DA; margin:0 0 10px 0; font-size:1.1em;">⚔️ Division Mode</h3>
-<p style="margin:0 0 10px 0; color:#d7dadc; line-height:1.6;">This league runs in Division Mode with two divisions. The league manager assigns players to divisions and can rearrange them until the first weekly winner is recorded on Monday. After that, divisions are locked for the season.</p>
+<p style="margin:0 0 10px 0; color:#d7dadc; line-height:1.6;">This league runs in Division Mode with <strong style="color:#d7dadc;">{_dcount} divisions</strong>. The league manager assigns players to divisions and can rearrange them until the first weekly winner is recorded on Monday. After that, divisions are locked for the season.</p>
 
 <h4 style="color:#FFA64D; margin:14px 0 8px 0; font-size:0.95em;">Promotion &amp; Relegation</h4>
-<p style="margin:0 0 10px 0; color:#d7dadc; line-height:1.6;">At the end of each season, the top <strong style="color:#FFA64D;">{promoted_count}</strong> player{"s" if promoted_count > 1 else ""} from Division II move up to Division I, and the bottom <strong style="color:#00E8DA;">{relegated_count}</strong> player{"s" if relegated_count > 1 else ""} from Division I drop to Division II.</p>
-<p style="margin:0 0 10px 0; color:#d7dadc; line-height:1.6;">Two spots are decided automatically: the <strong style="color:#d7dadc;">Division II champion is always promoted</strong>, and the <strong style="color:#d7dadc;">Division I champion is always safe</strong> from relegation&mdash;no matter what. Every other spot is decided by the rankings below.</p>
+<p style="margin:0 0 10px 0; color:#d7dadc; line-height:1.6;">At the end of each season, the top <strong style="color:#FFA64D;">{promoted_count}</strong> player{"s" if promoted_count > 1 else ""} in a division move up to the division above, and the bottom <strong style="color:#00E8DA;">{relegated_count}</strong> player{"s" if relegated_count > 1 else ""} drop to the one below. Moves are always one division at a time&mdash;nobody skips a tier.{" With three divisions, Division II is the only place you can go either way in the same season." if _dcount >= 3 else ""}</p>
+<p style="margin:0 0 10px 0; color:#d7dadc; line-height:1.6;">Two spots are decided automatically: a <strong style="color:#d7dadc;">division champion is always promoted</strong> (except in Division I, which has nowhere higher to go), and a <strong style="color:#d7dadc;">champion is always safe</strong> from relegation&mdash;no matter what. Every other spot is decided by the rankings below.</p>
 <p style="margin:0 0 10px 0; color:#818384; font-size:0.85em; line-height:1.5;">Your league is currently set to promote <strong style="color:#FFA64D;">{promoted_count}</strong> and relegate <strong style="color:#00E8DA;">{relegated_count}</strong> each season. This is configurable by the league manager (1&ndash;3).</p>
 
 <h4 style="color:#FFA64D; margin:14px 0 8px 0; font-size:0.95em;">How Players Are Ranked</h4>
@@ -1554,7 +1530,7 @@ def generate_rules_html(league_data):
 <p style="margin:0 0 10px 0; color:#d7dadc; line-height:1.6;">🎲 <strong style="color:#FFA64D;">Dead even?</strong> If two or more players are still perfectly tied for the last promotion or relegation spot after all three steps, a <strong style="color:#FFA64D;">random draw</strong> decides who moves. The Sunday update will warn the league when a random draw is on the line.</p>
 
 <h4 style="color:#FFA64D; margin:14px 0 8px 0; font-size:0.95em;">Immunity</h4>
-<p style="margin:0 0 10px 0; color:#d7dadc; line-height:1.6;">Newly promoted players receive <strong style="color:#d7dadc;">immunity</strong> for the remainder of the Division I season they join&mdash;they cannot be relegated until the following season. Relegated players receive a badge indicating they are a new arrival in Division II.</p>
+<p style="margin:0 0 10px 0; color:#d7dadc; line-height:1.6;">Players who have just moved receive <strong style="color:#d7dadc;">immunity</strong> for the remainder of the season they join&mdash;they cannot be relegated again until the following season. Immunity only ever protects against dropping: a player who was just relegated is still free to win their way straight back up. New arrivals carry a badge showing they have just moved.</p>
 <p style="margin:0; color:#818384; font-size:0.85em;">Use the Weekly Score / Season Total toggle on the weekly table to check where players stand.</p>
 </div>
 '''

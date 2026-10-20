@@ -16,6 +16,28 @@ from league_data_adapter import get_db_connection, calculate_wordle_number, get_
 DIVISION_WINS_FOR_SEASON = 3  # Wins needed to win a division season (vs 4 for normal)
 
 
+ROMAN = {1: 'I', 2: 'II', 3: 'III'}
+
+
+def get_division_count(league_id, conn=None, cursor=None):
+    """How many divisions this league runs. NULL in the column means 2 — the
+    only value that existed before 3-division mode — so old leagues behave
+    identically without a backfill."""
+    own = conn is None and cursor is None
+    if own:
+        conn = get_db_connection()
+    cur = cursor or conn.cursor()
+    try:
+        cur.execute("SELECT COALESCE(division_count, 2) FROM leagues WHERE id = %s", (league_id,))
+        row = cur.fetchone()
+        return row[0] if row else 2
+    finally:
+        if cursor is None:
+            cur.close()
+        if own:
+            conn.close()
+
+
 def get_division_status(league_id):
     """Get the current division mode status for a league"""
     conn = get_db_connection()
@@ -23,7 +45,8 @@ def get_division_status(league_id):
     
     try:
         cursor.execute("""
-            SELECT division_mode, division_confirmed_at, division_locked
+            SELECT division_mode, division_confirmed_at, division_locked,
+                   COALESCE(division_count, 2)
             FROM leagues WHERE id = %s
         """, (league_id,))
         row = cursor.fetchone()
@@ -34,7 +57,8 @@ def get_division_status(league_id):
         return {
             'division_mode': row[0] or False,
             'confirmed_at': row[1],
-            'locked': row[2] or False
+            'locked': row[2] or False,
+            'division_count': row[3]
         }
     finally:
         cursor.close()
@@ -71,10 +95,10 @@ def get_division_players(league_id):
         conn.close()
 
 
-def toggle_division_mode(league_id, enable):
+def toggle_division_mode(league_id, enable, division_count=2):
     """
     Toggle division mode on or off.
-    When enabling: auto-split players into 2 divisions.
+    When enabling: auto-split players into `division_count` divisions (2 or 3).
     When disabling (before locked): revert to pre-division state.
     """
     conn = get_db_connection()
@@ -100,7 +124,9 @@ def toggle_division_mode(league_id, enable):
             return {'success': False, 'error': 'Division mode is already disabled'}
         
         if enable:
-            return _enable_division_mode(league_id, cursor, conn)
+            if division_count not in (2, 3):
+                return {'success': False, 'error': 'Division count must be 2 or 3'}
+            return _enable_division_mode(league_id, cursor, conn, division_count)
         else:
             return _disable_division_mode(league_id, cursor, conn, is_locked)
     
@@ -115,9 +141,15 @@ def toggle_division_mode(league_id, enable):
         conn.close()
 
 
-def _enable_division_mode(league_id, cursor, conn):
-    """Enable division mode: snapshot current state, auto-split players"""
-    
+def _enable_division_mode(league_id, cursor, conn, division_count=2):
+    """Enable division mode: snapshot current state, auto-split players.
+
+    The split is arbitrary on purpose (ORDER BY name) — the manager reassigns
+    players before confirming, so this only has to produce the right SHAPE:
+    `division_count` contiguous groups, upper divisions no larger than lower
+    ones when the roster does not divide evenly.
+    """
+
     # Get active players
     cursor.execute("""
         SELECT id, name FROM players
@@ -125,9 +157,11 @@ def _enable_division_mode(league_id, cursor, conn):
         ORDER BY name
     """, (league_id,))
     players = cursor.fetchall()
-    
-    if len(players) < 6:
-        return {'success': False, 'error': 'Need at least 6 active players for division mode'}
+
+    min_players = 12 if division_count == 3 else 6
+    if len(players) < min_players:
+        return {'success': False,
+                'error': f'Need at least {min_players} active players for {division_count}-division mode'}
     
     # Snapshot current state for potential revert
     # Save: player divisions (all NULL currently), current weekly winners, season state
@@ -148,34 +182,38 @@ def _enable_division_mode(league_id, cursor, conn):
         SET snapshot_data = EXCLUDED.snapshot_data, created_at = CURRENT_TIMESTAMP
     """, (league_id, json.dumps(snapshot)))
     
-    # Auto-split players: first half to Division I (top), second half to Division II (bottom)
-    # Division I gets fewer players if odd number (e.g., 9 players = 4 top, 5 bottom)
-    mid = len(players) // 2
-    div1_players = players[:mid]  # Top division (fewer players)
-    div2_players = players[mid:]  # Bottom division (more players)
-    
-    for player_id, _ in div1_players:
-        cursor.execute("UPDATE players SET division = 1 WHERE id = %s", (player_id,))
-    
-    for player_id, _ in div2_players:
-        cursor.execute("UPDATE players SET division = 2 WHERE id = %s", (player_id,))
-    
+    # Auto-split into contiguous groups. Upper divisions get fewer players when
+    # the roster does not divide evenly (e.g. 9 players / 2 divs = 4 top, 5
+    # bottom; 17 / 3 = 5, 6, 6) — same shape the 2-division split always had.
+    n = len(players)
+    base, rem = divmod(n, division_count)
+    sizes = [base + (1 if d > division_count - rem else 0) for d in range(1, division_count + 1)]
+
+    counts = {}
+    idx = 0
+    for div, size in enumerate(sizes, start=1):
+        for player_id, _ in players[idx:idx + size]:
+            cursor.execute("UPDATE players SET division = %s WHERE id = %s", (div, player_id))
+        counts[div] = size
+        idx += size
+
     # Enable division mode (not yet confirmed or locked)
     cursor.execute("""
-        UPDATE leagues 
-        SET division_mode = TRUE, division_confirmed_at = NULL, division_locked = FALSE
+        UPDATE leagues
+        SET division_mode = TRUE, division_count = %s,
+            division_confirmed_at = NULL, division_locked = FALSE
         WHERE id = %s
-    """, (league_id,))
-    
+    """, (division_count, league_id))
+
     conn.commit()
-    
-    logging.info(f"Division mode enabled for league {league_id}: {len(div1_players)} in Div I, {len(div2_players)} in Div II")
-    
-    return {
-        'success': True,
-        'division_1_count': len(div1_players),
-        'division_2_count': len(div2_players)
-    }
+
+    logging.info(f"Division mode enabled for league {league_id} ({division_count} divisions): "
+                 + ", ".join(f"Div {ROMAN[d]}={c}" for d, c in counts.items()))
+
+    result = {'success': True}
+    for d, c in counts.items():
+        result[f'division_{d}_count'] = c
+    return result
 
 
 def _disable_division_mode(league_id, cursor, conn, was_locked):
@@ -275,9 +313,11 @@ def assign_player_division(league_id, player_id, division):
             if not prow[0]:
                 return {'success': False, 'error': 'Divisions are locked. Only newly added players (before their first completed week) can be moved — Reset Season to rearrange established players.'}
 
-        # Validate division
-        if division not in (1, 2):
-            return {'success': False, 'error': 'Division must be 1 or 2'}
+        # Validate division against how many this league actually runs
+        division_count = get_division_count(league_id, cursor=cursor)
+        if division not in range(1, division_count + 1):
+            return {'success': False,
+                    'error': f'Division must be between 1 and {division_count}'}
         
         # Update player
         cursor.execute("""
@@ -314,18 +354,25 @@ def confirm_division_mode(league_id):
         if not row or not row[0]:
             return {'success': False, 'error': 'Division mode is not enabled'}
         
-        # Verify both divisions have players
+        # Verify every division has enough players
+        division_count = get_division_count(league_id, cursor=cursor)
         cursor.execute("""
             SELECT division, COUNT(*) FROM players
             WHERE league_id = %s AND active = TRUE AND division IS NOT NULL
             GROUP BY division
         """, (league_id,))
         div_counts = {r[0]: r[1] for r in cursor.fetchall()}
-        
-        if 1 not in div_counts or div_counts[1] < 2:
-            return {'success': False, 'error': 'Division I needs at least 2 players'}
-        if 2 not in div_counts or div_counts[2] < 2:
-            return {'success': False, 'error': 'Division II needs at least 2 players'}
+
+        for d in range(1, division_count + 1):
+            if div_counts.get(d, 0) < 2:
+                return {'success': False,
+                        'error': f'Division {ROMAN[d]} needs at least 2 players'}
+        # A player parked in a division that no longer exists (e.g. Div III
+        # after a 3->2 switch) would silently vanish from every view.
+        stray = [d for d in div_counts if d > division_count]
+        if stray:
+            return {'success': False,
+                    'error': f'Players are assigned to division {stray} but this league runs {division_count} divisions'}
         
         pacific = pytz.timezone('America/Los_Angeles')
         now = datetime.now(pacific)
@@ -346,8 +393,8 @@ def confirm_division_mode(league_id):
         
         logging.info(f"Division mode confirm: using regular season {current_regular_season}, start_week {division_start_week}")
         
-        # Initialize division seasons for both divisions (continue from current regular season)
-        for div in (1, 2):
+        # Initialize division seasons for every division (continue from current regular season)
+        for div in range(1, division_count + 1):
             cursor.execute("""
                 INSERT INTO division_seasons (league_id, division, current_season, season_start_week)
                 VALUES (%s, %s, %s, %s)
@@ -383,11 +430,16 @@ def confirm_division_mode(league_id):
         carried_over = sum(1 for _ in player_div_map)
         logging.info(f"Division mode confirm: carried over weekly wins for {carried_over} players from week {division_start_week}")
         
-        # Set joined_week for all players
+        # Stamp the CONFIRM week, not the season start: this is the marker for
+        # "divisions started here for you", and the missed-week calculation
+        # floors on it. Everyone gets a clean slate when division mode goes
+        # live — missed weeks are a division-race concept, so weeks from before
+        # the divisions existed must not be carried in. Weekly WINS still carry
+        # (stamped separately, from division_start_week, just above).
         cursor.execute("""
             UPDATE players SET division_joined_week = %s
             WHERE league_id = %s AND active = TRUE AND division IS NOT NULL
-        """, (division_start_week, league_id))
+        """, (current_week, league_id))
         
         # Mark as confirmed
         cursor.execute("""
@@ -396,17 +448,115 @@ def confirm_division_mode(league_id):
         
         conn.commit()
         
-        logging.info(f"Division mode confirmed for league {league_id}: Div I={div_counts.get(1, 0)}, Div II={div_counts.get(2, 0)}")
-        
-        return {
-            'success': True,
-            'division_1_count': div_counts.get(1, 0),
-            'division_2_count': div_counts.get(2, 0)
-        }
+        logging.info(f"Division mode confirmed for league {league_id}: "
+                     + ", ".join(f"Div {ROMAN[d]}={div_counts.get(d, 0)}" for d in range(1, division_count + 1)))
+
+        result = {'success': True}
+        for d in range(1, division_count + 1):
+            result[f'division_{d}_count'] = div_counts.get(d, 0)
+        return result
     
     except Exception as e:
         conn.rollback()
         logging.error(f"Error confirming division mode: {e}")
+        return {'success': False, 'error': str(e)}
+    finally:
+        cursor.close()
+        conn.close()
+
+
+def change_division_count(league_id, new_count):
+    """Switch a division-mode league between 2 and 3 divisions. Both directions.
+
+    Brent's rule (2026-10-20): allowed at ANY time. If weekly wins exist (the
+    league is locked), the in-progress seasons RESET for everyone - the
+    divisions changed meaning, so restarting is the fair handling. Completed
+    season titles are preserved; reset_division_seasons already guarantees
+    that. Players are re-split into the new shape and the manager re-confirms,
+    so the layout is a draft again, exactly like a fresh enable.
+
+    Immunity is cleared for everyone: after a re-split a player could carry
+    immunity earned in a division that no longer exists.
+    """
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    try:
+        if new_count not in (2, 3):
+            return {'success': False, 'error': 'Division count must be 2 or 3'}
+
+        cursor.execute("SELECT division_mode, division_locked, COALESCE(division_count, 2) FROM leagues WHERE id = %s", (league_id,))
+        row = cursor.fetchone()
+        if not row or not row[0]:
+            return {'success': False, 'error': 'Division mode is not enabled'}
+        was_locked = row[1] or False
+        current_count = row[2]
+        if current_count == new_count:
+            return {'success': False, 'error': f'League already runs {new_count} divisions'}
+
+        cursor.execute("SELECT COUNT(*) FROM players WHERE league_id = %s AND active = TRUE", (league_id,))
+        n_players = cursor.fetchone()[0]
+        min_players = 12 if new_count == 3 else 6
+        if n_players < min_players:
+            return {'success': False,
+                    'error': f'Need at least {min_players} active players for {new_count}-division mode (you have {n_players})'}
+
+        # Wins exist -> reset the in-progress seasons first (snapshots state,
+        # wipes only in-progress weekly wins, preserves completed titles,
+        # advances season numbers, unlocks for rearrangement).
+        if was_locked:
+            cursor.close()
+            conn.close()
+            reset = reset_division_seasons(league_id)
+            if not reset.get('success'):
+                return reset
+            conn = get_db_connection()
+            cursor = conn.cursor()
+
+        # Re-split into the new shape (same arbitrary split as enabling - the
+        # manager rearranges before confirming) and clear immunity everywhere.
+        cursor.execute("""
+            SELECT id FROM players
+            WHERE league_id = %s AND active = TRUE
+            ORDER BY name
+        """, (league_id,))
+        player_ids = [r[0] for r in cursor.fetchall()]
+        base, rem = divmod(len(player_ids), new_count)
+        sizes = [base + (1 if d > new_count - rem else 0) for d in range(1, new_count + 1)]
+        idx = 0
+        counts = {}
+        for div, size in enumerate(sizes, start=1):
+            for pid in player_ids[idx:idx + size]:
+                cursor.execute(
+                    "UPDATE players SET division = %s, division_immunity = FALSE WHERE id = %s",
+                    (div, pid))
+            counts[div] = size
+            idx += size
+
+        # New shape is a DRAFT: count recorded, confirmation cleared so the
+        # manager reviews the split before it goes live. Not locked.
+        cursor.execute("""
+            UPDATE leagues
+            SET division_count = %s, division_confirmed_at = NULL, division_locked = FALSE
+            WHERE id = %s
+        """, (new_count, league_id))
+
+        conn.commit()
+
+        logging.info(f"League {league_id} switched {current_count} -> {new_count} divisions "
+                     f"(locked={was_locked}, seasons {'reset' if was_locked else 'untouched'}): "
+                     + ", ".join(f"Div {ROMAN[d]}={c}" for d, c in counts.items()))
+
+        result = {'success': True, 'seasons_reset': was_locked}
+        for d, c in counts.items():
+            result[f'division_{d}_count'] = c
+        return result
+
+    except Exception as e:
+        conn.rollback()
+        logging.error(f"Error changing division count for league {league_id}: {e}")
+        import traceback
+        traceback.print_exc()
         return {'success': False, 'error': str(e)}
     finally:
         cursor.close()
@@ -817,8 +967,12 @@ def check_division_season_transition(league_id, division):
             SET start_week = EXCLUDED.start_week, end_week = NULL
         """, (league_id, division, new_season, next_start))
         
-        # Handle promotion (Division II → Division I)
-        if division == 2:
+        # Handle promotion out of this division into the one above.
+        # Any division below Division I promotes upward when its season ends —
+        # with three divisions that is III -> II as well as II -> I. Movement is
+        # adjacent only; nobody skips a division.
+        if division > 1:
+            promote_to = division - 1
             # Get configurable promoted_count
             cursor.execute("SELECT COALESCE(promoted_count, 1) FROM leagues WHERE id = %s", (league_id,))
             promoted_count = cursor.fetchone()[0]
@@ -833,9 +987,9 @@ def check_division_season_transition(league_id, division):
                 winner_name_set = set(promoted_names)
                 cursor.execute("""
                     SELECT p.id, p.name FROM players p
-                    WHERE p.league_id = %s AND p.division = 2 AND p.active = TRUE
+                    WHERE p.league_id = %s AND p.division = %s AND p.active = TRUE
                         AND p.division_immunity = FALSE
-                """, (league_id,))
+                """, (league_id, division))
                 div2_players = cursor.fetchall()
 
                 candidates = []
@@ -873,10 +1027,10 @@ def check_division_season_transition(league_id, division):
                     # Get win count for tiebreaker
                     cursor.execute("""
                         SELECT COUNT(*) FROM weekly_winners
-                        WHERE league_id = %s AND division = 2
+                        WHERE league_id = %s AND division = %s
                           AND player_name = %s AND week_wordle_number >= %s
                           AND week_wordle_number <= %s
-                    """, (league_id, pname, season_start, last_week))
+                    """, (league_id, division, pname, season_start, last_week))
                     win_count = cursor.fetchone()[0]
 
                     candidates.append((pname, season_total, win_count, missed))
@@ -939,15 +1093,17 @@ def check_division_season_transition(league_id, division):
                         break
 
             for name in promoted_names:
-                _promote_player(cursor, league_id, name, next_start)
+                _promote_player(cursor, league_id, name, next_start, to_division=promote_to)
                 is_random = name in randomized_names
                 info = randomized_names.get(name, {})
-                _log_movement(cursor, league_id, name, 'promotion', current_season, 2,
+                # _log_movement records the division the move happened FROM,
+                # matching the existing rows (promotions were logged as 2).
+                _log_movement(cursor, league_id, name, 'promotion', current_season, division,
                               randomized=is_random,
                               tied_with=', '.join(info['tied_with']) if is_random else None,
                               tied_score=info.get('tied_score'))
 
-            logging.info(f"Promoted {len(promoted_names)} player(s) from Div II to Div I in league {league_id}: {promoted_names}")
+            logging.info(f"Promoted {len(promoted_names)} player(s) from Div {ROMAN[division]} to Div {ROMAN[promote_to]} in league {league_id}: {promoted_names}")
         
         conn.commit()
 
@@ -992,9 +1148,16 @@ def promotion_sort_key(missed_weeks, season_total, weekly_wins):
 
 
 def check_division1_relegation(league_id):
+    """Back-compat wrapper - relegation out of Division I, as it always was."""
+    return check_division_relegation(league_id, 1)
+
+
+def check_division_relegation(league_id, division):
     """
-    When Division I season ends, relegate the player with worst performance.
-    Called after check_division_season_transition for division 1.
+    When a division's season ends, relegate its worst performer(s) to the
+    division below. Runs for every division that HAS one below it - with
+    three divisions that is I -> II and II -> III. Movement is adjacent only.
+    Called after check_division_season_transition for that division.
     
     Relegation priority:
     1. Season winner is EXEMPT from relegation regardless of missed weeks.
@@ -1014,8 +1177,8 @@ def check_division1_relegation(league_id):
         cursor.execute("""
             SELECT current_season, season_start_week
             FROM division_seasons
-            WHERE league_id = %s AND division = 1
-        """, (league_id,))
+            WHERE league_id = %s AND division = %s
+        """, (league_id, division))
         row = cursor.fetchone()
         if not row:
             return False
@@ -1029,8 +1192,8 @@ def check_division1_relegation(league_id):
         # Get the season boundaries for the ended season
         cursor.execute("""
             SELECT start_week, end_week FROM division_season_boundaries
-            WHERE league_id = %s AND division = 1 AND season_number = %s
-        """, (league_id, ended_season))
+            WHERE league_id = %s AND division = %s AND season_number = %s
+        """, (league_id, division, ended_season))
         bounds = cursor.fetchone()
         if not bounds or not bounds[1]:
             return False  # Season hasn't ended
@@ -1043,16 +1206,16 @@ def check_division1_relegation(league_id):
             SELECT p.name
             FROM season_winners sw
             JOIN players p ON sw.player_id = p.id
-            WHERE sw.league_id = %s AND sw.division = 1 AND sw.season_number = %s
-        """, (league_id, ended_season))
+            WHERE sw.league_id = %s AND sw.division = %s AND sw.season_number = %s
+        """, (league_id, division, ended_season))
         season_winner_names = {r[0] for r in cursor.fetchall()}
         
         # Get Division I players (non-immune)
         cursor.execute("""
             SELECT p.id, p.name, p.division_immunity
             FROM players p
-            WHERE p.league_id = %s AND p.division = 1 AND p.active = TRUE
-        """, (league_id,))
+            WHERE p.league_id = %s AND p.division = %s AND p.active = TRUE
+        """, (league_id, division))
         div1_players = cursor.fetchall()
         
         # Calculate stats for each eligible-for-relegation player
@@ -1103,17 +1266,17 @@ def check_division1_relegation(league_id):
             cursor.execute("""
                 SELECT COUNT(*)
                 FROM weekly_winners
-                WHERE league_id = %s AND division = 1 
+                WHERE league_id = %s AND division = %s
                   AND player_name = %s AND week_wordle_number >= %s
                   AND week_wordle_number <= %s
-            """, (league_id, player_name, season_start, season_end))
+            """, (league_id, division, player_name, season_start, season_end))
             win_count = cursor.fetchone()[0]
             
             player_stats.append((player_id, player_name, total, win_count, missed))
             logging.info(f"  Relegation candidate: {player_name} - missed_weeks={missed}, season_total={total}, wins={win_count}")
         
         if not player_stats:
-            logging.info(f"No eligible players for relegation in league {league_id} (all immune or season winners)")
+            logging.info(f"No eligible players for relegation from Div {ROMAN[division]} in league {league_id} (all immune or season winners)")
             return False
         
         # Get configurable relegated_count
@@ -1162,19 +1325,22 @@ def check_division1_relegation(league_id):
                 logging.info(f"Relegation random draw in league {league_id}: {[d[1] for d in drawn]} selected from tied {all_tied_names} (missed={current[4]}, total={current[2]}, wins={current[3]})")
                 break
 
+        relegate_to = division + 1
         current_week = calculate_wordle_number(get_week_start_date())
         for name in relegated_names:
-            _relegate_player(cursor, league_id, name, current_week)
+            _relegate_player(cursor, league_id, name, current_week, to_division=relegate_to)
             is_random = name in randomized_names
             info = randomized_names.get(name, {})
-            _log_movement(cursor, league_id, name, 'relegation', ended_season, 1,
+            # _log_movement records the division the move happened FROM,
+            # matching the existing rows (relegations were logged as 1).
+            _log_movement(cursor, league_id, name, 'relegation', ended_season, division,
                           randomized=is_random,
                           tied_with=', '.join(info['tied_with']) if is_random else None,
                           tied_score=info.get('tied_score'))
 
         conn.commit()
-        
-        logging.info(f"Relegated {len(relegated_names)} player(s) from Div I to Div II in league {league_id}: {relegated_names}")
+
+        logging.info(f"Relegated {len(relegated_names)} player(s) from Div {ROMAN[division]} to Div {ROMAN[relegate_to]} in league {league_id}: {relegated_names}")
         return True
     
     except Exception as e:
@@ -1201,26 +1367,28 @@ def _log_movement(cursor, league_id, player_name, movement_type, season_number,
         logging.warning(f"Failed to log division movement: {e}")
 
 
-def _promote_player(cursor, league_id, player_name, joined_week):
-    """Move a player from Division II to Division I with immunity"""
+def _promote_player(cursor, league_id, player_name, joined_week, to_division=1):
+    """Move a player up a division with immunity. Adjacent moves only - the
+    caller passes the division directly above the one that just ended."""
     cursor.execute("""
-        UPDATE players 
-        SET division = 1, division_immunity = TRUE, division_joined_week = %s
+        UPDATE players
+        SET division = %s, division_immunity = TRUE, division_joined_week = %s
         WHERE name = %s AND league_id = %s AND active = TRUE
-    """, (joined_week, player_name, league_id))
-    
-    logging.info(f"Promoted {player_name} to Division I (immune) in league {league_id}")
+    """, (to_division, joined_week, player_name, league_id))
+
+    logging.info(f"Promoted {player_name} to Division {ROMAN.get(to_division, to_division)} (immune) in league {league_id}")
 
 
-def _relegate_player(cursor, league_id, player_name, joined_week):
-    """Move a player from Division I to Division II with immunity (orange highlight)"""
+def _relegate_player(cursor, league_id, player_name, joined_week, to_division=2):
+    """Move a player down a division with immunity (orange highlight).
+    Adjacent moves only - the caller passes the division directly below."""
     cursor.execute("""
-        UPDATE players 
-        SET division = 2, division_immunity = TRUE, division_joined_week = %s
+        UPDATE players
+        SET division = %s, division_immunity = TRUE, division_joined_week = %s
         WHERE name = %s AND league_id = %s AND active = TRUE
-    """, (joined_week, player_name, league_id))
-    
-    logging.info(f"Relegated {player_name} to Division II (immune) in league {league_id}")
+    """, (to_division, joined_week, player_name, league_id))
+
+    logging.info(f"Relegated {player_name} to Division {ROMAN.get(to_division, to_division)} (immune) in league {league_id}")
 
 
 def clear_immunity(league_id, division, season_start_week=None):

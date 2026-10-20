@@ -2162,6 +2162,12 @@ def generate_player_revert_html(league, alltime_player_reverts):
     return html
 
 
+# Division zone colours and numerals, matching the public league page and the
+# scoreboard image: cyan / orange / violet.
+DIVISION_NUMERALS = {1: 'I', 2: 'II', 3: 'III'}
+DIVISION_ZONE_COLORS = {1: COLORS['accent'], 2: COLORS['accent_orange'], 3: '#A78BFA'}
+
+
 def _render_players_section(league, players, player_rows, channel_type, identifier_label, identifier_placeholder, identifier_empty, is_chat_platform):
     """Render the Players section with optional Division Mode UI"""
     division_mode = league.get('division_mode', False)
@@ -2197,7 +2203,9 @@ def _render_players_section(league, players, player_rows, channel_type, identifi
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; margin-bottom: 16px;">
             <h2 style="margin: 0;">👥 Players ({len(players)})</h2>
             <div style="display: flex; align-items: center; gap: 12px;">
-                <form method="POST" action="/dashboard/league/{league_id}/division-toggle" id="divisionToggleForm" data-scroll-to="#division-1" style="display: inline;">
+<form method="POST" action="/dashboard/league/{league_id}/division-toggle" id="divisionToggleForm" data-scroll-to="#division-1" style="display: inline;"
+                      data-player-count="{len(players)}" data-channel="{channel_type}">
+                    <input type="hidden" name="division_count" id="divisionCountInput" value="2">
                     <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none;">
                         <span style="font-size: 0.85em; color: {COLORS['text_muted']};">Division Mode</span>
                         <div class="{toggle_class}" onclick="{toggle_onclick}">
@@ -2224,8 +2232,9 @@ def _render_division_players(league, players, is_chat_platform):
     if is_chat_platform:
         identifier_empty = ''
     
-    div1_players = [p for p in players if p.get('division') == 1]
-    div2_players = [p for p in players if p.get('division') == 2]
+    division_count = league.get('division_count') or 2
+    div_players = {d: [p for p in players if p.get('division') == d]
+                   for d in range(1, division_count + 1)}
     unassigned = [p for p in players if p.get('division') is None]
     
     def player_chip(player):
@@ -2238,10 +2247,12 @@ def _render_division_players(league, players, is_chat_platform):
             bg = f"{COLORS['accent']}30"
             border = COLORS['accent']
             badge = f'<span style="font-size: 0.7em; color: {COLORS["accent"]}; margin-left: 6px;">IMMUNE</span>'
-        elif immunity and player.get('division') == 2:
-            bg = f"{COLORS['accent_orange']}30"
-            border = COLORS['accent_orange']
-            badge = f'<span style="font-size: 0.7em; color: {COLORS["accent_orange"]}; margin-left: 6px;">RELEGATED</span>'
+        elif immunity and player.get('division'):
+            # Any division below the top: arriving there means you came down.
+            _c = DIVISION_ZONE_COLORS.get(player.get('division'), COLORS['accent_orange'])
+            bg = f"{_c}30"
+            border = _c
+            badge = f'<span style="font-size: 0.7em; color: {_c}; margin-left: 6px;">RELEGATED</span>'
         else:
             bg = COLORS['bg_dark']
             border = "transparent"
@@ -2295,13 +2306,10 @@ def _render_division_players(league, players, is_chat_platform):
             </div>
         </div>'''
     
-    div1_html = "".join(player_chip(p) for p in div1_players)
-    div2_html = "".join(player_chip(p) for p in div2_players)
-    
-    if not div1_players:
-        div1_html = f'<p style="color: {COLORS["text_muted"]}; text-align: center; padding: 20px;">Drag players here</p>'
-    if not div2_players:
-        div2_html = f'<p style="color: {COLORS["text_muted"]}; text-align: center; padding: 20px;">Drag players here</p>'
+    div_html = {}
+    for _d, _plist in div_players.items():
+        div_html[_d] = ("".join(player_chip(p) for p in _plist) if _plist
+                        else f'<p style="color: {COLORS["text_muted"]}; text-align: center; padding: 20px;">Drag players here</p>')
     
     # Locked message
     locked_msg = ""
@@ -2328,7 +2336,7 @@ def _render_division_players(league, players, is_chat_platform):
     # even after the league locks, so surface Edit Divisions when any exist.
     # Keyed on division_new_movable, NOT immunity, so season-winners / relegated
     # players don't trigger it.
-    has_new_movable = any(p.get('division_new_movable') and p.get('division') in (1, 2) for p in players)
+    has_new_movable = any(p.get('division_new_movable') and p.get('division') for p in players)
     edit_divisions_btn = ""
     if division_confirmed and (not division_locked or has_new_movable):
         edit_divisions_btn = f'''<button type="button" id="editDivisionsBtn"
@@ -2345,6 +2353,54 @@ def _render_division_players(league, players, is_chat_platform):
             style="background: {COLORS['accent_orange']}; {btn_style}"
             onclick="showDivisionResetModal()">Reset Season</button>'''
     
+    # One zone per division, in order, each in its own colour. The Season
+    # Movement panel sits AFTER them rather than wedged between I and II —
+    # with three divisions there is no single "between" to put it in.
+    zones_html = ""
+    for _d in range(1, division_count + 1):
+        _zc = DIVISION_ZONE_COLORS.get(_d, COLORS['accent_orange'])
+        zones_html += f'''
+        <div class="division-zone" id="division-{_d}" data-division="{_d}"
+            ondragover="dragOver(event)" ondrop="dropPlayer(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)"
+            style="border: 2px dashed {_zc}50; border-radius: 10px; padding: 12px; min-height: 80px; transition: border-color 0.2s, background 0.2s;">
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <span style="font-weight: 700; color: {_zc}; font-size: 0.95em;">DIVISION {DIVISION_NUMERALS.get(_d, _d)}</span>
+                <span style="color: {COLORS['text_muted']}; font-size: 0.8em;">({len(div_players[_d])} players)</span>
+            </div>
+            <div class="division-player-list" id="div{_d}-players">
+                {div_html[_d]}
+            </div>
+        </div>'''
+
+    _applies = ' Applies at each boundary.' if division_count > 2 else ''
+    movement_panel = f'''
+        <div style="background: {COLORS['bg_dark']}; border: 1px solid {COLORS['border']}; border-radius: 10px; padding: 16px 20px;">
+            <div style="margin-bottom: 10px;">
+                <span style="color: {COLORS['text']}; font-weight: 600; font-size: 0.9em;">Season Movement</span>
+                <p style="color: {COLORS['text_muted']}; font-size: 0.8em; margin: 4px 0 0;">How many players move between divisions when a season ends. Default is 1. Can be adjusted at any time.{_applies}</p>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="color: {COLORS['accent']}; font-size: 0.85em; font-weight: 600; min-width: 150px;">&#x2B06; Promoted Players</span>
+                    <select id="promotedCount" onchange="confirmPromoRelegChange()"
+                        style="background: {COLORS['bg_card']}; color: {COLORS['text']}; border: 1px solid {COLORS['accent']}50; border-radius: 6px; padding: 5px 10px; font-size: 0.85em; cursor: pointer;">
+                        <option value="1" {'selected' if promo_count == 1 else ''}>1</option>
+                        <option value="2" {'selected' if promo_count == 2 else ''}>2</option>
+                        <option value="3" {'selected' if promo_count == 3 else ''}>3</option>
+                    </select>
+                </div>
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="color: {COLORS['accent_orange']}; font-size: 0.85em; font-weight: 600; min-width: 150px;">&#x2B07; Relegated Players</span>
+                    <select id="relegatedCount" onchange="confirmPromoRelegChange()"
+                        style="background: {COLORS['bg_card']}; color: {COLORS['text']}; border: 1px solid {COLORS['accent_orange']}50; border-radius: 6px; padding: 5px 10px; font-size: 0.85em; cursor: pointer;">
+                        <option value="1" {'selected' if releg_count == 1 else ''}>1</option>
+                        <option value="2" {'selected' if releg_count == 2 else ''}>2</option>
+                        <option value="3" {'selected' if releg_count == 3 else ''}>3</option>
+                    </select>
+                </div>
+            </div>
+        </div>'''
+
     return f'''
     {locked_msg}
     <div style="display: flex; justify-content: flex-end; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
@@ -2354,59 +2410,8 @@ def _render_division_players(league, players, is_chat_platform):
         {reset_btn}
     </div>
     <div style="display: flex; flex-direction: column; gap: 16px;">
-        <!-- Division I -->
-        <div class="division-zone" id="division-1" data-division="1"
-            ondragover="dragOver(event)" ondrop="dropPlayer(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)"
-            style="border: 2px dashed {COLORS['accent']}50; border-radius: 10px; padding: 12px; min-height: 80px; transition: border-color 0.2s, background 0.2s;">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-                <span style="font-weight: 700; color: {COLORS['accent']}; font-size: 0.95em;">DIVISION I</span>
-                <span style="color: {COLORS['text_muted']}; font-size: 0.8em;">({len(div1_players)} players)</span>
-            </div>
-            <div class="division-player-list" id="div1-players">
-                {div1_html}
-            </div>
-        </div>
-        
-        <!-- Promotion / Relegation Settings -->
-        <div style="background: {COLORS['bg_dark']}; border: 1px solid {COLORS['border']}; border-radius: 10px; padding: 16px 20px;">
-            <div style="margin-bottom: 10px;">
-                <span style="color: {COLORS['text']}; font-weight: 600; font-size: 0.9em;">Season Movement</span>
-                <p style="color: {COLORS['text_muted']}; font-size: 0.8em; margin: 4px 0 0;">How many players move between divisions when a season ends. Default is 1. Can be adjusted at any time.</p>
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 10px;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="color: {COLORS['accent']}; font-size: 0.85em; font-weight: 600; min-width: 150px;">&#x2B06; Promoted Players</span>
-                    <select id="promotedCount" onchange="confirmPromoRelegChange()" 
-                        style="background: {COLORS['bg_card']}; color: {COLORS['text']}; border: 1px solid {COLORS['accent']}50; border-radius: 6px; padding: 5px 10px; font-size: 0.85em; cursor: pointer;">
-                        <option value="1" {'selected' if promo_count == 1 else ''}>1</option>
-                        <option value="2" {'selected' if promo_count == 2 else ''}>2</option>
-                        <option value="3" {'selected' if promo_count == 3 else ''}>3</option>
-                    </select>
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="color: {COLORS['accent_orange']}; font-size: 0.85em; font-weight: 600; min-width: 150px;">&#x2B07; Relegated Players</span>
-                    <select id="relegatedCount" onchange="confirmPromoRelegChange()" 
-                        style="background: {COLORS['bg_card']}; color: {COLORS['text']}; border: 1px solid {COLORS['accent_orange']}50; border-radius: 6px; padding: 5px 10px; font-size: 0.85em; cursor: pointer;">
-                        <option value="1" {'selected' if releg_count == 1 else ''}>1</option>
-                        <option value="2" {'selected' if releg_count == 2 else ''}>2</option>
-                        <option value="3" {'selected' if releg_count == 3 else ''}>3</option>
-                    </select>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Division II -->
-        <div class="division-zone" id="division-2" data-division="2"
-            ondragover="dragOver(event)" ondrop="dropPlayer(event)" ondragenter="dragEnter(event)" ondragleave="dragLeave(event)"
-            style="border: 2px dashed {COLORS['accent_orange']}50; border-radius: 10px; padding: 12px; min-height: 80px; transition: border-color 0.2s, background 0.2s;">
-            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
-                <span style="font-weight: 700; color: {COLORS['accent_orange']}; font-size: 0.95em;">DIVISION II</span>
-                <span style="color: {COLORS['text_muted']}; font-size: 0.8em;">({len(div2_players)} players)</span>
-            </div>
-            <div class="division-player-list" id="div2-players">
-                {div2_html}
-            </div>
-        </div>
+        {zones_html}
+        {movement_panel}
     </div>
     '''
 
@@ -5426,14 +5431,45 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
             function showEnableDivisionModal(event) {{
                 if (event) event.preventDefault();
                 const modal = document.getElementById('resetModal');
+                const form = document.getElementById('divisionToggleForm');
+                const playerCount = parseInt(form.dataset.playerCount || '0', 10);
+                const channel = form.dataset.channel || 'sms';
+                // Three divisions needs 12 players (4 apiece). SMS caps at 9 by
+                // the Twilio group-MMS limit, so the option is hidden there
+                // rather than shown as permanently unavailable.
+                const threeAllowed = (channel !== 'sms');
+                const threeEnabled = threeAllowed && playerCount >= 12;
+                document.getElementById('divisionCountInput').value = '2';
+
                 document.getElementById('resetModalTitle').textContent = 'Enable Division Mode?';
-                document.getElementById('resetModalText').textContent = 
-                    'This will enable Division Mode and split players into two divisions. You can rearrange players before confirming. ' +
-                    'The league page will not change until you click Confirm Division Mode.';
+                let html = '<p style="margin:0 0 14px;">Split the league into divisions, each with its own weekly race and season. ' +
+                           'You can rearrange players before confirming &mdash; the league page will not change until you click <strong>Confirm Division Mode</strong>.</p>';
+                html += '<label style="display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border:1px solid {COLORS['border']}; border-radius:8px; cursor:pointer; margin-bottom:8px;">' +
+                        '<input type="radio" name="divCountChoice" value="2" checked style="margin-top:3px;">' +
+                        '<span><strong style="color:{COLORS['text']};">2 Divisions</strong>' +
+                        '<span style="display:block; color:{COLORS['text_muted']}; font-size:0.85em;">Top and bottom. Needs 6 players.</span></span></label>';
+                if (threeAllowed) {{
+                    const dis = threeEnabled ? '' : ' opacity:0.55;';
+                    const sub = threeEnabled
+                        ? 'Three tiers, with promotion and relegation at both boundaries.'
+                        : 'Needs 12 players &mdash; you have ' + playerCount + '.';
+                    html += '<label style="display:flex; align-items:flex-start; gap:10px; padding:10px 12px; border:1px solid {COLORS['border']}; border-radius:8px; cursor:' +
+                            (threeEnabled ? 'pointer' : 'not-allowed') + ';' + dis + '">' +
+                            '<input type="radio" name="divCountChoice" value="3"' + (threeEnabled ? '' : ' disabled') + ' style="margin-top:3px;">' +
+                            '<span><strong style="color:{COLORS['text']};">3 Divisions</strong>' +
+                            '<span style="display:block; color:{COLORS['text_muted']}; font-size:0.85em;">' + sub + '</span></span></label>';
+                }}
+                document.getElementById('resetModalText').innerHTML = html;
+                document.querySelectorAll('input[name="divCountChoice"]').forEach(function (r) {{
+                    r.addEventListener('change', function () {{
+                        document.getElementById('divisionCountInput').value = this.value;
+                    }});
+                }});
+
                 const confirmBtn = document.getElementById('resetModalConfirmBtn');
                 confirmBtn.textContent = 'Enable';
                 confirmBtn.style.background = '{COLORS['accent']}';
-                pendingResetForm = document.getElementById('divisionToggleForm');
+                pendingResetForm = form;
                 pendingResetAction = null;
                 modal.classList.add('active');
             }}
@@ -5442,7 +5478,7 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                 const modal = document.getElementById('resetModal');
                 document.getElementById('resetModalTitle').textContent = 'Publish Divisions?';
                 document.getElementById('resetModalText').textContent =
-                    'This will publish the division setup to your league page. Players will see the two divisions with their current assignments. ' +
+'This will publish the division setup to your league page. Players will see their divisions with the current assignments. ' +
                     'After a week completes, divisions lock: established players are set for the season, though a newly added player can still be moved between divisions until their own first week completes, then they lock in too. Divisions cannot be turned off without resetting the season.';
                 const confirmBtn = document.getElementById('resetModalConfirmBtn');
                 confirmBtn.textContent = 'Publish';

@@ -315,10 +315,11 @@ def update_weekly_winners_from_db(league_id, week_start_wordle=None, week_end_wo
                 logging.info(f"Week {week_wordle}: No eligible players (need {league_min_scores} games)")
                 continue
             
-            # Check if league is in division mode
-            cursor.execute("SELECT division_mode FROM leagues WHERE id = %s", (league_id,))
+            # Check if league is in division mode (and how many divisions it runs)
+            cursor.execute("SELECT division_mode, COALESCE(division_count, 2) FROM leagues WHERE id = %s", (league_id,))
             div_row = cursor.fetchone()
             is_division_mode = div_row and div_row[0]
+            division_count = div_row[1] if div_row else 2
             
             if is_division_mode:
                 # Division mode: calculate winners per division
@@ -329,7 +330,7 @@ def update_weekly_winners_from_db(league_id, week_start_wordle=None, week_end_wo
                 """, (league_id,))
                 player_divisions = {row[0]: row[1] for row in cursor.fetchall()}
                 
-                for div_num in (1, 2):
+                for div_num in range(1, division_count + 1):
                     div_eligible = {
                         name: data for name, data in eligible_players.items()
                         if player_divisions.get(data['player_id']) == div_num
@@ -653,11 +654,14 @@ def run_full_update_for_league(league_id):
         div_conn.close()
         
         if is_division_mode:
-            from division_manager import check_division_season_transition, check_division1_relegation, clear_immunity
+            from division_manager import (check_division_season_transition,
+                                          check_division_relegation, clear_immunity,
+                                          get_division_count)
+            division_count = get_division_count(league_id)
             # Check each division separately
             # transitioned_divisions stores {div_num: new_season_start_week}
             transitioned_divisions = {}
-            for div_num in (1, 2):
+            for div_num in range(1, division_count + 1):
                 new_season_start = check_division_season_transition(league_id, div_num)
                 if new_season_start:
                     transitioned_divisions[div_num] = new_season_start
@@ -670,13 +674,15 @@ def run_full_update_for_league(league_id):
                     # before they joined count as missed weeks and missed weeks are
                     # ranked first. (Div II promotion was never affected: it runs inside
                     # check_division_season_transition, i.e. before this point.)
-                    if div_num == 1:
-                        # Division I season ended - relegate worst Season Total player
+                    if div_num < division_count:
+                        # This division has one below it - relegate its worst
+                        # performer(s) down. With three divisions that is I -> II
+                        # and II -> III; the bottom division only promotes.
                         try:
-                            relegation_result = check_division1_relegation(league_id)
-                            logging.info(f"check_division1_relegation for league {league_id} returned: {relegation_result}")
+                            relegation_result = check_division_relegation(league_id, div_num)
+                            logging.info(f"check_division_relegation(div {div_num}) for league {league_id} returned: {relegation_result}")
                             if not relegation_result:
-                                logging.warning(f"Relegation returned False for league {league_id} — no player was relegated. Check relegation-debug endpoint.")
+                                logging.warning(f"Relegation (div {div_num}) returned False for league {league_id} — no player was relegated. Check relegation-debug endpoint.")
                         except Exception as rel_err:
                             import traceback
                             logging.error(f"RELEGATION EXCEPTION for league {league_id}: {rel_err}")
@@ -689,11 +695,14 @@ def run_full_update_for_league(league_id):
                     # so this div_num-scoped clear does not touch their fresh immunity.
                     clear_immunity(league_id, div_num, season_start_week=new_season_start)
 
-            # If both divisions finished simultaneously, the promoted player
-            # doesn't need immunity — everyone starts the new season together
-            if 1 in transitioned_divisions and 2 in transitioned_divisions:
-                clear_immunity(league_id, 1)  # unconditional — no season_start_week
-                logging.info(f"Both divisions transitioned simultaneously for league {league_id} — cleared immunity on promoted player")
+            # If a division and the one below it finished simultaneously, the
+            # player promoted into it doesn't need immunity — everyone starts
+            # the new season together. Checked per adjacent pair so it holds
+            # for I/II and II/III alike.
+            for upper in range(1, division_count):
+                if upper in transitioned_divisions and (upper + 1) in transitioned_divisions:
+                    clear_immunity(league_id, upper)  # unconditional — no season_start_week
+                    logging.info(f"Divisions {upper} and {upper + 1} transitioned simultaneously for league {league_id} — cleared immunity on promoted player")
 
         else:
             check_and_handle_season_transition(league_id)

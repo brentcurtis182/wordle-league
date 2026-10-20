@@ -122,7 +122,9 @@ def get_max_current_season_wins(league_id, division_mode=None, conn=None):
 
         max_wins = 0
         if division_mode:
-            for div in (1, 2):
+            cursor.execute("SELECT COALESCE(division_count, 2) FROM leagues WHERE id = %s", (league_id,))
+            _dc_row = cursor.fetchone()
+            for div in range(1, (_dc_row[0] if _dc_row else 2) + 1):
                 cursor.execute(
                     "SELECT season_start_week FROM division_seasons WHERE league_id = %s AND division = %s",
                     (league_id, div),
@@ -646,12 +648,13 @@ def get_complete_league_data(league_id):
         div_cursor = conn.cursor()
         
         # Check if league is in division mode
-        div_cursor.execute("SELECT division_mode, division_confirmed_at, COALESCE(promoted_count, 1), COALESCE(relegated_count, 1) FROM leagues WHERE id = %s", (league_id,))
+        div_cursor.execute("SELECT division_mode, division_confirmed_at, COALESCE(promoted_count, 1), COALESCE(relegated_count, 1), COALESCE(division_count, 2) FROM leagues WHERE id = %s", (league_id,))
         div_result = div_cursor.fetchone()
         is_division_mode = div_result and div_result[0]
         division_confirmed_at = div_result[1] if div_result else None
         promoted_count = div_result[2] if div_result else 1
         relegated_count = div_result[3] if div_result else 1
+        division_count = div_result[4] if div_result else 2
         
         # Check if there are any division season winners in the database (even if division mode is OFF)
         # This ensures division season history is retained when toggling division mode off
@@ -772,6 +775,7 @@ def get_complete_league_data(league_id):
         'missed_weeks': missed_weeks,
         'promoted_count': promoted_count,
         'relegated_count': relegated_count,
+        'division_count': division_count,
         'min_weekly_scores': min_scores,
         'header_emoji': header_emoji,
         'ai_settings': ai_settings,
@@ -950,10 +954,14 @@ def get_division_season_data(league_id, weekly_stats=None, conn=None, min_scores
         min_scores = get_league_min_scores(league_id, conn=conn)
 
     DIVISION_WINS = 3  # Wins needed for division season
-    
+
+    cursor.execute("SELECT COALESCE(division_count, 2) FROM leagues WHERE id = %s", (league_id,))
+    _dc = cursor.fetchone()
+    division_count = _dc[0] if _dc else 2
+
     division_data = {}
-    
-    for div_num in (1, 2):
+
+    for div_num in range(1, division_count + 1):
         # Get current division season
         cursor.execute("""
             SELECT current_season, season_start_week
@@ -1155,8 +1163,19 @@ def get_division_season_data(league_id, weekly_stats=None, conn=None, min_scores
                 # Use default (5) for weeks before min_weekly_scores was changed
                 past_total = 0
                 player_missed = 0
-                # The week a player joined is never a missed week
+                # The week a player joined is never a missed week.
                 join_week = get_player_join_week(p['id'], season_start, conn=conn)
+                # Nor is anything before they joined THIS DIVISION. Two reasons:
+                #   1. Turning division mode on gives everyone a clean slate —
+                #      missed weeks are a division-race concept, so weeks from
+                #      before the divisions existed must not carry in
+                #      (confirm_division_mode stamps the confirm week here).
+                #   2. A player promoted or relegated mid-season was not in this
+                #      division for the earlier weeks, so charging them missed
+                #      weeks for it was wrong.
+                div_joined = p.get('joined_week')
+                if div_joined is not None:
+                    join_week = div_joined if join_week is None else max(join_week, div_joined)
                 for ws_start, scores in week_scores.items():
                     if current_week_start and ws_start >= current_week_start:
                         continue  # Skip current week, handled via weekly_stats

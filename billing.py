@@ -262,6 +262,13 @@ def create_billing_tables():
             cursor.execute("ALTER TABLE leagues ADD COLUMN IF NOT EXISTS max_players INTEGER DEFAULT NULL")
         except Exception:
             pass
+        # How many divisions a division-mode league runs. NULL means 2 — the
+        # only value that existed before 3-division mode (2026-10), so every
+        # existing league keeps its behaviour without a backfill.
+        try:
+            cursor.execute("ALTER TABLE leagues ADD COLUMN IF NOT EXISTS division_count INTEGER DEFAULT NULL")
+        except Exception:
+            pass
         try:
             cursor.execute("ALTER TABLE leagues ADD COLUMN IF NOT EXISTS lapsed_notified BOOLEAN DEFAULT FALSE")
         except Exception:

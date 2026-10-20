@@ -519,68 +519,79 @@ def _calc_season_stats(cursor, league_id, division, season_start, min_scores, di
 
     return stats
 
-def check_relegation_promotion_ties(league_id, div1_season_info, div2_season_info, min_scores,
-                                     div1_weekly_wins=None, div2_weekly_wins=None,
-                                     div1_standings=None, div2_standings=None,
+def check_relegation_promotion_ties(league_id, season_infos, min_scores,
+                                     weekly_wins_by_div=None, standings_by_div=None,
                                      wins_for_season=DIVISION_WINS_FOR_SEASON,
-                                     div1_has_stakes=False, div2_has_stakes=False):
-    """Check relegation (Div I) / promotion (Div II) outlook when a season could end this week.
+                                     has_stakes_by_div=None, division_count=2):
+    """Relegation / promotion outlook per division when a season could end this week.
 
-    Fires whenever the division has SEASON STAKES or SEASON CLINCH — i.e. someone is
-    one win away AND is either leading or can still get there today. Waiting for the
-    win to be banked (the old trigger) meant the relegation picture only appeared once
-    it was already settled.
+    Fires whenever a division has SEASON STAKES or SEASON CLINCH - i.e. someone is
+    one win away AND is either leading or can still get there today.
 
-    Ranking matches division_manager.relegation_sort_key exactly: missed weeks, then
-    season total, then fewest wins. Do not rank on total alone here — that is what
-    made this announce the wrong player.
+    Every division with one BELOW it gets the relegation check; every division
+    with one ABOVE it gets the promotion check. With two divisions that is the
+    original I-relegates / II-promotes; with three, Division II gets BOTH - the
+    only seat where you can go up or down in the same season.
 
-    Returns {1: div_I_text, 2: div_II_text} — each string belongs INSIDE its own
-    division's block. Returning one joined blob put the relegation line after the
-    Division II paragraph, where it also read "relegated to Division II", and the AI
-    duly announced relegation stakes for Division II — a division nobody can be
-    relegated from. Keep these separated.
+    Ranking matches division_manager.relegation_sort_key exactly: missed weeks,
+    then season total, then fewest wins. Do not rank on total alone here - that
+    is what made this announce the wrong player.
+
+    Takes dicts keyed by division number ({1: ..., 2: ..., 3: ...}) and returns
+    {division: text}. Each string belongs INSIDE its own division's block -
+    returning one joined blob once made the AI announce relegation stakes for a
+    division nobody can be relegated from. Keep them separated.
     """
-    from division_manager import relegation_sort_key
-    div1_warnings = []
-    div2_warnings = []
+    from division_manager import relegation_sort_key, promotion_sort_key, ROMAN
+    weekly_wins_by_div = weekly_wins_by_div or {}
+    standings_by_div = standings_by_div or {}
+    has_stakes_by_div = has_stakes_by_div or {}
+    warnings = {d: [] for d in range(1, division_count + 1)}
+
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        # --- Div I relegation check ---
-        div1_season = div1_season_info.get('current_season', 1)
-        div1_start = div1_season_info.get('season_start_week')
+        cursor.execute("SELECT COALESCE(relegated_count, 1), COALESCE(promoted_count, 1) FROM leagues WHERE id = %s", (league_id,))
+        relegated_count, promoted_count = cursor.fetchone()
 
-        if div1_start and div1_has_stakes:
-            # Exempt: anyone who already won a season, plus anyone who would win it
-            # today — the season only ends because one of them takes this week.
+        # --- relegation out of every division that has one below it ---
+        for div in range(1, division_count):
+            info = season_infos.get(div) or {}
+            div_season = info.get('current_season', 1)
+            div_start = info.get('season_start_week')
+            div_wins = weekly_wins_by_div.get(div)
+            below = ROMAN[div + 1]
+
+            if not (div_start and has_stakes_by_div.get(div)):
+                continue
+
+            # Exempt: anyone who already won a season, plus anyone who would win
+            # it today - the season only ends because one of them takes this week.
             cursor.execute("""
                 SELECT p.name FROM season_winners sw
                 JOIN players p ON sw.player_id = p.id
-                WHERE sw.league_id = %s AND sw.division = 1 AND sw.season_number = %s
-            """, (league_id, div1_season))
+                WHERE sw.league_id = %s AND sw.division = %s AND sw.season_number = %s
+            """, (league_id, div, div_season))
             existing_winners = {r[0] for r in cursor.fetchall()}
-            div1_clinchers = set()
-            if div1_weekly_wins:
-                div1_clinchers = {name for name, wins in div1_weekly_wins.items()
-                                  if wins >= wins_for_season - 1}
-            exempt_names = existing_winners | div1_clinchers
+            clinchers = set()
+            if div_wins:
+                clinchers = {name for name, wins in div_wins.items()
+                             if wins >= wins_for_season - 1}
+            exempt_names = existing_winners | clinchers
 
-            stats = _calc_season_stats(cursor, league_id, 1, div1_start, min_scores, div1_standings)
-            wins_by_name = div1_weekly_wins or {}
+            stats = _calc_season_stats(cursor, league_id, div, div_start, min_scores,
+                                       standings_by_div.get(div))
+            wins_by_name = div_wins or {}
 
             candidates = [
-                (name, s['total'], s['missed'], wins_by_name.get(name, 0))
-                for name, s in stats.items() if name not in exempt_names
+                (name, st['total'], st['missed'], wins_by_name.get(name, 0))
+                for name, st in stats.items() if name not in exempt_names
             ]
             candidates.sort(key=lambda c: relegation_sort_key(c[2], c[1], c[3]))
 
-            cursor.execute("SELECT COALESCE(relegated_count, 1) FROM leagues WHERE id = %s", (league_id,))
-            relegated_count = cursor.fetchone()[0]
-
             if candidates:
                 if len(candidates) > relegated_count:
-                    # A genuine tie needs ALL THREE criteria equal — only then is it a draw.
+                    # A genuine tie needs ALL THREE criteria equal - only then is it a draw.
                     boundary_key = relegation_sort_key(candidates[relegated_count - 1][2],
                                                        candidates[relegated_count - 1][1],
                                                        candidates[relegated_count - 1][3])
@@ -589,35 +600,39 @@ def check_relegation_promotion_ties(league_id, div1_season_info, div2_season_inf
                     if len(tied_at_boundary) > relegated_count:
                         names = ' and '.join(c[0] for c in tied_at_boundary)
                         reason = _standing_reason(tied_at_boundary[0][1], tied_at_boundary[0][2])
-                        div1_warnings.append(f"Relegation drama: {names} are dead level ({reason}, same wins) — a random draw would decide who moves down! 😮")
+                        warnings[div].append(f"Relegation drama: {names} are dead level ({reason}, same wins) - a random draw would decide who moves down! \U0001F62E")
                     else:
                         relegated = candidates[:relegated_count]
-                        div1_warnings.append(f"Relegation: If the season ends today, {_names_with_reasons(relegated)} would be relegated to Division II.")
+                        warnings[div].append(f"Relegation: If the season ends today, {_names_with_reasons(relegated)} would be relegated to Division {below}.")
                 elif len(candidates) == relegated_count:
-                    div1_warnings.append(f"Relegation: If the season ends today, {_names_with_reasons(candidates)} would be relegated to Division II.")
+                    warnings[div].append(f"Relegation: If the season ends today, {_names_with_reasons(candidates)} would be relegated to Division {below}.")
 
-        # --- Div II promotion check ---
-        cursor.execute("SELECT COALESCE(promoted_count, 1) FROM leagues WHERE id = %s", (league_id,))
-        promoted_count = cursor.fetchone()[0]
-        div2_season = div2_season_info.get('current_season', 1)
-        div2_start = div2_season_info.get('season_start_week')
-        div2_clinchers = set()
-        if div2_weekly_wins:
-            div2_clinchers = {name for name, wins in div2_weekly_wins.items()
-                              if wins >= wins_for_season - 1}
+        # --- promotion out of every division that has one above it ---
+        for div in range(2, division_count + 1):
+            info = season_infos.get(div) or {}
+            div_start = info.get('season_start_week')
+            div_wins = weekly_wins_by_div.get(div)
+            above = ROMAN[div - 1]
 
-        if div2_start and div2_has_stakes and div2_clinchers:
-            promoted_so_far = sorted(div2_clinchers)
+            clinchers = set()
+            if div_wins:
+                clinchers = {name for name, wins in div_wins.items()
+                             if wins >= wins_for_season - 1}
+
+            if not (div_start and has_stakes_by_div.get(div) and clinchers):
+                continue
+
+            promoted_so_far = sorted(clinchers)
             extra_spots = promoted_count - len(promoted_so_far)
 
             if extra_spots > 0:
-                from division_manager import promotion_sort_key
-                stats = _calc_season_stats(cursor, league_id, 2, div2_start, min_scores, div2_standings)
-                wins_by_name = div2_weekly_wins or {}
+                stats = _calc_season_stats(cursor, league_id, div, div_start, min_scores,
+                                           standings_by_div.get(div))
+                wins_by_name = div_wins or {}
 
                 remaining = [
-                    (name, s['total'], s['missed'], wins_by_name.get(name, 0))
-                    for name, s in stats.items() if name not in div2_clinchers
+                    (name, st['total'], st['missed'], wins_by_name.get(name, 0))
+                    for name, st in stats.items() if name not in clinchers
                 ]
                 remaining.sort(key=lambda r: promotion_sort_key(r[2], r[1], r[3]))
 
@@ -632,12 +647,12 @@ def check_relegation_promotion_ties(league_id, div1_season_info, div2_season_inf
                         if len(tied_at_boundary) > extra_spots:
                             names = ' and '.join(r[0] for r in tied_at_boundary)
                             reason = _standing_reason(tied_at_boundary[0][1], tied_at_boundary[0][2])
-                            div2_warnings.append(f"Promotion alert: {names} are dead level ({reason}, same wins) for the extra promotion spot — a random draw would decide who also moves up!")
+                            warnings[div].append(f"Promotion alert: {names} are dead level ({reason}, same wins) for the extra promotion spot - a random draw would decide who also moves up!")
                         else:
                             extra_promoted = remaining[:extra_spots]
-                            div2_warnings.append(f"Promotion: if {clincher_names} takes the season, {_names_with_reasons(extra_promoted)} would also earn promotion to Division I!")
+                            warnings[div].append(f"Promotion: if {clincher_names} takes the season, {_names_with_reasons(extra_promoted)} would also earn promotion to Division {above}!")
                     else:
-                        div2_warnings.append(f"Promotion: if {clincher_names} takes the season, {_names_with_reasons(remaining)} would also earn promotion to Division I!")
+                        warnings[div].append(f"Promotion: if {clincher_names} takes the season, {_names_with_reasons(remaining)} would also earn promotion to Division {above}!")
 
     except Exception as e:
         logging.warning(f"Error checking relegation/promotion ties: {e}")
@@ -647,7 +662,7 @@ def check_relegation_promotion_ties(league_id, div1_season_info, div2_season_inf
         cursor.close()
         conn.close()
 
-    return {1: ' '.join(div1_warnings), 2: ' '.join(div2_warnings)}
+    return {d: ' '.join(w) for d, w in warnings.items()}
 
 
 def _win_ordinal(n):
@@ -975,64 +990,69 @@ def send_sunday_race_update(league_id, force_season_image=False):
             # Per-league season target (manager override or default 3 for division mode)
             div_wins_needed = get_league_season_wins(league_id, division_mode=True)
 
-            # Split standings by division
-            div1_standings = sorted(
-                [s for s in standings if s.get('division') == 1],
-                key=lambda x: (not x['eligible'], x['best_5_total'] if x['best_5_total'] is not None else 999)
-            )
-            div2_standings = sorted(
-                [s for s in standings if s.get('division') == 2],
-                key=lambda x: (not x['eligible'], x['best_5_total'] if x['best_5_total'] is not None else 999)
-            )
-            
-            logging.info(f"Division mode: Div I has {len(div1_standings)} players, Div II has {len(div2_standings)} players")
-            
-            # Get per-division weekly wins and season info
-            div1_weekly_wins = get_division_weekly_wins(league_id, 1)
-            div2_weekly_wins = get_division_weekly_wins(league_id, 2)
-            div1_season_info = get_division_season_info(league_id, 1)
-            div2_season_info = get_division_season_info(league_id, 2)
-            
-            # Build per-division scenario text
-            div1_scenario = build_division_scenario(div1_standings, 1, div1_weekly_wins, div1_season_info['current_season'], min_scores=min_scores, wins_for_season=div_wins_needed)
-            div2_scenario = build_division_scenario(div2_standings, 2, div2_weekly_wins, div2_season_info['current_season'], min_scores=min_scores, wins_for_season=div_wins_needed)
-            
-            # Computed here rather than further down because the relegation/promotion
-            # outlook is gated on them: the season has to be genuinely winnable today.
-            div1_has_stakes = "SEASON STAKES" in div1_scenario or "SEASON CLINCH" in div1_scenario
-            div2_has_stakes = "SEASON STAKES" in div2_scenario or "SEASON CLINCH" in div2_scenario
+            from division_manager import get_division_count, ROMAN
+            division_count = get_division_count(league_id)
+
+            # Everything per-division lives in one dict per division, built in a
+            # loop. This used to be 11 hardcoded div1_*/div2_* variable pairs
+            # (39 references) — a third division would have meant a third set,
+            # and the next change after that would have been impossible.
+            divisions = []
+            for d in range(1, division_count + 1):
+                div_standings = sorted(
+                    [s for s in standings if s.get('division') == d],
+                    key=lambda x: (not x['eligible'], x['best_5_total'] if x['best_5_total'] is not None else 999)
+                )
+                div_weekly_wins = get_division_weekly_wins(league_id, d)
+                div_season_info = get_division_season_info(league_id, d)
+                div_scenario = build_division_scenario(
+                    div_standings, d, div_weekly_wins, div_season_info['current_season'],
+                    min_scores=min_scores, wins_for_season=div_wins_needed)
+                divisions.append({
+                    'num': d,
+                    'roman': ROMAN[d],
+                    'standings': div_standings,
+                    'weekly_wins': div_weekly_wins,
+                    'season_info': div_season_info,
+                    'scenario': div_scenario,
+                    # Computed here rather than further down because the
+                    # relegation/promotion outlook is gated on it: the season
+                    # has to be genuinely winnable today.
+                    'has_stakes': "SEASON STAKES" in div_scenario or "SEASON CLINCH" in div_scenario,
+                })
+
+            logging.info(f"Division mode: " + ", ".join(
+                f"Div {dv['roman']} has {len(dv['standings'])} players" for dv in divisions))
 
             # Who goes down / comes up if the season ends today. Each warning is
             # folded into ITS OWN division's paragraph — relegation belongs to
-            # Division I and promotion to Division II, and the AI attributes them
-            # by position. Appending both after the combined text made it announce
-            # relegation stakes for Division II, where relegation cannot happen.
+            # the division it happens FROM, and the AI attributes by position.
             tie_warnings = check_relegation_promotion_ties(
-                league_id, div1_season_info, div2_season_info, min_scores,
-                div1_weekly_wins=div1_weekly_wins, div2_weekly_wins=div2_weekly_wins,
-                div1_standings=div1_standings, div2_standings=div2_standings,
+                league_id,
+                {dv['num']: dv['season_info'] for dv in divisions},
+                min_scores,
+                weekly_wins_by_div={dv['num']: dv['weekly_wins'] for dv in divisions},
+                standings_by_div={dv['num']: dv['standings'] for dv in divisions},
                 wins_for_season=div_wins_needed,
-                div1_has_stakes=div1_has_stakes, div2_has_stakes=div2_has_stakes
+                has_stakes_by_div={dv['num']: dv['has_stakes'] for dv in divisions},
+                division_count=division_count,
             ) or {}
 
             # These lines are appended to the final message VERBATIM and are
             # deliberately kept OUT of the AI prompt. The model paraphrased them
             # and dropped the reason — "Dave would be relegated to Division II"
             # with no mention of his missed week, which reads as a flat
-            # contradiction of the league page, where the Season Total column
-            # showed Dave on the division's best score (league 7, week 1927).
-            # The sentences are already complete and factual; letting the model
+            # contradiction of the league page (league 7, week 1927). The
+            # sentences are already complete and factual; letting the model
             # rewrite them can only lose information. Each carries its own
-            # division label so it cannot be misattributed, which is what went
-            # wrong when both were appended as one blob.
+            # division label so it cannot be misattributed.
             movement_lines = []
-            if tie_warnings.get(1):
-                movement_lines.append(f"Division I — {tie_warnings[1]}")
-            if tie_warnings.get(2):
-                movement_lines.append(f"Division II — {tie_warnings[2]}")
+            for dv in divisions:
+                if tie_warnings.get(dv['num']):
+                    movement_lines.append(f"Division {dv['roman']} — {tie_warnings[dv['num']]}")
             movement_block = ("\n\n" + "\n".join(movement_lines)) if movement_lines else ""
 
-            scenario_text = f"{div1_scenario}\n\n{div2_scenario}"
+            scenario_text = "\n\n".join(dv['scenario'] for dv in divisions)
 
             logging.info(f"League {league_id} division scenarios: {scenario_text}")
 
@@ -1047,45 +1067,43 @@ def send_sunday_race_update(league_id, force_season_image=False):
                         current = sum(sorted(non_fail)[:min_scores]) if non_fail else 0
                         lines.append(f"  {s['name']}: {s['days_posted']} games (needs {min_scores}), current total = {current}, posted today = {'yes' if s['posted_today'] else 'no'}")
                 return "\n".join(lines) if lines else "  No players"
-            
+
             def build_div_wins_summary(div_wins):
                 lines = []
                 for name, wins in sorted(div_wins.items(), key=lambda x: x[1], reverse=True):
                     lines.append(f"  {name}: {wins} win{'s' if wins != 1 else ''}")
                 return "\n".join(lines) if lines else "  No wins yet"
-            
-            # div1_has_stakes / div2_has_stakes computed above, where the
-            # relegation/promotion outlook is gated on them.
 
-            # Always include season wins so the AI can mention win counts for context
-            # (e.g., "gives them their 2nd win") even when no season stakes are in play
-            div1_block = f"""DIVISION I STANDINGS (lower is better, best {min_scores} of 7):
-{build_div_standings_summary(div1_standings)}
+            # Always include season wins so the AI can mention win counts for
+            # context even when no season stakes are in play.
+            div_blocks = []
+            for dv in divisions:
+                div_blocks.append(
+                    f"DIVISION {dv['roman']} STANDINGS (lower is better, best {min_scores} of 7):\n"
+                    f"{build_div_standings_summary(dv['standings'])}\n\n"
+                    f"DIVISION {dv['roman']} SEASON {dv['season_info']['current_season']} WINS (need {div_wins_needed} to win):\n"
+                    f"{build_div_wins_summary(dv['weekly_wins'])}")
 
-DIVISION I SEASON {div1_season_info['current_season']} WINS (need {div_wins_needed} to win):
-{build_div_wins_summary(div1_weekly_wins)}"""
-
-            div2_block = f"""DIVISION II STANDINGS (lower is better, best {min_scores} of 7):
-{build_div_standings_summary(div2_standings)}
-
-DIVISION II SEASON {div2_season_info['current_season']} WINS (need {div_wins_needed} to win):
-{build_div_wins_summary(div2_weekly_wins)}"""
-
-            div_context = f"""{div1_block}
-
-{div2_block}
-
-RACE ANALYSIS:
-{scenario_text}"""
+            div_context = "\n\n".join(div_blocks) + f"\n\nRACE ANALYSIS:\n{scenario_text}"
 
             # No movement-stakes prompt variant any more: the relegation/promotion
             # outlook is appended verbatim and never reaches the AI prompt.
-            has_season_stakes = div1_has_stakes or div2_has_stakes
+            has_season_stakes = any(dv['has_stakes'] for dv in divisions)
+
+            # The character budget scales with the division count. 400/450 was
+            # sized for TWO divisions on SMS, where every 160 characters is a
+            # billed segment; three divisions on that budget is ~133 characters
+            # each, which cannot carry a race update. Three-division leagues are
+            # Slack/Discord-only (no per-message cost, 40k char ceiling), so the
+            # larger budget is free.
+            char_budget = 450 if has_season_stakes else 400
+            if division_count >= 3:
+                char_budget = 650 if has_season_stakes else 600
 
             if has_season_stakes:
-                prompt = f"It's Sunday morning Wordle race update for a league with DIVISIONS! Give a brief update for EACH division separately. {div_context} THIS IS HUGE - MENTION THE SEASON STAKES! Make it exciting with emojis! Keep it under 450 characters. Lower scores are better in Wordle."
+                prompt = f"It's Sunday morning Wordle race update for a league with DIVISIONS! Give a brief update for EACH division separately. {div_context} THIS IS HUGE - MENTION THE SEASON STAKES! Make it exciting with emojis! Keep it under {char_budget} characters. Lower scores are better in Wordle."
             else:
-                prompt = f"It's Sunday morning Wordle race update for a league with DIVISIONS! Give a brief update for EACH division separately. {div_context} Make it exciting with emojis! Keep it under 400 characters. Lower scores are better in Wordle."
+                prompt = f"It's Sunday morning Wordle race update for a league with DIVISIONS! Give a brief update for EACH division separately. {div_context} Make it exciting with emojis! Keep it under {char_budget} characters. Lower scores are better in Wordle."
             
             sunday_system_msg = """You are a concise sports announcer for a Wordle league with DIVISIONS. In Wordle, LOWER scores are BETTER (1/6 is perfect, 6/6 is barely made it).
 
@@ -1105,7 +1123,7 @@ ACCURACY RULES:
 5. NEVER claim someone "clinched the season" or earned "promotion" unless RACE ANALYSIS explicitly says "SEASON CLINCH" or "Promotion".
 6. When stating a player's win count or "their Nth win", use ONLY the exact number/ordinal written in the RACE ANALYSIS or SEASON WINS data. Do NOT infer or inflate.
 7. Use emojis for excitement!
-8. Division I first, then Division II. Line break between them.
+8. Cover the divisions in order (I, then II, then III when present). Line break between them.
 9. Do NOT write a relegation or promotion OUTLOOK — who would go down or come up if the season ended today, who is in the drop zone, who is on the bubble. Not even a tease like "relegation stakes loom". Those lines are appended to your message automatically, word for word, with each player's reason. Anything you write about it is duplicated and probably wrong.
 10. The one exception to rule 9: if RACE ANALYSIS contains "SEASON CLINCH" text that itself mentions earning a PROMOTION, convey that clinch exactly as written. That is a stated result, not an outlook.
 11. FORBIDDEN PHRASES (unless explicitly in RACE ANALYSIS): "locked", "out of contention", "eliminated", "in the hunt", "hail mary" (only if score of 1 needed).
@@ -1117,14 +1135,14 @@ ACCURACY RULES:
                     {"role": "system", "content": sunday_system_msg},
                     {"role": "user", "content": prompt}
                 ],
-                max_tokens=400,
+                max_tokens=max(400, int(char_budget * 1.2)),
                 temperature=0.3
             )
             
             race_message = response.choices[0].message.content.strip()
             logging.info(f"Generated division Sunday race update for league {league_id}: {race_message}")
             raw_ai_message = race_message
-            race_message = _apply_race_guard(race_message, scenario_text, openai_client, sunday_system_msg, prompt, league_id, 400)
+            race_message = _apply_race_guard(race_message, scenario_text, openai_client, sunday_system_msg, prompt, league_id, max(400, int(char_budget * 1.2)))
             # Verbatim, after the guard — these are facts, not narration, and the
             # guard has no business rewording them either.
             race_message = f"{race_message}{movement_block}"
@@ -1505,10 +1523,9 @@ ACCURACY RULES:
         
         try:
             if is_division_mode:
-                # Division mode: generate image with two separate division tables
-                div1_image_data = build_image_data(div1_standings)
-                div2_image_data = build_image_data(div2_standings)
-                weekly_img = generate_division_weekly_image(league_name, div1_image_data, div2_image_data, week_date_str)
+                # Division mode: one table per division, however many there are
+                division_image_data = [(dv['roman'], build_image_data(dv['standings'])) for dv in divisions]
+                weekly_img = generate_division_weekly_image(league_name, division_image_data, week_date_str=week_date_str)
             else:
                 # Standard mode: single table
                 weekly_image_data = build_image_data(standings)

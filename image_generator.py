@@ -20,6 +20,7 @@ COLORS = {
     'border': '#30363d',           # Border color
     'row_highlight': '#00E8DA22',  # Cyan with transparency
     'gold': '#FFD700',             # Gold for 3-win players
+    'tertiary': '#A78BFA',         # Soft violet — Division III header
 }
 
 def hex_to_rgb(hex_color):
@@ -313,13 +314,16 @@ def generate_season_image(league_name, season_number, standings_data, highlight_
     
     return img
 
-def generate_division_weekly_image(league_name, div1_data, div2_data, week_date_str=None, show_games=False):
+def generate_division_weekly_image(league_name, divisions, week_date_str=None, show_games=False):
     """
-    Generate a styled weekly standings image for division mode.
-    Shows two separate division tables with colored headers.
-    
-    div1_data / div2_data: list of dicts with keys:
-        - name, score, used, thrown, eligible, failed
+    Generate a styled weekly standings image for division mode: one table per
+    division, however many the league runs.
+
+    `divisions`: list of (roman_label, rows) in display order, e.g.
+        [('I', rows), ('II', rows), ('III', rows)]
+    where rows is a list of dicts with keys name, score, used, thrown,
+    eligible, failed. (Took two positional div1_data/div2_data args until
+    3-division mode, 2026-10.)
     """
     width = 550
     row_height = 50
@@ -327,17 +331,14 @@ def generate_division_weekly_image(league_name, div1_data, div2_data, week_date_
     header_height = 92
     section_gap = 20
     padding = 20
-    
-    num_div1 = len(div1_data)
-    num_div2 = len(div2_data)
-    
-    # Calculate total height
+
+    # Calculate total height — one header + rows block per division
     hdr_extra = 24 if show_games else 0   # stacked column headers, per table
-    height = (header_height +
-              div_header_height + hdr_extra + (num_div1 * row_height) + 30 +
-              section_gap +
-              div_header_height + hdr_extra + (num_div2 * row_height) + 30 +
-              padding * 2 + 30)
+    height = (header_height
+              + sum(div_header_height + hdr_extra + (len(rows) * row_height) + 30
+                    for _, rows in divisions)
+              + section_gap * (len(divisions) - 1)
+              + padding * 2 + 30)
     
     img = Image.new('RGB', (width, height), hex_to_rgb(COLORS['background']))
     draw = ImageDraw.Draw(img)
@@ -458,13 +459,13 @@ def generate_division_weekly_image(league_name, div1_data, div2_data, week_date_
         
         return y + (len(div_data) * row_height) + 10
     
-    # Draw Division I
+    # One table per division, cyan / orange / violet headers in order
+    div_colors = [COLORS['primary'], COLORS['secondary'], COLORS['tertiary']]
     y = header_height
-    y = draw_division_table(y, "DIVISION I", COLORS['primary'], div1_data)
-    
-    # Draw Division II
-    y += section_gap
-    y = draw_division_table(y, "DIVISION II", COLORS['secondary'], div2_data)
+    for i, (label, rows) in enumerate(divisions):
+        if i:
+            y += section_gap
+        y = draw_division_table(y, f"DIVISION {label}", div_colors[i % len(div_colors)], rows)
     
     # Footer
     footer_y = height - 22

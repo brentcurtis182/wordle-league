@@ -2428,7 +2428,9 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
 
     # Billing context
     ai_messaging_enabled = billing_context.get('ai_messaging_enabled', True)
-    player_limit = billing_context.get('player_limit', 9 if channel_type == 'sms' else 14)
+    from billing import CHAT_PLAYER_LIMIT
+    player_limit = billing_context.get('player_limit',
+                                       9 if channel_type == 'sms' else CHAT_PLAYER_LIMIT)
     requires_payment = billing_context.get('requires_payment', False)
     subscription_status = billing_context.get('subscription_status')
     linked_subscription = billing_context.get('linked_subscription')
@@ -7234,6 +7236,7 @@ def render_admin_twilio_reports(user, monthly_data):
 
 def render_membership_page(user, subscriptions, message=None, error=None):
     """Render the League Membership page — subscription management and plan selection."""
+    from billing import CHAT_PLAYER_LIMIT
     # Trial messaging is conditional: a user who has already used their trial
     # would otherwise be shown an offer checkout will not give them.
     try:
@@ -7687,7 +7690,7 @@ def render_membership_page(user, subscriptions, message=None, error=None):
             <div class="plan-section">
                 <h3 class="plan-section-toggle" onclick="this.parentElement.classList.toggle('expanded')">💬 Slack &amp; Discord League Plans {_trial_pill}<span class="toggle-arrow">&#9654;</span></h3>
                 <div class="plan-section-content">
-                <p style="color: {COLORS['text_muted']}; margin-bottom: 16px; font-size: 0.9em;">Up to 14 players per league, no limit on player count.</p>
+                <p style="color: {COLORS['text_muted']}; margin-bottom: 16px; font-size: 0.9em;">Up to {CHAT_PLAYER_LIMIT} players per league &mdash; the price is the same whether you have 3 or {CHAT_PLAYER_LIMIT}.</p>
                 <div class="plan-grid">
                     <div class="plan-card">
                         <div style="color: {COLORS['text_muted']}; font-size: 0.85em;">1 League</div>

@@ -6542,10 +6542,11 @@ def dashboard_add_player(league_id):
             cursor.close()
             conn.close()
             return redirect(f'/dashboard/league/{league_id}?error=SMS leagues are limited to 9 players (Twilio group MMS maximum). Remove a player before adding a new one.')
-        if channel_type in ('slack', 'discord') and active_count >= 14:
+        from billing import CHAT_PLAYER_LIMIT
+        if channel_type in ('slack', 'discord') and active_count >= CHAT_PLAYER_LIMIT:
             cursor.close()
             conn.close()
-            return redirect(f'/dashboard/league/{league_id}?error=Leagues are limited to 14 players. Remove a player before adding a new one.')
+            return redirect(f'/dashboard/league/{league_id}?error=Leagues are limited to {CHAT_PLAYER_LIMIT} players. Remove a player before adding a new one.')
         
         # Check if player name already exists and is active
         cursor.execute("SELECT id FROM players WHERE league_id = %s AND name = %s AND active = TRUE", (league_id, name))

@@ -16,6 +16,20 @@ STRIPE_WEBHOOK_SECRET = os.environ.get('STRIPE_WEBHOOK_SECRET')
 # Legacy leagues — free forever, bypass all payment checks
 LEGACY_LEAGUE_IDS = {1, 3, 4, 7, 8, 19}
 
+# Player cap for Slack and Discord leagues.
+#
+# Raised 14 -> 21 on 2026-10-20 because Alchemer Wordle Starz filled 14/14 and
+# kept growing. Costs nothing to raise: Slack/Discord tiers are priced by
+# LEAGUE SLOTS (see SLACK_TIERS), not by player count, and there is no
+# per-message carrier fee on those channels. 21 is also 3 x 7, which is what
+# three-division mode wants.
+#
+# SMS is the opposite and is NOT governed by this: it is priced per player
+# (SMS_PRICE_MAP) and hard-capped at 9 by the Twilio group-MMS participant
+# limit of 10 (9 players + our number). That cap is a carrier constraint, not
+# a pricing decision, so it does not move.
+CHAT_PLAYER_LIMIT = 21
+
 # SMS pricing: player_count -> cents/month
 SMS_PRICE_MAP = {4: 800, 5: 1000, 6: 1200, 7: 1400, 8: 1600, 9: 1800}
 
@@ -826,7 +840,7 @@ def get_league_billing_context(league_id, league, channel_type, payment_required
         elif channel_type == 'sms':
             player_limit = 9
         else:
-            player_limit = 14
+            player_limit = CHAT_PLAYER_LIMIT
 
         return {
             'payment_required': payment_required,
@@ -931,7 +945,7 @@ def get_user_subscriptions_for_linking(user_id, channel_type, conn=None):
             else:
                 tier_info = SLACK_TIERS.get(plan_tier, {})
                 max_slots = tier_info.get('league_slots', 1)
-                max_players = 14
+                max_players = CHAT_PLAYER_LIMIT
                 tier_labels = {
                     'slack_1': 'Slack/Discord 1 League — $5/mo',
                     'slack_1_ai': 'Slack/Discord 1 League + AI — $7/mo',
@@ -1000,7 +1014,7 @@ def link_league_to_subscription(subscription_id, league_id, player_count):
                 except ValueError:
                     max_players = 9
         else:
-            max_players = 14  # Slack/Discord have no per-tier player limit
+            max_players = CHAT_PLAYER_LIMIT  # Slack/Discord have no per-tier player limit
 
         # Validate player count
         if player_count > max_players:

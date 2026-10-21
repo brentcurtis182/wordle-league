@@ -835,6 +835,13 @@ def division_color(div_num):
     return DIVISION_COLORS.get(div_num, '#8a8aa5')
 
 
+def division_tint(div_num, alpha=0.15):
+    """Division color as an rgba() tint, for clinched-row highlights."""
+    hex_color = division_color(div_num).lstrip('#')
+    r, g, b = (int(hex_color[i:i + 2], 16) for i in (0, 2, 4))
+    return f'rgba({r}, {g}, {b}, {alpha})'
+
+
 def division_styled_label(div_num):
     """'Division <span>II</span>' - white word, coloured numeral."""
     return f'Division <span style="color:{division_color(div_num)}">{division_numeral(div_num)}</span>'
@@ -1091,8 +1098,8 @@ def generate_division_season_stats_html(league_data):
 
     for div_num in range(1, division_count + 1):
         div_info = division_data.get(div_num, {})
-        div_label = "Division I" if div_num == 1 else "Division II"
-        div_color = "#00E8DA" if div_num == 1 else "#FFA64D"
+        div_label = f"Division {division_numeral(div_num)}"
+        div_color = division_color(div_num)
         current_season = div_info.get('current_season', 1)
         season_standings = div_info.get('season_standings', {})
         season_winners = div_info.get('season_winners', [])
@@ -1119,7 +1126,7 @@ def generate_division_season_stats_html(league_data):
                 weeks_display = '<br>'.join([f"{wordle_to_date_string(w)} ({s})" for w, s in zip(data['weeks'], data['scores'])])
                 row_style = ''
                 if wins >= wins_needed:
-                    row_style = f' style="background-color: rgba({0 if div_num == 1 else 255}, {232 if div_num == 1 else 166}, {218 if div_num == 1 else 77}, 0.15);"'
+                    row_style = f' style="background-color: {division_tint(div_num)};"'
                 # Highlight immune player names with division color
                 name_style = f' style="color: {div_color};"' if player_name in immune_players else ''
                 html += f'<tr{row_style}>\n'

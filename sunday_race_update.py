@@ -699,7 +699,11 @@ def _names_with_reasons(entries):
 def build_division_scenario(div_standings, div_num, div_weekly_wins, div_current_season, min_scores=5, wins_for_season=DIVISION_WINS_FOR_SEASON):
     """Build scenario analysis text for a single division.
     Returns scenario text string for the AI prompt."""
-    div_label = "Division I" if div_num == 1 else "Division II"
+    from division_manager import ROMAN
+    div_label = f"Division {ROMAN[div_num]}"
+    # Any division below the top has one above it to be promoted into. Adjacent
+    # only, so the target is always div_num - 1 (see project_three_division_mode).
+    promote_to = f"Division {ROMAN[div_num - 1]}" if div_num > 1 else None
 
     eligible = [s for s in div_standings if s['eligible']]
     ineligible = [s for s in div_standings if not s['eligible']]
@@ -819,14 +823,14 @@ def build_division_scenario(div_standings, div_num, div_weekly_wins, div_current
         if actual_clinchers:
             if len(actual_clinchers) == 1:
                 clincher = actual_clinchers[0]
-                if div_num == 2:
-                    season_clinch_text = f" SEASON CLINCH: {clincher} clinches {div_label} Season {div_current_season} and earns a PROMOTION to Division I!"
+                if promote_to:
+                    season_clinch_text = f" SEASON CLINCH: {clincher} clinches {div_label} Season {div_current_season} and earns a PROMOTION to {promote_to}!"
                 else:
                     season_clinch_text = f" SEASON CLINCH: {clincher} clinches {div_label} Season {div_current_season}!"
             else:
                 clinchers_list = " and ".join(actual_clinchers)
-                if div_num == 2:
-                    season_clinch_text = f" SEASON CLINCH: {clinchers_list} clinch {div_label} Season {div_current_season} and earn a PROMOTION to Division I!"
+                if promote_to:
+                    season_clinch_text = f" SEASON CLINCH: {clinchers_list} clinch {div_label} Season {div_current_season} and earn a PROMOTION to {promote_to}!"
                 else:
                     season_clinch_text = f" SEASON CLINCH: {clinchers_list} clinch {div_label} Season {div_current_season}!"
         # If potential clinchers exist but didn't win, no clinch text — they didn't clinch
@@ -844,14 +848,14 @@ def build_division_scenario(div_standings, div_num, div_weekly_wins, div_current
             if clinch_names:
                 if len(clinch_names) == 1:
                     clincher = clinch_names[0]
-                    if div_num == 2:
-                        season_clinch_text = f" SEASON STAKES: If {clincher} wins this week, they clinch {div_label} Season {div_current_season} and earn a PROMOTION to Division I!"
+                    if promote_to:
+                        season_clinch_text = f" SEASON STAKES: If {clincher} wins this week, they clinch {div_label} Season {div_current_season} and earn a PROMOTION to {promote_to}!"
                     else:
                         season_clinch_text = f" SEASON STAKES: If {clincher} wins this week, they clinch {div_label} Season {div_current_season}!"
                 else:
                     clinchers_list = " or ".join(clinch_names)
-                    if div_num == 2:
-                        season_clinch_text = f" SEASON STAKES: If {clinchers_list} wins this week, they clinch {div_label} Season {div_current_season} and earn a PROMOTION to Division I!"
+                    if promote_to:
+                        season_clinch_text = f" SEASON STAKES: If {clinchers_list} wins this week, they clinch {div_label} Season {div_current_season} and earn a PROMOTION to {promote_to}!"
                     else:
                         season_clinch_text = f" SEASON STAKES: If {clinchers_list} wins this week, they clinch {div_label} Season {div_current_season}!"
         else:
@@ -863,8 +867,8 @@ def build_division_scenario(div_standings, div_num, div_weekly_wins, div_current
                     contenders_in_hunt.append(p['name'])
             if contenders_in_hunt:
                 clinchers_list = " or ".join(contenders_in_hunt[:2])
-                if div_num == 2:
-                    season_clinch_text = f" SEASON STAKES: {clinchers_list} could clinch {div_label} Season {div_current_season} with a win — earning a PROMOTION to Division I!"
+                if promote_to:
+                    season_clinch_text = f" SEASON STAKES: {clinchers_list} could clinch {div_label} Season {div_current_season} with a win — earning a PROMOTION to {promote_to}!"
                 else:
                     season_clinch_text = f" SEASON STAKES: {clinchers_list} could clinch {div_label} Season {div_current_season} with a win!"
     

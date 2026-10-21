@@ -88,10 +88,13 @@ def get_last_week_results(league_id):
     cursor = conn.cursor()
     
     try:
-        # Check if league is in division mode
-        cursor.execute("SELECT division_mode FROM leagues WHERE id = %s", (league_id,))
+        # Check if league is in division mode. division_count is NULL for every
+        # league that predates 3-division mode, where NULL means 2.
+        cursor.execute("SELECT division_mode, COALESCE(division_count, 2) FROM leagues WHERE id = %s", (league_id,))
         div_row = cursor.fetchone()
         is_division_mode = div_row and div_row[0]
+        division_count = div_row[1] if div_row else 2
+        all_divisions = tuple(range(1, division_count + 1))
         
         # Get last week's winner(s) from weekly_winners table
         if is_division_mode:
@@ -119,7 +122,7 @@ def get_last_week_results(league_id):
         # Build division winners info if applicable
         division_winners = None
         if is_division_mode:
-            division_winners = {1: [], 2: []}
+            division_winners = {d: [] for d in all_divisions}
             for row in winners:
                 div_num = row[2]
                 if div_num in division_winners:
@@ -163,11 +166,11 @@ def get_last_week_results(league_id):
         division_current_seasons = None
         
         if is_division_mode:
-            division_season_wins = {1: {}, 2: {}}
+            division_season_wins = {d: {} for d in all_divisions}
             division_season_clinched = []
             division_current_seasons = {}
-            
-            for div_num in (1, 2):
+
+            for div_num in all_divisions:
                 # Get division season info
                 cursor.execute("""
                     SELECT current_season, season_start_week
@@ -203,7 +206,8 @@ def get_last_week_results(league_id):
                 # Group winners from the same recent clinch (completed after last_monday)
                 recent_winners = [r for r in div_winners_rows if r[3] and r[3] > last_sunday]
                 if recent_winners:
-                    div_label = "Division I" if div_num == 1 else "Division II"
+                    from division_manager import ROMAN
+                    div_label = f"Division {ROMAN[div_num]}"
                     names = [r[0] for r in recent_winners]
                     clinch_info = {
                         'division': div_num,
@@ -214,8 +218,8 @@ def get_last_week_results(league_id):
                         'season_number': recent_winners[0][2],
                         'co_champions': len(names) > 1,
                     }
-                    # Div II winner(s) get promoted
-                    if div_num == 2:
+                    # Any division below the top promotes its champion upward.
+                    if div_num > 1:
                         clinch_info['promoted'] = True
                     division_season_clinched.append(clinch_info)
         
@@ -317,7 +321,7 @@ def get_last_week_results(league_id):
         if is_division_mode:
             # Check per-division first wins
             first_win_of_season = []
-            for div_num in (1, 2):
+            for div_num in all_divisions:
                 dw = (division_winners or {}).get(div_num, [])
                 for w in dw:
                     if division_season_wins.get(div_num, {}).get(w['name'], 0) == 1:
@@ -426,8 +430,11 @@ def get_last_week_results(league_id):
         division_movements = []
         if is_division_mode:
             try:
+                # `division` is the division the move happened FROM (promotions
+                # logged as the lower division, relegations as the higher one),
+                # which is what the per-division blocks below attribute against.
                 cursor.execute("""
-                    SELECT player_name, movement_type, randomized, tied_with, tied_score
+                    SELECT player_name, movement_type, randomized, tied_with, tied_score, division
                     FROM division_movements
                     WHERE league_id = %s AND created_at > %s
                     ORDER BY created_at
@@ -439,6 +446,7 @@ def get_last_week_results(league_id):
                         'randomized': row[2],
                         'tied_with': row[3],
                         'tied_score': row[4],
+                        'division': row[5],
                     })
             except Exception:
                 pass  # Table may not exist yet
@@ -469,6 +477,7 @@ def get_last_week_results(league_id):
             'week_start': last_monday,
             'week_end': last_sunday,
             'division_mode': is_division_mode,
+            'division_count': division_count,
             'division_winners': division_winners,
             'division_season_wins': division_season_wins,
             'division_season_clinched': division_season_clinched,
@@ -530,9 +539,16 @@ def send_monday_recap(league_id):
                     clinch_names.update(c.get('names', [c['name']]))
 
             # Build per-division blocks so the AI gets clear separation
+            from division_manager import ROMAN
+            division_count = results.get('division_count', 2)
             div_blocks = []
-            for div_num in (1, 2):
-                div_label = "Division I" if div_num == 1 else "Division II"
+            for div_num in range(1, division_count + 1):
+                div_label = f"Division {ROMAN[div_num]}"
+                # Adjacent-only movement: a division promotes into the one above
+                # it and relegates into the one below, so a middle division does
+                # BOTH. With two divisions this reduces to the original I/II case.
+                promote_to = f"Division {ROMAN[div_num - 1]}" if div_num > 1 else None
+                relegate_to = f"Division {ROMAN[div_num + 1]}" if div_num < division_count else None
                 div_parts = []
                 dw = div_winners.get(div_num, [])
                 if not dw:
@@ -567,32 +583,50 @@ def send_monday_recap(league_id):
                     is_co = clinch.get('co_champions', False)
                     champ_label = "CO-CHAMPIONS" if is_co else "SEASON CHAMPION"
                     clinch_verb = "share" if is_co else "clinched"
-                    if clinch.get('promoted'):
+                    # A middle division's clinch triggers BOTH a promotion up and
+                    # a relegation down, so these are additive clauses rather than
+                    # an either/or. With two divisions the output is unchanged.
+                    clinch_text = (f"🏆 {champ_label}: {clinch['name']} {clinch_verb} "
+                                   f"Season {clinch['season_number']} with {clinch['wins']} wins")
+                    clinch_clauses = []
+                    if promote_to:
+                        clinch_text += f" and earn{'s' if not is_co else ''} a PROMOTION to {promote_to}!"
                         if promoted_count > 1:
-                            div_parts.append(f"🏆 {champ_label}: {clinch['name']} {clinch_verb} Season {clinch['season_number']} with {clinch['wins']} wins and earn{'s' if not is_co else ''} a PROMOTION to Division I! The top {promoted_count} players get promoted. A new season begins!")
-                        else:
-                            div_parts.append(f"🏆 {champ_label}: {clinch['name']} {clinch_verb} Season {clinch['season_number']} with {clinch['wins']} wins and earn{'s' if not is_co else ''} a PROMOTION to Division I! A new season begins!")
+                            clinch_clauses.append(f"The top {promoted_count} players get promoted.")
                     else:
+                        clinch_text += "!"
+                    if relegate_to:
                         if relegated_count > 1:
-                            div_parts.append(f"🏆 {champ_label}: {clinch['name']} {clinch_verb} Season {clinch['season_number']} with {clinch['wins']} wins! The {relegated_count} players with the worst Season Totals get RELEGATED to Division II. A new season begins!")
+                            clinch_clauses.append(f"The {relegated_count} players with the worst Season Totals get RELEGATED to {relegate_to}.")
                         else:
-                            div_parts.append(f"🏆 {champ_label}: {clinch['name']} {clinch_verb} Season {clinch['season_number']} with {clinch['wins']} wins! The player with the worst Season Total gets RELEGATED to Division II. A new season begins!")
+                            clinch_clauses.append(f"The player with the worst Season Total gets RELEGATED to {relegate_to}.")
+                    clinch_clauses.append("A new season begins!")
+                    div_parts.append(" ".join([clinch_text] + clinch_clauses))
 
-                # Movements for this division (promotions go with Div II, relegations with Div I)
+                # Movements belong to the division they moved FROM, which is what
+                # division_movements.division records.
                 for mv in movements:
                     name = mv['player_name']
                     if name in clinch_names:
                         continue
-                    if mv['movement_type'] == 'promotion' and div_num == 2:
+                    mv_type = mv['movement_type']
+                    # Rows written before the division column existed fall back to
+                    # the old two-division mapping: promotions from II, relegations from I.
+                    mv_div = mv.get('division')
+                    if mv_div is None:
+                        mv_div = 2 if mv_type == 'promotion' else 1
+                    if mv_div != div_num:
+                        continue
+                    if mv_type == 'promotion' and promote_to:
                         if mv['randomized']:
-                            div_parts.append(f"⬆️ PROMOTION (Random Draw): {name} also promoted to Division I! Tied at {mv['tied_score']} with {mv['tied_with']} — decided by random draw.")
+                            div_parts.append(f"⬆️ PROMOTION (Random Draw): {name} also promoted to {promote_to}! Tied at {mv['tied_score']} with {mv['tied_with']} — decided by random draw.")
                         else:
-                            div_parts.append(f"⬆️ PROMOTION: {name} also earns promotion to Division I!")
-                    elif mv['movement_type'] == 'relegation' and div_num == 1:
+                            div_parts.append(f"⬆️ PROMOTION: {name} also earns promotion to {promote_to}!")
+                    elif mv_type == 'relegation' and relegate_to:
                         if mv['randomized']:
-                            div_parts.append(f"⬇️ RELEGATION (Random Draw): {name} relegated to Division II! Tied at {mv['tied_score']} with {mv['tied_with']} — decided by random draw.")
+                            div_parts.append(f"⬇️ RELEGATION (Random Draw): {name} relegated to {relegate_to}! Tied at {mv['tied_score']} with {mv['tied_with']} — decided by random draw.")
                         else:
-                            div_parts.append(f"⬇️ RELEGATION: {name} had the worst Season Total and moves down to Division II.")
+                            div_parts.append(f"⬇️ RELEGATION: {name} had the worst Season Total and moves down to {relegate_to}.")
 
                 div_blocks.append(" ".join(div_parts))
 
@@ -665,15 +699,19 @@ def send_monday_recap(league_id):
         has_div_clinch = is_div and results.get('division_season_clinched')
 
         if is_div:
-            if has_div_clinch:
-                prompt = f"Monday recap (DIVISIONS):\n\n{scenario_text}\n\nKeep it concise — under 350 characters. State what happened for each division."
+            # A third division needs room to be mentioned at all — the same
+            # reason sunday_race_update widens its budget at 3 divisions.
+            div_count = results.get('division_count', 2)
+            if div_count >= 3:
+                div_char_budget = 500 if has_div_clinch else 450
             else:
-                prompt = f"Monday recap (DIVISIONS):\n\n{scenario_text}\n\nKeep it concise — under 300 characters. State what happened for each division."
+                div_char_budget = 350 if has_div_clinch else 300
+            prompt = f"Monday recap (DIVISIONS):\n\n{scenario_text}\n\nKeep it concise — under {div_char_budget} characters. State what happened for each division."
 
             system_msg = """You are a concise sports announcer for a Wordle league with DIVISIONS. Lower scores are better in Wordle.
 
 RULES:
-1. Division I first, then Division II. Put a BLANK LINE between divisions.
+1. Cover the divisions in the order given, highest first. Put a BLANK LINE between divisions.
 2. Include streaks, back-to-back wins, or first wins WITH their division's section — do not list them separately.
 3. If a SEASON CHAMPION or CO-CHAMPIONS line appears, celebrate it briefly within that division's section.
 4. If PROMOTION or RELEGATION appears, mention it within the relevant division's section.

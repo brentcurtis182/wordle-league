@@ -5752,6 +5752,18 @@ def get_league_info(league_id, conn=None):
 
             return league_data
         return None
+    except Exception:
+        # When the caller passed its own connection, a failed SELECT here leaves
+        # that transaction aborted and every later query on it fails with
+        # "current transaction is aborted" — which is how a single bad column
+        # reference turned into a 500 on an otherwise healthy page. Roll back so
+        # the connection stays usable, but re-raise: the caller still needs to
+        # know this failed.
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        raise
     finally:
         cursor.close()
         if own_conn:

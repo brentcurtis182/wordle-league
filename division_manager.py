@@ -14,9 +14,38 @@ import pytz
 from league_data_adapter import get_db_connection, calculate_wordle_number, get_week_start_date, get_league_min_scores, get_league_season_wins, get_player_join_week
 
 DIVISION_WINS_FOR_SEASON = 3  # Wins needed to win a division season (vs 4 for normal)
+STANDARD_WINS_FOR_SEASON = 4  # The same default for a league with no divisions
 
 
 ROMAN = {1: 'I', 2: 'II', 3: 'III'}
+
+
+def _reset_season_wins_to_mode_default(cursor, league_id, to_division):
+    """Drop a season_wins override that is only sitting on the OTHER mode's default.
+
+    get_league_season_wins already picks 3 for division mode and 4 otherwise,
+    but only when leagues.season_wins is NULL. The league settings form always
+    posts a concrete value, so any league whose settings were ever saved has a
+    hard number stored — and that number beat the mode default, which is how
+    the automatic 4 -> 3 switch got lost.
+
+    Clearing back to NULL (rather than writing the new default) restores the
+    league to "follow the mode", so it keeps switching correctly every time
+    divisions are toggled without needing another write.
+
+    A value the manager actually chose is left alone: only the old mode's
+    default is treated as "not a real preference".
+    """
+    old_default = STANDARD_WINS_FOR_SEASON if to_division else DIVISION_WINS_FOR_SEASON
+    cursor.execute("""
+        UPDATE leagues
+        SET season_wins = NULL
+        WHERE id = %s AND season_wins = %s
+    """, (league_id, old_default))
+    if cursor.rowcount:
+        new_default = DIVISION_WINS_FOR_SEASON if to_division else STANDARD_WINS_FOR_SEASON
+        logging.info(f"League {league_id}: season wins target now follows the mode "
+                     f"default ({old_default} -> {new_default})")
 
 
 def get_division_count(league_id, conn=None, cursor=None):
@@ -205,6 +234,9 @@ def _enable_division_mode(league_id, cursor, conn, division_count=2):
         WHERE id = %s
     """, (division_count, league_id))
 
+    # Division seasons are shorter: 4 wins -> 3, for 2 and 3 divisions alike.
+    _reset_season_wins_to_mode_default(cursor, league_id, to_division=True)
+
     conn.commit()
 
     logging.info(f"Division mode enabled for league {league_id} ({division_count} divisions): "
@@ -265,10 +297,13 @@ def _disable_division_mode(league_id, cursor, conn, was_locked):
     
     # Disable division mode
     cursor.execute("""
-        UPDATE leagues 
+        UPDATE leagues
         SET division_mode = FALSE, division_confirmed_at = NULL, division_locked = FALSE
         WHERE id = %s
     """, (league_id,))
+
+    # Back to a single league: the season target returns to 4.
+    _reset_season_wins_to_mode_default(cursor, league_id, to_division=False)
     
     # Clean up division seasons and boundaries
     cursor.execute("DELETE FROM division_seasons WHERE league_id = %s", (league_id,))

@@ -179,11 +179,8 @@ def extract_discord_emoji_pattern(text: str) -> str:
     Discord preserves Unicode emoji directly (unlike Slack which uses :emoji_name: format).
     Note: Discord slash commands flatten newlines to spaces, so we extract all emoji and split into rows of 5.
     """
-    # High-contrast mode: orange = correct, blue = present
-    text = text.replace('🟧', '🟩').replace('🟦', '🟨')
-
     # Extract all Wordle emoji characters
-    emoji_chars = [c for c in text if c in '🟩🟨⬛⬜']
+    emoji_chars = [c for c in text if c in '🟩🟨⬛⬜🟧🟦']  # 🟧🟦 = high-contrast mode
     
     if not emoji_chars:
         return ""

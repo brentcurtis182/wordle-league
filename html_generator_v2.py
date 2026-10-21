@@ -34,12 +34,17 @@ def transform_emoji_colors(emoji_pattern):
     orange_block = '<span class="wl-block wl-orange"></span>'
     dark_block = '<span class="wl-block wl-dark"></span>'
     light_block = '<span class="wl-block wl-light"></span>'
+    # High-contrast mode squares, shown in the colors the player posted
+    hc_orange_block = '<span class="wl-block wl-hc-orange"></span>'
+    hc_blue_block = '<span class="wl-block wl-hc-blue"></span>'
     
     # Replace each emoji with our custom block
     result = emoji_pattern.replace('🟩', cyan_block)
     result = result.replace('🟨', orange_block)
     result = result.replace('⬛', dark_block)
     result = result.replace('⬜', light_block)
+    result = result.replace('🟧', hc_orange_block)
+    result = result.replace('🟦', hc_blue_block)
     
     return result
 
@@ -68,6 +73,14 @@ def get_emoji_block_styles():
     }
     .wl-light {
         background: linear-gradient(145deg, #787c7e, #6a6d6f);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -2px 0 rgba(0,0,0,0.15);
+    }
+    .wl-hc-orange {
+        background: linear-gradient(145deg, #f5793a, #d9652b);
+        box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -2px 0 rgba(0,0,0,0.15);
+    }
+    .wl-hc-blue {
+        background: linear-gradient(145deg, #85c0f9, #6aa6e0);
         box-shadow: inset 0 1px 0 rgba(255,255,255,0.3), inset 0 -2px 0 rgba(0,0,0,0.15);
     }
     '''
@@ -1791,6 +1804,17 @@ def generate_full_html(league_data, league_name="League 6 Beta", slug=None):
         background: linear-gradient(135deg, #ffffff 0%, #e8e8e8 50%, #d8d8d8 100%);
         box-shadow: inset 0 1px 2px rgba(255,255,255,0.5), inset 0 -2px 3px rgba(0,0,0,0.1);
         border-color: #c8c8c8;
+    }}
+    /* High-contrast mode squares (orange = correct, blue = present) */
+    .wl-hc-orange {{
+        background: linear-gradient(135deg, #f8925f 0%, #f5793a 50%, #d9652b 100%);
+        box-shadow: inset 0 1px 2px rgba(255,255,255,0.4), inset 0 -2px 3px rgba(0,0,0,0.1), 0 0 3px rgba(245,121,58,0.3);
+        border-color: #d9652b;
+    }}
+    .wl-hc-blue {{
+        background: linear-gradient(135deg, #a3d0fb 0%, #85c0f9 50%, #6aa6e0 100%);
+        box-shadow: inset 0 1px 2px rgba(255,255,255,0.4), inset 0 -2px 3px rgba(0,0,0,0.1), 0 0 3px rgba(133,192,249,0.3);
+        border-color: #6aa6e0;
     }}
     
     .emoji-container {{

@@ -284,11 +284,11 @@ def extract_slack_emoji_pattern(text: str) -> str:
         ':yellow_square:': '🟨',
         ':black_square:': '⬛',
         ':white_square:': '⬜',
-        # High-contrast mode: orange = correct, blue = present
-        ':large_orange_square:': '🟩',
-        ':large_blue_square:': '🟨',
-        ':orange_square:': '🟩',
-        ':blue_square:': '🟨',
+        # High-contrast mode (orange = correct, blue = present), kept as posted
+        ':large_orange_square:': '🟧',
+        ':large_blue_square:': '🟦',
+        ':orange_square:': '🟧',
+        ':blue_square:': '🟦',
     }
     
     # Find all lines after the "Wordle X,XXX X/6" line that contain emoji codes
@@ -306,9 +306,9 @@ def extract_slack_emoji_pattern(text: str) -> str:
             for slack_code, unicode_char in slack_to_unicode.items():
                 converted_line = converted_line.replace(slack_code, unicode_char)
             # Only keep lines that have Wordle emoji squares
-            if any(c in converted_line for c in ['🟩', '🟨', '⬛', '⬜']):
+            if any(c in converted_line for c in ['🟩', '🟨', '⬛', '⬜', '🟧', '🟦']):
                 # Clean up - keep only the emoji characters
-                clean_line = ''.join(c for c in converted_line if c in '🟩🟨⬛⬜')
+                clean_line = ''.join(c for c in converted_line if c in '🟩🟨⬛⬜🟧🟦')
                 if clean_line:
                     emoji_lines.append(clean_line)
     

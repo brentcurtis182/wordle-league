@@ -501,9 +501,6 @@ def extract_wordle_score(message_body):
     
     # Extract emoji pattern - HANDLE BOTH FORMATS
     emoji_pattern = None
-
-    # High-contrast mode: orange = correct, blue = present
-    message_body = message_body.replace('🟧', '🟩').replace('🟦', '🟨')
     
     # Method 1: Check for multi-line format (like Google Voice)
     lines = message_body.split('\n')
@@ -511,11 +508,11 @@ def extract_wordle_score(message_body):
     
     for line in lines:
         # Check for Wordle emoji colors
-        if any(emoji in line for emoji in ['🟩', '⬛', '⬜', '🟨']):
+        if any(emoji in line for emoji in ['🟩', '⬛', '⬜', '🟨', '🟧', '🟦']):
             # Skip the score line itself (e.g., "Wordle 1,618 4/6")
             if not re.search(r'Wordle\s+[\d,]+\s+[1-6X]/6', line):
                 # Extract ONLY emoji characters from this line
-                emoji_only = ''.join(char for char in line if char in ['🟩', '⬛', '⬜', '🟨'])
+                emoji_only = ''.join(char for char in line if char in ['🟩', '⬛', '⬜', '🟨', '🟧', '🟦'])
                 if emoji_only:
                     emoji_lines.append(emoji_only)
     
@@ -531,7 +528,7 @@ def extract_wordle_score(message_body):
         # Extract only emoji characters
         emoji_chars = []
         for char in after_score:
-            if char in ['🟩', '⬛', '⬜', '🟨']:
+            if char in ['🟩', '⬛', '⬜', '🟨', '🟧', '🟦']:
                 emoji_chars.append(char)
         
         # Group into rows of 5

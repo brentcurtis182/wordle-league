@@ -89,7 +89,7 @@ def save_score_to_db(player, wordle_num, score, emoji_pattern=None, league_id=1)
     if score != 'X' and score != 7 and emoji_pattern:
         # Check if pattern matches the score - pattern should have exactly 'score' number of rows
         pattern_rows = [line for line in emoji_pattern.split('\n') 
-                       if any(emoji in line for emoji in ['🟩', '⬛', '⬜', '🟨'])]
+                       if any(emoji in line for emoji in ['🟩', '⬛', '⬜', '🟨', '🟧', '🟦'])]
         
         # For scores 1-6, there should be that many rows of emoji patterns
         if len(pattern_rows) != score:
@@ -189,7 +189,7 @@ def save_score_to_db(player, wordle_num, score, emoji_pattern=None, league_id=1)
             if emoji_pattern:
                 # Only keep lines that contain emoji squares to remove any trailing text/dates
                 clean_lines = [line for line in emoji_pattern.split('\n') 
-                              if any(emoji in line for emoji in ['🟩', '⬛', '⬜', '🟨'])]
+                              if any(emoji in line for emoji in ['🟩', '⬛', '⬜', '🟨', '🟧', '🟦'])]
                 
                 # Validate that we have at least some emoji pattern lines for non-X scores
                 if score != 7 and len(clean_lines) == 0:

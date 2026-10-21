@@ -501,6 +501,9 @@ def extract_wordle_score(message_body):
     
     # Extract emoji pattern - HANDLE BOTH FORMATS
     emoji_pattern = None
+
+    # High-contrast mode: orange = correct, blue = present
+    message_body = message_body.replace('🟧', '🟩').replace('🟦', '🟨')
     
     # Method 1: Check for multi-line format (like Google Voice)
     lines = message_body.split('\n')

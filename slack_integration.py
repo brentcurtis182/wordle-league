@@ -284,6 +284,11 @@ def extract_slack_emoji_pattern(text: str) -> str:
         ':yellow_square:': '🟨',
         ':black_square:': '⬛',
         ':white_square:': '⬜',
+        # High-contrast mode: orange = correct, blue = present
+        ':large_orange_square:': '🟩',
+        ':large_blue_square:': '🟨',
+        ':orange_square:': '🟩',
+        ':blue_square:': '🟨',
     }
     
     # Find all lines after the "Wordle X,XXX X/6" line that contain emoji codes

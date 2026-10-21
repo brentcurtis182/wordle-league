@@ -273,6 +273,47 @@ def get_player_join_week(player_id, week_anchor, conn=None, _cache={}):
     return joined - ((joined - week_anchor) % 7)
 
 
+def added_on_monday_or_tuesday(created_at):
+    """True when a players.created_at (naive UTC) falls on a Pacific Mon/Tue.
+
+    Brent's rule for the first week of division mode: a player added Monday or
+    Tuesday still had the chance to post a full week, so that week counts in
+    full - missed week included. Added Wednesday or later, they are immune for
+    the season instead, like any mid-season add.
+    """
+    import pytz
+    if created_at is None:
+        return False
+    pacific = pytz.utc.localize(created_at).astimezone(pytz.timezone('America/Los_Angeles'))
+    return pacific.weekday() <= 1  # Monday=0, Tuesday=1
+
+
+def division_join_grace_week(player_id, week_anchor, conn=None):
+    """The division-race version of get_player_join_week.
+
+    Same week, but only for a player added Wednesday or later: a Monday or
+    Tuesday add had the chance to post a full week, so their first week is not
+    exempt from missed weeks (returns None - no grace).
+    """
+    join_week = get_player_join_week(player_id, week_anchor, conn=conn)
+    if join_week is None:
+        return None
+    own_conn = conn is None
+    if own_conn:
+        conn = get_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT created_at FROM players WHERE id = %s", (player_id,))
+        row = cursor.fetchone()
+        cursor.close()
+    finally:
+        if own_conn:
+            conn.close()
+    if row and added_on_monday_or_tuesday(row[0]):
+        return None
+    return join_week
+
+
 def division_counting_floor(season_start, division_joined_week):
     """First week that counts toward a player's division season.
 
@@ -1186,8 +1227,9 @@ def get_division_season_data(league_id, weekly_stats=None, conn=None, min_scores
                 # Use default (5) for weeks before min_weekly_scores was changed
                 past_total = 0
                 player_missed = 0
-                # The week a player was added to the league is never a missed week.
-                join_week = get_player_join_week(p['id'], season_start, conn=conn)
+                # The week a player was added is not a missed week - unless they
+                # were added Monday or Tuesday and so had the whole week.
+                join_week = division_join_grace_week(p['id'], season_start, conn=conn)
                 # Nothing before they joined THIS DIVISION counts at all - not
                 # toward the total, not as a missed week. Confirming division
                 # mode stamps the confirm week on everyone, so the division race

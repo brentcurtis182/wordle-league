@@ -6,6 +6,7 @@ so no code path ever had to handle a division doing both. These pin the shape
 of that, plus the split maths and the N-division rendering.
 """
 import sys
+from datetime import datetime
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
@@ -17,7 +18,10 @@ from html_generator_v2 import (  # noqa: E402
     division_styled_label,
 )
 from image_generator import generate_division_weekly_image  # noqa: E402
-from league_data_adapter import division_counting_floor  # noqa: E402
+from league_data_adapter import (  # noqa: E402
+    added_on_monday_or_tuesday,
+    division_counting_floor,
+)
 
 
 def split_sizes(n, division_count):
@@ -169,3 +173,29 @@ def test_floor_snaps_to_the_season_week_grid():
 
 def test_floor_without_a_season_start():
     assert division_counting_floor(None, 1948) is None
+
+
+# --- first-week adds: Mon/Tue race in full, Wed+ are immune -----------------
+# created_at is naive UTC; the day is judged in Pacific (PDT = UTC-7 in Oct).
+
+def test_tuesday_morning_add_races_in_full():
+    # Alchemer's eight adds, Tue 2026-10-20 ~09:30 PDT.
+    assert added_on_monday_or_tuesday(datetime(2026, 10, 20, 16, 32))
+
+
+def test_late_tuesday_is_still_tuesday_in_pacific():
+    # Tue 23:30 PDT is already Wednesday in UTC.
+    assert added_on_monday_or_tuesday(datetime(2026, 10, 21, 6, 30))
+
+
+def test_wednesday_add_is_not():
+    assert not added_on_monday_or_tuesday(datetime(2026, 10, 21, 7, 30))  # Wed 00:30 PDT
+
+
+def test_sunday_night_is_not_monday():
+    # Sun 23:00 PDT is Monday in UTC.
+    assert not added_on_monday_or_tuesday(datetime(2026, 10, 19, 6, 0))
+
+
+def test_missing_created_at_gets_no_exception():
+    assert not added_on_monday_or_tuesday(None)

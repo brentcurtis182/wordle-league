@@ -11,7 +11,7 @@ import logging
 import random
 from datetime import datetime
 import pytz
-from league_data_adapter import get_db_connection, calculate_wordle_number, get_week_start_date, get_league_min_scores, get_league_season_wins, get_player_join_week, division_counting_floor
+from league_data_adapter import get_db_connection, calculate_wordle_number, get_week_start_date, get_league_min_scores, get_league_season_wins, get_player_join_week, division_counting_floor, division_join_grace_week, added_on_monday_or_tuesday
 
 DIVISION_WINS_FOR_SEASON = 3  # Wins needed to win a division season (vs 4 for normal)
 STANDARD_WINS_FOR_SEASON = 4  # The same default for a league with no divisions
@@ -475,7 +475,33 @@ def confirm_division_mode(league_id):
             UPDATE players SET division_joined_week = %s
             WHERE league_id = %s AND active = TRUE AND division IS NOT NULL
         """, (current_week, league_id))
-        
+
+        # First-week immunity (Brent, 2026-10-20). Added Monday or Tuesday of
+        # the confirm week, or any earlier week: they get the whole first
+        # division week, so they race like everyone else. Added Wednesday or
+        # later: immune for the season, like a mid-season add. Adds made while
+        # the layout was a draft were auto-flagged immune whatever the day, so
+        # this sets the flag both ways.
+        #
+        # Only on a first confirm. Every path back to unconfirmed (enable from
+        # off, a 2<->3 switch, a season reset) already clears immunity, so no
+        # earned promotion/relegation immunity can exist here to overwrite -
+        # the guard keeps it that way if confirm is ever reached another way.
+        if row[1] is None:
+            cursor.execute("""
+                SELECT id, created_at FROM players
+                WHERE league_id = %s AND active = TRUE AND division IS NOT NULL
+            """, (league_id,))
+            for pid, created_at in cursor.fetchall():
+                created_week = None
+                if created_at is not None:
+                    created_pacific = pytz.utc.localize(created_at).astimezone(pacific)
+                    created_week = calculate_wordle_number(get_week_start_date(created_pacific.date()))
+                immune = (created_week == current_week
+                          and not added_on_monday_or_tuesday(created_at))
+                cursor.execute("UPDATE players SET division_immunity = %s WHERE id = %s",
+                               (immune, pid))
+
         # Mark as confirmed
         cursor.execute("""
             UPDATE leagues SET division_confirmed_at = %s WHERE id = %s
@@ -1050,7 +1076,7 @@ def check_division_season_transition(league_id, division):
                     # Count missed weeks AND calculate season total (mirrors relegation logic)
                     missed = 0
                     season_total = 0
-                    join_week = get_player_join_week(pid, season_start, conn=conn)
+                    join_week = division_join_grace_week(pid, season_start, conn=conn)
                     w = division_counting_floor(season_start, div_joined)
                     while w <= last_week:
                         scores_in_week = week_scores.get(w, [])
@@ -1285,7 +1311,7 @@ def check_division_relegation(league_id, division):
             # standings display or the page and relegation would disagree.
             missed = 0
             total = 0
-            join_week = get_player_join_week(player_id, season_start, conn=conn)
+            join_week = division_join_grace_week(player_id, season_start, conn=conn)
             w = division_counting_floor(season_start, div_joined)
             while w <= season_end:
                 scores_in_week = week_scores.get(w, [])

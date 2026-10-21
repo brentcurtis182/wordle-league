@@ -6697,9 +6697,27 @@ def dashboard_add_player(league_id):
                 GROUP BY division
             """, (league_id,))
             div_counts = {r[0]: r[1] for r in cursor2.fetchall()}
-            # Assign to the division with fewer players (default to Div II if equal)
-            target_div = 1 if div_counts.get(1, 0) <= div_counts.get(2, 0) else 2
-            div_label = "I" if target_div == 1 else "II"
+            # Assign to the division with the fewest players, ties to the lower
+            # number - with two divisions that is exactly the old I-vs-II rule.
+            from division_manager import get_division_count, ROMAN
+            target_div = min(range(1, get_division_count(league_id, cursor=cursor2) + 1),
+                             key=lambda d: (div_counts.get(d, 0), d))
+            div_label = ROMAN[target_div]
+
+            # Immune for the season, like any mid-season add - EXCEPT on the
+            # Monday or Tuesday of the week division mode was confirmed, when
+            # the whole first week is still ahead of them (Brent, 2026-10-20).
+            # While the layout is still a draft, flag immune anyway:
+            # confirm_division_mode re-decides it by the same rule.
+            new_player_immune = True
+            if div_row[1] is not None:
+                import pytz
+                from league_data_adapter import get_week_start_date, pacific_now
+                confirmed_pacific = pytz.utc.localize(div_row[1]).astimezone(pytz.timezone('America/Los_Angeles'))
+                today = pacific_now()
+                if (get_week_start_date(confirmed_pacific.date()) == get_week_start_date(today.date())
+                        and today.weekday() <= 1):
+                    new_player_immune = False
             
             # Get the newly inserted player's ID
             cursor2.execute("SELECT id FROM players WHERE league_id = %s AND name = %s AND active = TRUE", (league_id, name))
@@ -6712,12 +6730,13 @@ def dashboard_add_player(league_id):
                 # lock, whereas immunity lasts the whole season).
                 current_week = get_todays_wordle_number()
                 cursor2.execute("""
-                    UPDATE players SET division = %s, division_immunity = TRUE, division_joined_week = %s, division_new_movable = TRUE
+                    UPDATE players SET division = %s, division_immunity = %s, division_joined_week = %s, division_new_movable = TRUE
                     WHERE id = %s
-                """, (target_div, current_week, new_player[0]))
+                """, (target_div, new_player_immune, current_week, new_player[0]))
                 conn.commit()
                 division_msg_suffix = f" (assigned to Division {div_label})"
-                logging.info(f"Auto-assigned new player {name} to Division {div_label} in league {league_id} (immune for first season)")
+                logging.info(f"Auto-assigned new player {name} to Division {div_label} in league {league_id} "
+                             f"({'immune for first season' if new_player_immune else 'not immune: added Mon/Tue of the first division week'})")
         
         cursor2.close()
         cursor.close()

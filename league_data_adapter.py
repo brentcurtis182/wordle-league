@@ -1152,13 +1152,12 @@ def get_division_season_data(league_id, weekly_stats=None, conn=None, min_scores
             """, (league_id, div_num, season_start))
             div_weekly_wins = {r[0]: r[1] for r in cursor.fetchall()}
 
-        # Determine current week start wordle from weekly_stats
-        current_week_start = None
-        if weekly_stats:
-            for pname, pstats in weekly_stats.items():
-                if pstats.get('daily_scores'):
-                    current_week_start = min(pstats['daily_scores'].keys())
-                    break
+        # The live week's Monday - the same week get_weekly_stats summed, so the
+        # past-weeks loop below and the live overlay can never overlap. This used
+        # to be the earliest day some player happened to post this week: when
+        # that player skipped Monday, the current week was ALSO counted as a past
+        # week, doubling every Season Total and judging it as a missed week.
+        current_week_start = get_current_week_wordles()[0]
 
         for p in div_players:
             if p['immunity']:

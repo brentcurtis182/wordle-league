@@ -17,6 +17,7 @@ from html_generator_v2 import (  # noqa: E402
     division_styled_label,
 )
 from image_generator import generate_division_weekly_image  # noqa: E402
+from league_data_adapter import division_counting_floor  # noqa: E402
 
 
 def split_sizes(n, division_count):
@@ -141,3 +142,30 @@ def test_image_handles_an_empty_division():
 def test_image_still_renders_two_divisions():
     img = generate_division_weekly_image('L', [('I', _rows(4)), ('II', _rows(5))])
     assert img.size == (550, img.size[1])
+
+
+# --- the division starting line --------------------------------------------
+# Confirming division mode stamps the confirm week on every player, and the
+# season total and missed weeks count from there. Weekly wins do not.
+
+def test_floor_is_season_start_without_a_stamp():
+    assert division_counting_floor(1927, None) == 1927
+
+
+def test_floor_never_precedes_the_season_start():
+    # Next season: the old confirm stamp is behind the new season start.
+    assert division_counting_floor(1955, 1948) == 1955
+    assert division_counting_floor(1927, 1927) == 1927
+
+
+def test_floor_is_the_confirm_week():
+    # Alchemer on prod, 2026-10-20: season from 1927, confirmed in week 1948.
+    assert division_counting_floor(1927, 1948) == 1948
+
+
+def test_floor_snaps_to_the_season_week_grid():
+    assert division_counting_floor(1927, 1950) == 1948
+
+
+def test_floor_without_a_season_start():
+    assert division_counting_floor(None, 1948) is None

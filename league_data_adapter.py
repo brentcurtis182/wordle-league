@@ -273,6 +273,30 @@ def get_player_join_week(player_id, week_anchor, conn=None, _cache={}):
     return joined - ((joined - week_anchor) % 7)
 
 
+def division_counting_floor(season_start, division_joined_week):
+    """First week that counts toward a player's division season.
+
+    Confirming division mode stamps the confirm week on every player
+    (confirm_division_mode), and that is the starting line: weeks before it
+    count toward NEITHER the season total NOR missed weeks. Weekly wins are
+    deliberately not floored - they carry over from the season start.
+
+    The floor week itself counts in full, missed weeks included. Everyone had
+    the whole week available, so exempting it would let a player post fewer
+    scores, carry a lower (better) total, and dodge the missed week.
+
+    Every season-total calculation must use this - the league page, Sunday's
+    "if the season ended today", and the real promotion/relegation - or the
+    page and the actual result disagree. Returns a week-start on the
+    season_start grid; never earlier than season_start.
+    """
+    if not season_start:
+        return season_start
+    if not division_joined_week or division_joined_week <= season_start:
+        return season_start
+    return division_joined_week - ((division_joined_week - season_start) % 7)
+
+
 def clear_player_join_cache(player_id=None):
     """Clear the per-player join-week cache."""
     cache = get_player_join_week.__defaults__[-1]  # _cache={} is last default
@@ -1163,20 +1187,16 @@ def get_division_season_data(league_id, weekly_stats=None, conn=None, min_scores
                 # Use default (5) for weeks before min_weekly_scores was changed
                 past_total = 0
                 player_missed = 0
-                # The week a player joined is never a missed week.
+                # The week a player was added to the league is never a missed week.
                 join_week = get_player_join_week(p['id'], season_start, conn=conn)
-                # Nor is anything before they joined THIS DIVISION. Two reasons:
-                #   1. Turning division mode on gives everyone a clean slate —
-                #      missed weeks are a division-race concept, so weeks from
-                #      before the divisions existed must not carry in
-                #      (confirm_division_mode stamps the confirm week here).
-                #   2. A player promoted or relegated mid-season was not in this
-                #      division for the earlier weeks, so charging them missed
-                #      weeks for it was wrong.
-                div_joined = p.get('joined_week')
-                if div_joined is not None:
-                    join_week = div_joined if join_week is None else max(join_week, div_joined)
+                # Nothing before they joined THIS DIVISION counts at all - not
+                # toward the total, not as a missed week. Confirming division
+                # mode stamps the confirm week on everyone, so the division race
+                # starts level. Wins still carry (counted from season_start above).
+                floor = division_counting_floor(season_start, p.get('joined_week'))
                 for ws_start, scores in week_scores.items():
+                    if ws_start < floor:
+                        continue
                     if current_week_start and ws_start >= current_week_start:
                         continue  # Skip current week, handled via weekly_stats
                     threshold = get_min_scores_for_week(league_id, ws_start, conn=conn)
@@ -1190,8 +1210,8 @@ def get_division_season_data(league_id, weekly_stats=None, conn=None, min_scores
                 # Also check past weeks where the player had zero scores
                 # (they won't appear in week_scores at all). The join week can
                 # land here too, for someone who was added but never posted.
-                if current_week_start and season_start < current_week_start:
-                    w = season_start
+                if current_week_start and floor < current_week_start:
+                    w = floor
                     while w < current_week_start:
                         if w not in week_scores and (join_week is None or w > join_week):
                             player_missed += 1

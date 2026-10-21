@@ -868,7 +868,10 @@ def generate_division_weekly_totals_html(league_data):
         div_players_list = div_info.get('players', [])
         div_player_names = {p['name'] for p in div_players_list}
         immune_players = {p['name'] for p in div_players_list if p.get('immunity')}
-        
+        # Immune players in Division I can only have come up, and in the bottom
+        # division only down. A middle division can hold either, so it says Immune.
+        immune_label = 'Relegated' if div_num == division_count and div_num > 1 else 'Immune'
+
         # Filter weekly_stats to only this division's players
         div_stats = {name: stats for name, stats in weekly_stats.items() if player_divisions.get(name) == div_num}
         
@@ -925,13 +928,11 @@ def generate_division_weekly_totals_html(league_data):
         for player_name, stats in sorted_players:
             row_style = ''
             if stats['used_scores'] >= min_scores:
-                row_style = ' style="background-color: rgba(0, 232, 218, 0.15);"' if div_num == 1 else ' style="background-color: rgba(255, 166, 77, 0.15);"'
-            
+                row_style = f' style="background-color: {division_tint(div_num)};"'
+
             # Check immunity for season total display
             st_val = season_totals.get(player_name)
-            # Promoted players in Div I show "Immune", relegated players in Div II show "Relegated"
             if st_val is None:
-                immune_label = 'Immune' if div_num == 1 else 'Relegated'
                 season_total_display = f'<span style="color: {div_color};">{immune_label}</span>'
             else:
                 season_total_display = str(st_val) if st_val else "-"
@@ -976,9 +977,7 @@ def generate_division_weekly_totals_html(league_data):
         for p in div_players_list:
             if p['name'] not in div_stats:
                 st_val = season_totals.get(p['name'])
-                # Promoted players in Div I show "Immune", relegated players in Div II show "Relegated"
                 if st_val is None:
-                    immune_label = 'Immune' if div_num == 1 else 'Relegated'
                     season_total_display = f'<span style="color: {div_color};">{immune_label}</span>'
                 else:
                     season_total_display = str(st_val) if st_val else "-"
@@ -1002,10 +1001,11 @@ def generate_division_weekly_totals_html(league_data):
         # Show promoted/relegated count below each division table
         promoted_count = league_data.get('promoted_count', 1)
         relegated_count = league_data.get('relegated_count', 1)
-        if div_num == 1:
-            html += f'<p style="margin: 6px 0 0; font-size: 0.8em; color: #00E8DA; font-style: italic;">&#x2B07; Relegated Players: {relegated_count}</p>\n'
-        else:
-            html += f'<p style="margin: 6px 0 0; font-size: 0.8em; color: #FFA64D; font-style: italic;">&#x2B06; Promoted Players: {promoted_count}</p>\n'
+        # A middle division does both, so it gets both lines.
+        if div_num > 1:
+            html += f'<p style="margin: 6px 0 0; font-size: 0.8em; color: {div_color}; font-style: italic;">&#x2B06; Promoted Players: {promoted_count}</p>\n'
+        if div_num < division_count:
+            html += f'<p style="margin: 6px 0 0; font-size: 0.8em; color: {div_color}; font-style: italic;">&#x2B07; Relegated Players: {relegated_count}</p>\n'
         
         html += '</div>\n'
     

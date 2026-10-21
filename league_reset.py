@@ -178,7 +178,8 @@ def reset_current_season(league_id):
         div_row = cursor.fetchone()
         if div_row and div_row[0]:
             # Reset division_seasons start weeks to current week
-            for div in (1, 2):
+            from division_manager import get_division_count
+            for div in range(1, get_division_count(league_id, cursor=cursor) + 1):
                 cursor.execute("""
                     UPDATE division_seasons
                     SET season_start_week = %s, updated_at = CURRENT_TIMESTAMP
@@ -513,8 +514,9 @@ def reset_season_winners(league_id):
             # Delete all division season boundaries
             cursor.execute("DELETE FROM division_season_boundaries WHERE league_id = %s", (league_id,))
             
-            # Reset both divisions to Season 1 with current start week
-            for div in (1, 2):
+            # Reset every division to Season 1 with current start week
+            from division_manager import get_division_count
+            for div in range(1, get_division_count(league_id, cursor=cursor) + 1):
                 cursor.execute("""
                     UPDATE division_seasons
                     SET current_season = 1, season_start_week = %s, updated_at = CURRENT_TIMESTAMP

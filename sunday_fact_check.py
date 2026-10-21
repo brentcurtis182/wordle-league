@@ -128,8 +128,8 @@ def get_league_truth(cursor, league_id, week):
     # when the real boundary was 1850) and would manufacture false "wrong count" alarms.
     season_starts = {}
     if division_mode:
-        from division_manager import get_division_season_info
-        for div in (1, 2):
+        from division_manager import get_division_season_info, get_division_count
+        for div in range(1, get_division_count(league_id) + 1):
             info = get_division_season_info(league_id, div)
             season_starts[div] = {
                 'season': info['current_season'],

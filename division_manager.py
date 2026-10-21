@@ -11,7 +11,7 @@ import logging
 import random
 from datetime import datetime
 import pytz
-from league_data_adapter import get_db_connection, calculate_wordle_number, get_week_start_date, get_league_min_scores, get_league_season_wins, get_player_join_week
+from league_data_adapter import get_db_connection, calculate_wordle_number, get_week_start_date, get_league_min_scores, get_league_season_wins, get_player_join_week, division_counting_floor
 
 DIVISION_WINS_FOR_SEASON = 3  # Wins needed to win a division season (vs 4 for normal)
 STANDARD_WINS_FOR_SEASON = 4  # The same default for a league with no divisions
@@ -1021,14 +1021,14 @@ def check_division_season_transition(league_id, division):
                 # Get remaining Div II players and calculate true season totals from raw scores
                 winner_name_set = set(promoted_names)
                 cursor.execute("""
-                    SELECT p.id, p.name FROM players p
+                    SELECT p.id, p.name, p.division_joined_week FROM players p
                     WHERE p.league_id = %s AND p.division = %s AND p.active = TRUE
                         AND p.division_immunity = FALSE
                 """, (league_id, division))
                 div2_players = cursor.fetchall()
 
                 candidates = []
-                for pid, pname in div2_players:
+                for pid, pname, div_joined in div2_players:
                     if pname in winner_name_set:
                         continue
 
@@ -1050,11 +1050,12 @@ def check_division_season_transition(league_id, division):
                     # Count missed weeks AND calculate season total (mirrors relegation logic)
                     missed = 0
                     season_total = 0
-                    w = season_start
+                    join_week = get_player_join_week(pid, season_start, conn=conn)
+                    w = division_counting_floor(season_start, div_joined)
                     while w <= last_week:
                         scores_in_week = week_scores.get(w, [])
                         valid = sorted([s for s in scores_in_week if s < 7])
-                        if len(valid) < min_scores:
+                        if len(valid) < min_scores and (join_week is None or w > join_week):
                             missed += 1
                         season_total += sum(valid[:min_scores]) if valid else 0
                         w += 7
@@ -1247,15 +1248,15 @@ def check_division_relegation(league_id, division):
         
         # Get Division I players (non-immune)
         cursor.execute("""
-            SELECT p.id, p.name, p.division_immunity
+            SELECT p.id, p.name, p.division_immunity, p.division_joined_week
             FROM players p
             WHERE p.league_id = %s AND p.division = %s AND p.active = TRUE
         """, (league_id, division))
         div1_players = cursor.fetchall()
-        
+
         # Calculate stats for each eligible-for-relegation player
         player_stats = []
-        for player_id, player_name, is_immune in div1_players:
+        for player_id, player_name, is_immune, div_joined in div1_players:
             if is_immune:
                 continue  # Immune players can't be relegated
             if player_name in season_winner_names:
@@ -1279,12 +1280,13 @@ def check_division_relegation(league_id, division):
                 week_scores[ws].append(sc)
             
             # Count missed weeks AND calculate true season total (best-N per week, ALL weeks)
-            # The week a player joined is never a missed week, and this must agree
-            # with the standings display or the page and relegation would disagree.
+            # The week a player joined is never a missed week, and nothing before
+            # they joined this division counts at all. This must agree with the
+            # standings display or the page and relegation would disagree.
             missed = 0
             total = 0
             join_week = get_player_join_week(player_id, season_start, conn=conn)
-            w = season_start
+            w = division_counting_floor(season_start, div_joined)
             while w <= season_end:
                 scores_in_week = week_scores.get(w, [])
                 valid = sorted([s for s in scores_in_week if s < 7])

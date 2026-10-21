@@ -13107,9 +13107,13 @@ def admin_league_state(league_id):
                           for r in cursor.fetchall()}
             result['division_seasons'] = div_seasons
 
+            from division_manager import get_division_count
+            from league_data_adapter import division_counting_floor
+            div_range = range(1, get_division_count(league_id) + 1)
+
             # Per-division weekly wins in current season
             div_wins = {}
-            for div_num in (1, 2):
+            for div_num in div_range:
                 ds = div_seasons.get(div_num)
                 if ds and ds['season_start_week']:
                     cursor.execute("""
@@ -13127,7 +13131,7 @@ def admin_league_state(league_id):
             current_week_start = calculate_wordle_number(get_week_start_date())
 
             div_season_totals = {}
-            for div_num in (1, 2):
+            for div_num in div_range:
                 ds = div_seasons.get(div_num)
                 if not ds or not ds['season_start_week']:
                     continue
@@ -13136,7 +13140,7 @@ def admin_league_state(league_id):
                 totals = {}
                 for p in div_players:
                     if p['immunity']:
-                        totals[p['name']] = 'Immune' if div_num == 1 else 'Relegated'
+                        totals[p['name']] = 'Immune'
                         continue
                     cursor.execute("""
                         SELECT s.wordle_number, s.score FROM scores s
@@ -13150,7 +13154,7 @@ def admin_league_state(league_id):
                             week_scores[ws] = []
                         week_scores[ws].append(sc)
                     total = 0
-                    w = season_start
+                    w = division_counting_floor(season_start, p['joined_week'])
                     while w <= current_week_start:
                         scores_in_week = week_scores.get(w, [])
                         valid = sorted([s for s in scores_in_week if s < 7])

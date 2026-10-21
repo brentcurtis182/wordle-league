@@ -18,7 +18,7 @@ import pytz
 # Add parent directory to path
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from league_data_adapter import get_db_connection, calculate_wordle_number, get_week_start_date, get_league_min_scores
+from league_data_adapter import get_db_connection, calculate_wordle_number, get_week_start_date, get_league_min_scores, get_player_join_week, division_counting_floor
 from season_management import get_weekly_wins_in_current_season
 from image_generator import generate_weekly_image, generate_season_image, generate_division_weekly_image, image_to_bytes
 
@@ -457,7 +457,7 @@ def _calc_season_stats(cursor, league_id, division, season_start, min_scores, di
     not counted as missing it.
     """
     cursor.execute("""
-        SELECT p.id, p.name FROM players p
+        SELECT p.id, p.name, p.division_joined_week FROM players p
         WHERE p.league_id = %s AND p.division = %s AND p.active = TRUE
             AND p.division_immunity = FALSE
     """, (league_id, division))
@@ -480,7 +480,7 @@ def _calc_season_stats(cursor, league_id, division, season_start, min_scores, di
     live = {s['name']: s for s in (div_standings or [])}
 
     stats = {}
-    for player_id, player_name in players:
+    for player_id, player_name, div_joined in players:
         cursor.execute("""
             SELECT s.wordle_number, s.score
             FROM scores s
@@ -493,13 +493,17 @@ def _calc_season_stats(cursor, league_id, division, season_start, min_scores, di
             ws = wn - ((wn - season_start) % 7)
             week_scores.setdefault(ws, []).append(sc)
 
-        # Walk every COMPLETED week of the season, including ones never played.
+        # Walk every COMPLETED week from the player's division starting line,
+        # including ones never played. Same rules as the league page and the
+        # real relegation: nothing before the floor counts, and the week a
+        # player was added to the league is never a missed week.
         total = 0
         missed = 0
-        w = season_start
+        join_week = get_player_join_week(player_id, season_start, conn=cursor.connection)
+        w = division_counting_floor(season_start, div_joined)
         while w < current_week_start:
             valid = sorted([s for s in week_scores.get(w, []) if s < 7])
-            if len(valid) < min_scores:
+            if len(valid) < min_scores and (join_week is None or w > join_week):
                 missed += 1
             total += sum(valid[:min_scores])
             w += 7

@@ -266,9 +266,48 @@ def gather_cloudflare(week):
     if not (token and account and site_tag):
         return {'connected': False}
     this_start, this_end, prev_start, prev_end = week
-    return {'connected': True,
-            'this': _cf_week(token, account, site_tag, this_start, this_end),
-            'prev': _cf_week(token, account, site_tag, prev_start, prev_end)}
+    out = {'connected': True,
+           'this': _cf_week(token, account, site_tag, this_start, this_end),
+           'prev': _cf_week(token, account, site_tag, prev_start, prev_end)}
+    # Page speed is a separate query so a schema surprise there can't take
+    # the traffic numbers down with it.
+    try:
+        out['vitals'] = {'this': _cf_vitals(token, account, site_tag, this_start, this_end),
+                         'prev': _cf_vitals(token, account, site_tag, prev_start, prev_end)}
+    except Exception as e:
+        out['vitals_error'] = f'{type(e).__name__}: {e}'[:300]
+    return out
+
+
+CF_VITALS_QUERY = """
+query($account: String!, $filter: AccountRumWebVitalsEventsAdaptiveGroupsFilter_InputObject!) {
+  viewer { accounts(filter: {accountTag: $account}) {
+    rumWebVitalsEventsAdaptiveGroups(limit: 1, filter: $filter) {
+      count
+      quantiles { largestContentfulPaintP75 interactionToNextPaintP75 cumulativeLayoutShiftP75 }
+    }
+  } }
+}"""
+
+
+def _cf_vitals(token, account, site_tag, start, end):
+    t0 = PACIFIC.localize(datetime.combine(start, datetime.min.time())).astimezone(timezone.utc)
+    t1 = PACIFIC.localize(datetime.combine(end + timedelta(days=1), datetime.min.time())).astimezone(timezone.utc)
+    flt = {'siteTag': site_tag, 'datetime_geq': t0.strftime('%Y-%m-%dT%H:%M:%SZ'),
+           'datetime_lt': t1.strftime('%Y-%m-%dT%H:%M:%SZ')}
+    r = requests.post('https://api.cloudflare.com/client/v4/graphql',
+                      headers={'Authorization': f'Bearer {token}'},
+                      json={'query': CF_VITALS_QUERY, 'variables': {'account': account, 'filter': flt}}, timeout=60)
+    r.raise_for_status()
+    body = r.json()
+    if body.get('errors'):
+        raise RuntimeError('; '.join(e.get('message', '?') for e in body['errors']))
+    g = body['data']['viewer']['accounts'][0]['rumWebVitalsEventsAdaptiveGroups']
+    if not g:
+        return None
+    q = g[0]['quantiles']
+    return {'samples': g[0]['count'], 'lcp_ms': q.get('largestContentfulPaintP75'),
+            'inp_ms': q.get('interactionToNextPaintP75'), 'cls': q.get('cumulativeLayoutShiftP75')}
 
 
 # ---------------------------------------------------------------------------
@@ -327,6 +366,90 @@ def gather_product(conn, week):
                     'past_due': subs_now.get('past_due', 0)}}
 
 
+def gather_attribution(conn, week):
+    """Signups by source and signup-page arrivals (signup_attribution.py)."""
+    this_start, this_end, prev_start, prev_end = week
+    cur = conn.cursor()
+
+    def bounds(s, e):
+        a = PACIFIC.localize(datetime.combine(s, datetime.min.time())).astimezone(timezone.utc).replace(tzinfo=None)
+        b = PACIFIC.localize(datetime.combine(e + timedelta(days=1), datetime.min.time())).astimezone(timezone.utc).replace(tzinfo=None)
+        return a, b
+
+    def grouped(sql, s, e):
+        cur.execute(sql, bounds(s, e))
+        return {(k or 'unknown'): n for k, n in cur.fetchall()}
+
+    out = {}
+    for name, sql in (
+        ('signups', "SELECT COALESCE(signup_source, 'unknown'), COUNT(*) FROM users "
+                    "WHERE created_at >= %s AND created_at < %s GROUP BY 1"),
+        # Arrivals that came through one of our site's buttons (wpl_cta set).
+        ('cta_arrivals', "SELECT cta, COUNT(*) FROM signup_funnel_events WHERE event = 'arrival' "
+                         "AND cta IS NOT NULL AND page LIKE '/auth/register%%' "
+                         "AND created_at >= %s AND created_at < %s GROUP BY 1"),
+        ('arrivals_by_source', "SELECT source, COUNT(*) FROM signup_funnel_events WHERE event = 'arrival' "
+                               "AND page LIKE '/auth/register%%' AND created_at >= %s AND created_at < %s GROUP BY 1"),
+    ):
+        out[name] = {'this': grouped(sql, this_start, this_end), 'prev': grouped(sql, prev_start, prev_end)}
+    cur.execute("SELECT MIN(created_at) FROM signup_funnel_events")
+    out['tracking_since'] = cur.fetchone()[0]
+    return out
+
+
+BING_API = 'https://ssl.bing.com/webmaster/api.svc/json'
+
+
+def _bing_date(v):
+    # Bing returns "/Date(1729641600000)/" (ms since epoch, sometimes with an offset).
+    m = re.search(r'(\d{10,})', str(v or ''))
+    return datetime.fromtimestamp(int(m.group(1)) / 1000, timezone.utc).date() if m else None
+
+
+def gather_bing(week):
+    key = os.environ.get('BING_WEBMASTER_API_KEY')
+    if not key:
+        return {'connected': False}
+    site = os.environ.get('BING_SITE_URL', 'https://wordplayleague.com/')
+    this_start, this_end, prev_start, prev_end = week
+
+    def call(method):
+        r = requests.get(f'{BING_API}/{method}', params={'siteUrl': site, 'apikey': key}, timeout=60)
+        r.raise_for_status()
+        return r.json().get('d') or []
+
+    def sum_range(rows, s, e):
+        tot = {'clicks': 0, 'impressions': 0}
+        for row in rows:
+            d = _bing_date(row.get('Date'))
+            if d and s <= d <= e:
+                tot['clicks'] += row.get('Clicks', 0) or 0
+                tot['impressions'] += row.get('Impressions', 0) or 0
+        return tot
+
+    traffic = call('GetRankAndTrafficStats')
+    out = {'connected': True,
+           'this': sum_range(traffic, this_start, this_end),
+           'prev': sum_range(traffic, prev_start, prev_end)}
+    try:
+        agg = {}
+        for row in call('GetQueryStats'):
+            d = _bing_date(row.get('Date'))
+            if d and prev_start <= d <= this_end:
+                k = (row.get('Query') or '').strip()
+                a = agg.setdefault(k, {'impressions': 0, 'clicks': 0, 'pos': []})
+                a['impressions'] += row.get('Impressions', 0) or 0
+                a['clicks'] += row.get('Clicks', 0) or 0
+                if row.get('AvgImpressionPosition'):
+                    a['pos'].append(row['AvgImpressionPosition'])
+        out['queries'] = sorted(({'key': k, 'impressions': v['impressions'], 'clicks': v['clicks'],
+                                  'position': (sum(v['pos']) / len(v['pos'])) if v['pos'] else None}
+                                 for k, v in agg.items()), key=lambda r: -r['impressions'])[:15]
+    except Exception as e:
+        out['queries_error'] = str(e)[:200]
+    return out
+
+
 # ---------------------------------------------------------------------------
 # build + render
 # ---------------------------------------------------------------------------
@@ -337,8 +460,10 @@ def build(dry_run=False):
     prev_snap = load_previous_snapshot(conn, week[0])
     report = {'week': week, 'prev_snapshot_week': (prev_snap or {}).get('week_start')}
     for name, fn in (('product', lambda: gather_product(conn, week)),
+                     ('attribution', lambda: gather_attribution(conn, week)),
                      ('gsc', lambda: gather_gsc(prev_snap)),
-                     ('cf', lambda: gather_cloudflare(week))):
+                     ('cf', lambda: gather_cloudflare(week)),
+                     ('bing', lambda: gather_bing(week))):
         try:
             report[name] = fn()
         except Exception as e:
@@ -397,6 +522,10 @@ def summary_lines(report):
         top_ref = next((k for k in t['refs'] if k not in ('(none)', 'wordplayleague.com')), None)
         out.append(f"Site: {t['visits']} visits ({delta(t['visits'], pv['visits'])[0]}), {t['views']} page views"
                    + (f"; top outside referrer {top_ref}." if top_ref else '.'))
+    srcs = ((report.get('attribution') or {}).get('signups') or {}).get('this') or {}
+    known = {k: v for k, v in srcs.items() if k != 'unknown'}
+    if known:
+        out.append('Signups by source: ' + ', '.join(f'{k} {v}' for k, v in sorted(known.items(), key=lambda kv: -kv[1])) + '.')
     if p.get('this'):
         t = p['this']
         out.append(f"{t['accounts']} new account{'s' if t['accounts'] != 1 else ''}, {t['leagues_created']} league"
@@ -508,6 +637,21 @@ def render_html(report):
             note(f"Sitemap {_esc(sm.get('path'))}: last read {(sm.get('lastDownloaded') or '?')[:10]}, "
                  f"{sm.get('errors', 0)} errors, {sm.get('warnings', 0)} warnings.")
 
+    # --- Bing ---
+    b = report.get('bing') or {}
+    section('Bing', 'Bing Webmaster Tools. Bing\u2019s index also feeds DuckDuckGo, Yahoo and the search behind ChatGPT / Copilot.')
+    if not b.get('connected'):
+        note('Not connected yet: needs BING_WEBMASTER_API_KEY on the cron service.', '#f39c12')
+    elif b.get('error'):
+        note(f'Bing failed: {_esc(b["error"])}', bad_c)
+    else:
+        tiles([('Clicks', b['this']['clicks'], b['prev']['clicks'], False),
+               ('Impressions', b['this']['impressions'], b['prev']['impressions'], False)])
+        if b.get('queries'):
+            table(['Query (last 2 weeks)', 'Clicks', 'Impr.', 'Position'],
+                  [[_esc(q['key']), q['clicks'], q['impressions'], f"{q['position']:.1f}" if q['position'] else '&ndash;']
+                   for q in b['queries']])
+
     # --- Site traffic ---
     cf = report.get('cf') or {}
     section('Website traffic', 'Cloudflare Web Analytics: real visitors (no bots, no cookies), Mon&ndash;Sun Pacific.')
@@ -535,6 +679,31 @@ def render_html(report):
         section('Countries / devices')
         table(['Country', 'Views', 'Change'], merged('countries', 8))
         table(['Device', 'Views', 'Change'], merged('devices', 4))
+        section('Page speed', 'Real visitors, 75th percentile (what Google judges). Google\u2019s targets: load under 2.5s, response under 200ms, shift under 0.1.')
+        v = cf.get('vitals') or {}
+        vt, vp = v.get('this'), v.get('prev') or {}
+        if cf.get('vitals_error'):
+            note(f'Page speed unavailable: {_esc(cf["vitals_error"])}', '#f39c12')
+        elif not vt:
+            note('No page-speed samples this week yet.')
+        else:
+            def grade(val, good, poor):
+                if val is None:
+                    return mute
+                return ok_c if val <= good else ('#f39c12' if val <= poor else bad_c)
+            cells = [('Load (LCP)', vt.get('lcp_ms'), vp.get('lcp_ms'), 2500, 4000, lambda x: f'{x / 1000:.2f}s'),
+                     ('Response (INP)', vt.get('inp_ms'), vp.get('inp_ms'), 200, 500, lambda x: f'{x:.0f}ms'),
+                     ('Layout shift (CLS)', vt.get('cls'), vp.get('cls'), 0.1, 0.25, lambda x: f'{x:.3f}')]
+            h.append('<table style="width:100%;border-collapse:separate;border-spacing:6px;margin:0 -6px;"><tr>')
+            for label, cur_v, prev_v, good, poor, fmt in cells:
+                shown = fmt(cur_v) if cur_v is not None else '&ndash;'
+                was = f'was {fmt(prev_v)}' if prev_v is not None else '&nbsp;'
+                h.append(f'<td style="background:#1b1b28;border-radius:8px;padding:12px;">'
+                         f'<div style="font-size:11px;color:{mute};text-transform:uppercase;letter-spacing:.05em;">{label}</div>'
+                         f'<div style="font-size:22px;font-weight:700;margin:4px 0;color:{grade(cur_v, good, poor)};">{shown}</div>'
+                         f'<div style="font-size:12px;color:{mute};">{was}</div></td>')
+            h.append('</tr></table>')
+            note(f'{vt.get("samples", 0)} page loads measured.')
 
     # --- Product ---
     p = report.get('product') or {}
@@ -561,7 +730,29 @@ def render_html(report):
                   [[_esc(a['who']), pytz.utc.localize(a['when']).astimezone(PACIFIC).strftime('%a %b %d %I:%M %p'),
                     a['leagues'], a['subs']] for a in p['new_accounts']])
         if not report.get('prev_now'):
-            note('Paying / trialing / connected / total compare against last week’s snapshot, starting next week.')
+            note('Paying / trialing / connected / total compare against last week\u2019s snapshot, starting next week.')
+
+    # --- Where signups come from ---
+    at = report.get('attribution') or {}
+    section('Where signups come from', 'Each new account is stamped with how its first visit arrived (site, campaign tag, or Slack app directory).')
+    if at.get('error'):
+        note(f'Attribution unavailable: {_esc(at["error"])}', bad_c)
+    elif at:
+        def compare(key, label, n=12):
+            t, pv = at[key]['this'], at[key]['prev']
+            names = sorted(set(t) | set(pv), key=lambda k: (-t.get(k, 0), -pv.get(k, 0)))[:n]
+            if not names:
+                note('None this week or last.')
+                return
+            table([label, 'This week', 'Last week'], [[_esc(k), t.get(k, 0), pv.get(k, 0)] for k in names])
+        compare('signups', 'Source of new accounts')
+        section('Signup-page visits by source')
+        compare('arrivals_by_source', 'Source')
+        section('Which button sent them', 'Clicks on our site\u2019s "Start your league" buttons that reached the signup page.')
+        compare('cta_arrivals', 'Page # section')
+        since = at.get('tracking_since')
+        if since:
+            note(f'Tracking since {pytz.utc.localize(since).astimezone(PACIFIC):%b %d}. Accounts created earlier show as "unknown".')
 
     h.append(f'<div style="color:#6a6a80;font-size:11px;margin-top:28px;">Generated {datetime.now(timezone.utc):%Y-%m-%d %H:%M UTC} '
              '&middot; Search Console API, Cloudflare Web Analytics, WordPlayLeague database.</div></div>')
@@ -581,7 +772,7 @@ def send(report, dry_run=False, html_path=None):
         print(f"\nSUBJECT: {subject}\n")
         for line in summary_lines(report):
             print(' -', line)
-        for name in ('gsc', 'cf', 'product'):
+        for name in ('gsc', 'bing', 'cf', 'product', 'attribution'):
             sec = report.get(name) or {}
             state = 'error: ' + sec['error'] if sec.get('error') else ('connected' if sec.get('connected', True) else 'NOT CONNECTED')
             print(f"   [{name}] {state}")

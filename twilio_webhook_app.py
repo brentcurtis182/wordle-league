@@ -149,6 +149,28 @@ def validate_twilio_webhook():
         #         '<Response><Message>Unauthorized</Message></Response>'), 403
 
 # ---------------------------------------------------------------------------
+# Signup attribution: arrivals at the auth pages + first-touch source cookie
+# (see signup_attribution.py). Fail-safe; never blocks a login or signup.
+# ---------------------------------------------------------------------------
+@app.before_request
+def track_signup_arrival():
+    from flask import g
+    if request.method == 'GET':
+        from signup_attribution import track_arrival
+        g.wpl_src_cookie = track_arrival(request, get_db_connection)
+
+
+@app.after_request
+def set_signup_source_cookie(response):
+    from flask import g
+    value = getattr(g, 'wpl_src_cookie', None)
+    if value:
+        from signup_attribution import set_cookie
+        set_cookie(response, value)
+    return response
+
+
+# ---------------------------------------------------------------------------
 # Security Headers (Item #10)
 # ---------------------------------------------------------------------------
 @app.after_request
@@ -3375,6 +3397,8 @@ def auth_register():
         result = register_user(email, password, first_name, last_name, phone, sms_consent)
         
         if result['success']:
+            from signup_attribution import record_signup
+            record_signup(request, get_db_connection, user_id=result.get('user_id'), email=email)
             from dashboard import render_unverified_email_page
             return render_unverified_email_page(email)
         else:
@@ -3527,6 +3551,16 @@ def auth_google_callback():
         result = google_oauth_callback(code)
         
         if result['success']:
+            # Only stamps an account created in the last hour with no source,
+            # so a returning Google user is untouched.
+            try:
+                from auth import validate_session
+                from signup_attribution import record_signup
+                _u = validate_session(result['session_token'])
+                if _u:
+                    record_signup(request, get_db_connection, user_id=_u['id'])
+            except Exception as attr_err:
+                logging.warning(f"Google signup attribution skipped: {attr_err}")
             response = make_response(redirect('/dashboard'))
             response.set_cookie('session_token', result['session_token'],
                               max_age=30*24*60*60,
@@ -12662,6 +12696,9 @@ def _run_one_time_migrations():
         # Add promoted_count and relegated_count columns for division mode (can differ to balance pacing)
         cursor.execute("ALTER TABLE leagues ADD COLUMN IF NOT EXISTS promoted_count INTEGER DEFAULT 1")
         cursor.execute("ALTER TABLE leagues ADD COLUMN IF NOT EXISTS relegated_count INTEGER DEFAULT 1")
+        # Signup attribution (users.signup_source / signup_detail, funnel events).
+        from signup_attribution import ensure_schema as _attr_schema
+        _attr_schema(cursor)
         # Division II's own pair in 3-division mode. NULL = same as the league pair.
         cursor.execute("ALTER TABLE leagues ADD COLUMN IF NOT EXISTS div2_promoted_count INTEGER DEFAULT NULL")
         cursor.execute("ALTER TABLE leagues ADD COLUMN IF NOT EXISTS div2_relegated_count INTEGER DEFAULT NULL")

@@ -48,6 +48,17 @@ def _reset_season_wins_to_mode_default(cursor, league_id, to_division):
                      f"default ({old_default} -> {new_default})")
 
 
+def _reset_movement_counts(cursor, league_id):
+    """Every promote/relegate count to 1: the league pair to 1, Division II's
+    own pair to NULL (= follow the league pair, so also 1)."""
+    cursor.execute("""
+        UPDATE leagues
+        SET promoted_count = 1, relegated_count = 1,
+            div2_promoted_count = NULL, div2_relegated_count = NULL
+        WHERE id = %s
+    """, (league_id,))
+
+
 def get_division_count(league_id, conn=None, cursor=None):
     """How many divisions this league runs. NULL in the column means 2 — the
     only value that existed before 3-division mode — so old leagues behave
@@ -236,6 +247,10 @@ def _enable_division_mode(league_id, cursor, conn, division_count=2):
 
     # Division seasons are shorter: 4 wins -> 3, for 2 and 3 divisions alike.
     _reset_season_wins_to_mode_default(cursor, league_id, to_division=True)
+
+    # Fresh start: every movement count back to 1 (Brent, 2026-10-23), rather
+    # than whatever the league had the last time divisions were on.
+    _reset_movement_counts(cursor, league_id)
 
     conn.commit()
 
@@ -601,6 +616,9 @@ def change_division_count(league_id, new_count):
             SET division_count = %s, division_confirmed_at = NULL, division_locked = FALSE
             WHERE id = %s
         """, (new_count, league_id))
+        # The boxes mean different things in 2 vs 3 divisions, and the seasons
+        # restart anyway, so every movement count goes back to 1.
+        _reset_movement_counts(cursor, league_id)
 
         conn.commit()
 

@@ -419,6 +419,82 @@ def send_admin_league_created_email(league_name, league_slug, channel_type, leag
     return _send_email(ADMIN_EMAIL, subject, html)
 
 
+def send_admin_new_subscription_email(plan_label, monthly_cents, status, trial_end, owner_name, owner_email,
+                                      league_name=None, league_slug=None, stripe_url=None):
+    """Send admin notification when a customer completes checkout (new subscription).
+
+    status is Stripe's: 'trialing' means card on file, first charge at
+    trial_end (a datetime); anything else means they were charged now.
+    """
+    from datetime import datetime
+
+    created_at = datetime.utcnow().strftime('%B %d, %Y at %I:%M %p UTC')
+    price = f"${monthly_cents / 100:.2f}/mo" if monthly_cents is not None else 'N/A'
+    if status == 'trialing':
+        status_html = (f'<span style="color: #FFA64D; font-weight: bold;">Free trial</span>'
+                       f'<span style="color: #888;"> &middot; first charge {trial_end:%B %d, %Y}</span>'
+                       if trial_end else '<span style="color: #FFA64D; font-weight: bold;">Free trial</span>')
+    else:
+        status_html = f'<span style="color: #2ECC71; font-weight: bold;">Paid ({status})</span>'
+    league_url = f"{APP_URL}/leagues/{league_slug}" if league_slug else ""
+    league_row = (f'<a href="{league_url}" style="color: #00E8DA; text-decoration: none;">{league_name or league_slug}</a>'
+                  if league_url else (league_name or 'Not assigned yet'))
+
+    body = f"""
+    <p style="color: #e0e0e0; line-height: 1.6;">Someone just subscribed to WordPlayLeague.</p>
+
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1a1a2e" style="background-color: #1a1a2e; border-radius: 8px; margin: 20px 0;"><tr><td style="padding: 16px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+                <td style="color: #888; padding: 6px 0; width: 120px;">Plan</td>
+                <td style="color: #00E8DA; padding: 6px 0; font-weight: bold; font-size: 1.05em;">{plan_label}</td>
+            </tr>
+            <tr>
+                <td style="color: #888; padding: 6px 0;">Price</td>
+                <td style="color: #e0e0e0; padding: 6px 0;">{price}</td>
+            </tr>
+            <tr>
+                <td style="color: #888; padding: 6px 0;">Status</td>
+                <td style="padding: 6px 0;">{status_html}</td>
+            </tr>
+            <tr>
+                <td style="color: #888; padding: 6px 0;">League</td>
+                <td style="color: #e0e0e0; padding: 6px 0;">{league_row}</td>
+            </tr>
+        </table>
+    </td></tr></table>
+
+    <p style="color: #00E8DA; font-weight: bold; font-size: 1.05em; margin-top: 24px;">Customer</p>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#1a1a2e" style="background-color: #1a1a2e; border-radius: 8px; margin: 10px 0 20px;"><tr><td style="padding: 16px;">
+        <table width="100%" cellpadding="0" cellspacing="0">
+            <tr>
+                <td style="color: #888; padding: 4px 0; width: 120px;">Name</td>
+                <td style="color: #e0e0e0; padding: 4px 0; font-weight: bold;">{owner_name or 'N/A'}</td>
+            </tr>
+            <tr>
+                <td style="color: #888; padding: 4px 0;">Email</td>
+                <td style="padding: 4px 0;"><a href="mailto:{owner_email}" style="color: #00E8DA; text-decoration: none;">{owner_email or 'N/A'}</a></td>
+            </tr>
+            <tr>
+                <td style="color: #888; padding: 4px 0;">Subscribed</td>
+                <td style="color: #e0e0e0; padding: 4px 0;">{created_at}</td>
+            </tr>
+        </table>
+    </td></tr></table>
+    """
+    if stripe_url:
+        body += f"""
+    <div style="text-align: center; margin: 30px 0;">
+        <a href="{stripe_url}" style="background: #00E8DA; color: #1a1a2e; padding: 14px 32px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 1em; display: inline-block;">View in Stripe</a>
+    </div>
+    """
+
+    kind = 'Trial Started' if status == 'trialing' else 'New Subscription'
+    subject = f"{kind}: {plan_label}" + (f" ({league_name})" if league_name else "")
+    html = _get_email_template(kind, body)
+    return _send_email(ADMIN_EMAIL, subject, html)
+
+
 # ============================================================
 # Newsletter / Feature Update Emails
 # ============================================================

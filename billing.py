@@ -1251,6 +1251,60 @@ def _on_checkout_completed(session):
         cursor.close()
         conn.close()
 
+    _notify_admin_new_subscription(sub, user_id, plan_type, plan_tier, league_id)
+
+
+def _plan_label(plan_type, plan_tier):
+    if plan_type == 'sms' or plan_tier.startswith('sms_'):
+        if plan_tier in SMS_BUNDLES:
+            return f"SMS · {SMS_BUNDLES[plan_tier]['player_count']} players + AI"
+        return f"SMS · {plan_tier.replace('sms_', '')} players"
+    tier = SLACK_TIERS.get(plan_tier)
+    if not tier:
+        return f"{plan_type} · {plan_tier}"
+    slots = tier['league_slots']
+    label = f"Slack/Discord · {slots} league{'s' if slots != 1 else ''}"
+    if slots > 1:
+        return label + " (AI included)"
+    return label + (" + AI" if tier['ai_included'] else "")
+
+
+def _notify_admin_new_subscription(sub, user_id, plan_type, plan_tier, league_id):
+    """Email Brent about a new subscription. Fail-safe: never affects billing."""
+    try:
+        from auth import get_db_connection
+        from datetime import datetime
+        from email_utils import send_admin_new_subscription_email
+
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT first_name, last_name, email FROM users WHERE id = %s", (user_id,))
+            u = cursor.fetchone() or (None, None, None)
+            league_name = league_slug = None
+            if league_id:
+                cursor.execute("SELECT COALESCE(display_name, name), slug FROM leagues WHERE id = %s", (int(league_id),))
+                row = cursor.fetchone()
+                if row:
+                    league_name, league_slug = row
+        finally:
+            cursor.close()
+            conn.close()
+
+        # What they'll pay per month: every item on the subscription (a base
+        # plan can carry an AI add-on item), at list price.
+        items = sub['items']['data'] if sub.get('items') else []
+        monthly = sum((it['price'].get('unit_amount') or 0) * (it.get('quantity') or 1) for it in items) if items else None
+        trial_end = datetime.utcfromtimestamp(sub['trial_end']) if sub.get('trial_end') else None
+        stripe_url = (f"https://dashboard.stripe.com/{'' if sub.get('livemode') else 'test/'}"
+                      f"subscriptions/{sub['id']}")
+
+        send_admin_new_subscription_email(
+            _plan_label(plan_type, plan_tier), monthly, sub.get('status'), trial_end,
+            f"{u[0] or ''} {u[1] or ''}".strip(), u[2], league_name, league_slug, stripe_url)
+    except Exception as e:
+        logging.error(f"Failed to send admin new-subscription email: {e}")
+
 
 def _on_subscription_updated(subscription):
     """Handle subscription updates (plan changes, status changes)."""

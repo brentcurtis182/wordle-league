@@ -11620,6 +11620,14 @@ def dashboard_division_counts(league_id):
 
         logging.info(f"League {league_id}: division counts updated - promoted={promoted}, relegated={relegated}"
                      + (f", {div2}" if div2 else ""))
+
+        # The public page is stored HTML and shows these counts (table footers
+        # and the Rules tab), so rebuild it or it keeps the old numbers.
+        try:
+            from update_pipeline import run_update_pipeline
+            run_update_pipeline(league_id)
+        except Exception as regen_err:
+            logging.error(f"League {league_id}: page regenerate after division counts failed: {regen_err}")
         return jsonify({'success': True, 'promoted_count': promoted, 'relegated_count': relegated, **div2})
     except Exception as e:
         logging.error(f"Error updating division counts: {e}")

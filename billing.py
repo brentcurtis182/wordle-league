@@ -1299,11 +1299,28 @@ def _notify_admin_new_subscription(sub, user_id, plan_type, plan_tier, league_id
         stripe_url = (f"https://dashboard.stripe.com/{'' if sub.get('livemode') else 'test/'}"
                       f"subscriptions/{sub['id']}")
 
+        owner = f"{u[0] or ''} {u[1] or ''}".strip() or u[2] or 'unknown'
         send_admin_new_subscription_email(
             _plan_label(plan_type, plan_tier), monthly, sub.get('status'), trial_end,
-            f"{u[0] or ''} {u[1] or ''}".strip(), u[2], league_name, league_slug, stripe_url)
+            owner, u[2], league_name, league_slug, stripe_url)
+
+        # And a text (Brent, 2026-10-23), through the same Twilio alert path as
+        # monitoring. Background thread: the Twilio call must not slow the webhook.
+        price = f"${monthly / 100:.2f}/mo" if monthly is not None else ''
+        if sub.get('status') == 'trialing':
+            head = 'Trial started'
+            tail = f" First charge {trial_end:%b %d}." if trial_end else ''
+        else:
+            head, tail = 'New subscription', ''
+        # Plain dash, not the email's middot: one non-GSM character switches
+        # the whole SMS to UCS-2 and splits it into two billed segments.
+        text = (f"WordPlayLeague {head}: {_plan_label(plan_type, plan_tier).replace(' · ', ' - ')} {price}"
+                + (f" for {league_name}" if league_name else '') + f", by {owner}.{tail}")
+        import threading
+        from monitoring import _send_alert_sms
+        threading.Thread(target=_send_alert_sms, args=(text,), daemon=True).start()
     except Exception as e:
-        logging.error(f"Failed to send admin new-subscription email: {e}")
+        logging.error(f"Failed to send admin new-subscription notification: {e}")
 
 
 def _on_subscription_updated(subscription):

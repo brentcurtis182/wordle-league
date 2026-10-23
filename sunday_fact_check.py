@@ -720,6 +720,13 @@ def main():
                 run_audit(dry_run=args.dry_run)
             except Exception as e:
                 logging.error(f"Division audit failed: {e}")
+            # Third Monday email: growth & SEO (search, indexing, traffic,
+            # signups). Same independence: its failure blocks nothing else.
+            try:
+                from growth_report import run_report
+                run_report(dry_run=args.dry_run)
+            except Exception as e:
+                logging.error(f"Growth report failed: {e}")
 
 
 if __name__ == '__main__':

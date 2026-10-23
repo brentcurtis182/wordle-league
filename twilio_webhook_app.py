@@ -12998,7 +12998,7 @@ def admin_relegation_debug(league_id):
                 trace.append(f"  SKIP {player_name}: season winner")
                 continue
 
-            cursor.execute("SELECT s.wordle_number, s.score FROM scores s WHERE s.player_id = %s AND s.wordle_number >= %s AND s.wordle_number <= %s ORDER BY s.wordle_number", (player_id, season_start, season_end))
+            cursor.execute("SELECT s.wordle_number, s.score FROM scores s WHERE s.player_id = %s AND s.wordle_number >= %s AND s.wordle_number < %s ORDER BY s.wordle_number", (player_id, season_start, season_end + 7))
             raw_scores = cursor.fetchall()
             trace.append(f"  {player_name}: raw_scores count={len(raw_scores)}, range={season_start}-{season_end}")
 

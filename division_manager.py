@@ -1058,12 +1058,15 @@ def check_division_season_transition(league_id, division):
                     if pname in winner_name_set:
                         continue
 
-                    # Get all raw scores in the ended season
+                    # Get all raw scores in the ended season. last_week is the
+                    # Monday of the final week, so the window runs to its Sunday
+                    # (last_week + 6) - stopping at last_week counted only the
+                    # final Monday and dropped the rest of that week.
                     cursor.execute("""
                         SELECT s.wordle_number, s.score FROM scores s
-                        WHERE s.player_id = %s AND s.wordle_number >= %s AND s.wordle_number <= %s
+                        WHERE s.player_id = %s AND s.wordle_number >= %s AND s.wordle_number < %s
                         ORDER BY s.wordle_number
-                    """, (pid, season_start, last_week))
+                    """, (pid, season_start, last_week + 7))
 
                     # Group by week, sum best-N per week
                     week_scores = {}
@@ -1288,14 +1291,15 @@ def check_division_relegation(league_id, division):
             if player_name in season_winner_names:
                 continue  # Season winner is exempt from relegation
             
-            # Get all scores in the ended season to calculate missed weeks AND season total
+            # Get all scores in the ended season to calculate missed weeks AND season total.
+            # season_end is the Monday of the final week; the window runs to its Sunday.
             cursor.execute("""
                 SELECT s.wordle_number, s.score
                 FROM scores s
                 WHERE s.player_id = %s
-                  AND s.wordle_number >= %s AND s.wordle_number <= %s
+                  AND s.wordle_number >= %s AND s.wordle_number < %s
                 ORDER BY s.wordle_number
-            """, (player_id, season_start, season_end))
+            """, (player_id, season_start, season_end + 7))
             
             # Group scores by week
             week_scores = {}

@@ -658,6 +658,14 @@ def run_full_update_for_league(league_id):
                                           check_division_relegation, clear_immunity,
                                           get_division_count)
             division_count = get_division_count(league_id)
+            # Record who was where (and who was immune) before anyone moves, so
+            # Monday's division audit can check the moves against the real
+            # "before". Fail-safe: never blocks the reset.
+            try:
+                from division_audit import save_pre_move_snapshot
+                save_pre_move_snapshot(league_id, last_week_start_wordle)
+            except Exception as snap_err:
+                logging.warning(f"Division audit snapshot skipped for league {league_id}: {snap_err}")
             # Check each division separately
             # transitioned_divisions stores {div_num: new_season_start_week}
             transitioned_divisions = {}

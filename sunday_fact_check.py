@@ -708,7 +708,18 @@ def main():
     ap.add_argument('--week', type=int, default=None, help='week_wordle_number to check')
     ap.add_argument('--dry-run', action='store_true', help='print instead of emailing')
     args = ap.parse_args()
-    check_week(week=args.week, dry_run=args.dry_run)
+    try:
+        check_week(week=args.week, dry_run=args.dry_run)
+    finally:
+        # Second Monday email: division movements and immunity. Rides on this
+        # cron so it needs no Railway service of its own. Runs even if the
+        # fact-check above failed, and the other way round.
+        if args.week is None:
+            try:
+                from division_audit import run_audit
+                run_audit(dry_run=args.dry_run)
+            except Exception as e:
+                logging.error(f"Division audit failed: {e}")
 
 
 if __name__ == '__main__':

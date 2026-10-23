@@ -72,6 +72,15 @@ def describe_request(req):
     """What this auth-page request tells us about where the visitor came from."""
     a = req.args
     d = {k: a.get(k, '')[:200] for k in ('utm_source', 'utm_medium', 'utm_campaign') if a.get(k)}
+    # An ad that links straight to the app: credit it by the platform's click
+    # id when untagged (same rules as the marketing site's attribution.js).
+    if not d.get('utm_source'):
+        if a.get('gclid') or a.get('gbraid') or a.get('wbraid'):
+            d.update(utm_source='google-ads', utm_medium='cpc')
+        elif a.get('msclkid'):
+            d.update(utm_source='bing-ads', utm_medium='cpc')
+        elif a.get('fbclid'):
+            d.update(utm_source='facebook', utm_medium='social')
     if a.get('wpl_ref'):
         d['ref'] = a.get('wpl_ref')[:100]
     else:

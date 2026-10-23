@@ -390,8 +390,23 @@ def gather_attribution(conn, week):
                          "AND created_at >= %s AND created_at < %s GROUP BY 1"),
         ('arrivals_by_source', "SELECT source, COUNT(*) FROM signup_funnel_events WHERE event = 'arrival' "
                                "AND page LIKE '/auth/register%%' AND created_at >= %s AND created_at < %s GROUP BY 1"),
+        # The number that matters for ad spend: subscriptions started, by the
+        # source of the account that started them (trials count - they put a
+        # card down).
+        ('subs', "SELECT COALESCE(u.signup_source, 'unknown'), COUNT(*) FROM subscriptions s "
+                 "JOIN users u ON u.id = s.user_id WHERE s.created_at >= %s AND s.created_at < %s GROUP BY 1"),
     ):
         out[name] = {'this': grouped(sql, this_start, this_end), 'prev': grouped(sql, prev_start, prev_end)}
+    # Where today's paying and trialing customers originally came from.
+    cur.execute("""
+        SELECT COALESCE(u.signup_source, 'unknown'), s.status, COUNT(*)
+        FROM subscriptions s JOIN users u ON u.id = s.user_id
+        WHERE s.status IN ('active', 'trialing') GROUP BY 1, 2
+    """)
+    now_by_source = {}
+    for src, status, n in cur.fetchall():
+        now_by_source.setdefault(src, {'active': 0, 'trialing': 0})[status] = n
+    out['customers_by_source'] = now_by_source
     cur.execute("SELECT MIN(created_at) FROM signup_funnel_events")
     out['tracking_since'] = cur.fetchone()[0]
     return out
@@ -526,6 +541,9 @@ def summary_lines(report):
     known = {k: v for k, v in srcs.items() if k != 'unknown'}
     if known:
         out.append('Signups by source: ' + ', '.join(f'{k} {v}' for k, v in sorted(known.items(), key=lambda kv: -kv[1])) + '.')
+    subs_src = ((report.get('attribution') or {}).get('subs') or {}).get('this') or {}
+    if subs_src:
+        out.append('Subscriptions by source: ' + ', '.join(f'{k} {v}' for k, v in sorted(subs_src.items(), key=lambda kv: -kv[1])) + '.')
     if p.get('this'):
         t = p['this']
         out.append(f"{t['accounts']} new account{'s' if t['accounts'] != 1 else ''}, {t['leagues_created']} league"
@@ -746,6 +764,13 @@ def render_html(report):
                 return
             table([label, 'This week', 'Last week'], [[_esc(k), t.get(k, 0), pv.get(k, 0)] for k in names])
         compare('signups', 'Source of new accounts')
+        section('Trials & subscriptions by source', 'Subscriptions started (trials included), credited to the source of the account that started them.')
+        compare('subs', 'Source')
+        cbs = at.get('customers_by_source') or {}
+        if cbs:
+            table(['Current customers by source', 'Paying', 'Trialing'],
+                  [[_esc(k), v['active'], v['trialing']]
+                   for k, v in sorted(cbs.items(), key=lambda kv: -(kv[1]['active'] + kv[1]['trialing']))])
         section('Signup-page visits by source')
         compare('arrivals_by_source', 'Source')
         section('Which button sent them', 'Clicks on our site\u2019s "Start your league" buttons that reached the signup page.')

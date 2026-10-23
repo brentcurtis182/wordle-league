@@ -2372,32 +2372,53 @@ def _render_division_players(league, players, is_chat_platform):
             </div>
         </div>'''
 
-    _applies = ' Applies at each boundary.' if division_count > 2 else ''
+    def _count_select(el_id, value, color):
+        opts = ''.join(f'<option value="{n}" {"selected" if value == n else ""}>{n}</option>' for n in (1, 2, 3))
+        return (f'<select id="{el_id}" onchange="confirmPromoRelegChange()" '
+                f'style="background: {COLORS["bg_card"]}; color: {COLORS["text"]}; border: 1px solid {color}50; '
+                f'border-radius: 6px; padding: 5px 10px; font-size: 0.85em; cursor: pointer;">{opts}</select>')
+
+    def _count_row(label, el_id, value, color, arrow):
+        return (f'<div style="display: flex; align-items: center; gap: 10px;">'
+                f'<span style="color: {color}; font-size: 0.85em; font-weight: 600; min-width: 150px;">{arrow} {label}</span>'
+                f'{_count_select(el_id, value, color)}</div>')
+
+    if division_count >= 3:
+        # Three divisions: each boundary set where it happens. Division II is
+        # the only division that sends players both ways, so it gets its own
+        # pair; Division I's relegation and Division III's promotion use the
+        # league pair (promotedCount / relegatedCount), exactly as before.
+        d2_promo = league.get('div2_promoted_count') or promo_count
+        d2_releg = league.get('div2_relegated_count') or releg_count
+
+        def _div_block(d, rows):
+            _zc = DIVISION_ZONE_COLORS.get(d, COLORS['accent_orange'])
+            return (f'<div style="border-left: 3px solid {_zc}; padding: 4px 0 4px 12px; display: flex; flex-direction: column; gap: 8px;">'
+                    f'<span style="color: {_zc}; font-weight: 700; font-size: 0.8em; letter-spacing: 0.04em;">DIVISION {DIVISION_NUMERALS.get(d, d)}</span>'
+                    + ''.join(rows) + '</div>')
+
+        count_rows = (
+            _div_block(1, [_count_row('Relegated Players', 'relegatedCount', releg_count, COLORS['accent_orange'], '&#x2B07;')])
+            + _div_block(2, [_count_row('Promoted Players', 'div2PromotedCount', d2_promo, COLORS['accent'], '&#x2B06;'),
+                             _count_row('Relegated Players', 'div2RelegatedCount', d2_releg, COLORS['accent_orange'], '&#x2B07;')])
+            + _div_block(3, [_count_row('Promoted Players', 'promotedCount', promo_count, COLORS['accent'], '&#x2B06;')])
+        )
+        movement_help = ('How many players move when that division&rsquo;s season ends. Each division runs its own season, '
+                         'so these happen at different times. Default is 1. Can be adjusted at any time. '
+                         'A season&rsquo;s moves never leave a division with fewer than 3 players.')
+    else:
+        count_rows = (_count_row('Promoted Players', 'promotedCount', promo_count, COLORS['accent'], '&#x2B06;')
+                      + _count_row('Relegated Players', 'relegatedCount', releg_count, COLORS['accent_orange'], '&#x2B07;'))
+        movement_help = 'How many players move between divisions when a season ends. Default is 1. Can be adjusted at any time.'
+
     movement_panel = f'''
         <div style="background: {COLORS['bg_dark']}; border: 1px solid {COLORS['border']}; border-radius: 10px; padding: 16px 20px;">
             <div style="margin-bottom: 10px;">
                 <span style="color: {COLORS['text']}; font-weight: 600; font-size: 0.9em;">Season Movement</span>
-                <p style="color: {COLORS['text_muted']}; font-size: 0.8em; margin: 4px 0 0;">How many players move between divisions when a season ends. Default is 1. Can be adjusted at any time.{_applies}</p>
+                <p style="color: {COLORS['text_muted']}; font-size: 0.8em; margin: 4px 0 0;">{movement_help}</p>
             </div>
             <div style="display: flex; flex-direction: column; gap: 10px;">
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="color: {COLORS['accent']}; font-size: 0.85em; font-weight: 600; min-width: 150px;">&#x2B06; Promoted Players</span>
-                    <select id="promotedCount" onchange="confirmPromoRelegChange()"
-                        style="background: {COLORS['bg_card']}; color: {COLORS['text']}; border: 1px solid {COLORS['accent']}50; border-radius: 6px; padding: 5px 10px; font-size: 0.85em; cursor: pointer;">
-                        <option value="1" {'selected' if promo_count == 1 else ''}>1</option>
-                        <option value="2" {'selected' if promo_count == 2 else ''}>2</option>
-                        <option value="3" {'selected' if promo_count == 3 else ''}>3</option>
-                    </select>
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="color: {COLORS['accent_orange']}; font-size: 0.85em; font-weight: 600; min-width: 150px;">&#x2B07; Relegated Players</span>
-                    <select id="relegatedCount" onchange="confirmPromoRelegChange()"
-                        style="background: {COLORS['bg_card']}; color: {COLORS['text']}; border: 1px solid {COLORS['accent_orange']}50; border-radius: 6px; padding: 5px 10px; font-size: 0.85em; cursor: pointer;">
-                        <option value="1" {'selected' if releg_count == 1 else ''}>1</option>
-                        <option value="2" {'selected' if releg_count == 2 else ''}>2</option>
-                        <option value="3" {'selected' if releg_count == 3 else ''}>3</option>
-                    </select>
-                </div>
+                {count_rows}
             </div>
         </div>'''
 
@@ -5294,34 +5315,53 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                 }});
             }}
             
-            var prevPromoted = '{promo_count}';
-            var prevRelegated = '{releg_count}';
-            
-            function confirmPromoRelegChange() {{
-                var promoted = document.getElementById('promotedCount').value;
-                var relegated = document.getElementById('relegatedCount').value;
-                
-                var promoModal = document.getElementById('promoRelegModal');
-                var desc = document.getElementById('promoRelegDesc');
-                desc.innerHTML = 'Promoted Players: <strong style="color:{COLORS["accent"]};">' + promoted + '</strong><br>Relegated Players: <strong style="color:{COLORS["accent_orange"]};">' + relegated + '</strong>';
-                promoModal.classList.add('active');
+            // Every movement selector on the panel: the league pair always,
+            // plus Division II's own pair in 3-division mode.
+            var promoRelegFields = [
+                ['promotedCount', 'promoted_count'],
+                ['relegatedCount', 'relegated_count'],
+                ['div2PromotedCount', 'div2_promoted_count'],
+                ['div2RelegatedCount', 'div2_relegated_count']
+            ].filter(function(f) {{ return document.getElementById(f[0]); }});
+            var prevPromoReleg = {{}};
+            promoRelegFields.forEach(function(f) {{ prevPromoReleg[f[0]] = document.getElementById(f[0]).value; }});
+
+            function promoRelegLabel(id) {{
+                var threeDiv = !!document.getElementById('div2PromotedCount');
+                var labels = threeDiv ? {{
+                    relegatedCount: 'Division I relegated',
+                    div2PromotedCount: 'Division II promoted',
+                    div2RelegatedCount: 'Division II relegated',
+                    promotedCount: 'Division III promoted'
+                }} : {{ promotedCount: 'Promoted Players', relegatedCount: 'Relegated Players' }};
+                return labels[id];
             }}
-            
+
+            function confirmPromoRelegChange() {{
+                var order = ['relegatedCount', 'div2PromotedCount', 'div2RelegatedCount', 'promotedCount'];
+                if (!document.getElementById('div2PromotedCount')) order = ['promotedCount', 'relegatedCount'];
+                var lines = order.map(function(id) {{
+                    var color = id.indexOf('romoted') > -1 ? '{COLORS["accent"]}' : '{COLORS["accent_orange"]}';
+                    return promoRelegLabel(id) + ': <strong style="color:' + color + ';">' + document.getElementById(id).value + '</strong>';
+                }});
+                document.getElementById('promoRelegDesc').innerHTML = lines.join('<br>');
+                document.getElementById('promoRelegModal').classList.add('active');
+            }}
+
             function confirmPromoReleg() {{
-                var promoted = document.getElementById('promotedCount').value;
-                var relegated = document.getElementById('relegatedCount').value;
                 document.getElementById('promoRelegModal').classList.remove('active');
-                
+                var body = {{}};
+                promoRelegFields.forEach(function(f) {{ body[f[1]] = parseInt(document.getElementById(f[0]).value); }});
+
                 fetch('/dashboard/league/{league['id']}/division-counts', {{
                     method: 'POST',
                     headers: {{ 'Content-Type': 'application/json' }},
-                    body: JSON.stringify({{ promoted_count: parseInt(promoted), relegated_count: parseInt(relegated) }})
+                    body: JSON.stringify(body)
                 }})
                 .then(r => r.json())
                 .then(data => {{
                     if (data.success) {{
-                        prevPromoted = promoted;
-                        prevRelegated = relegated;
+                        promoRelegFields.forEach(function(f) {{ prevPromoReleg[f[0]] = document.getElementById(f[0]).value; }});
                         showToast('Season movement updated');
                     }} else {{
                         revertPromoReleg();
@@ -5333,17 +5373,16 @@ def render_league_management(user, league, players, player_ai_settings=None, mes
                     showToast('Error saving counts');
                 }});
             }}
-            
+
             function cancelPromoReleg() {{
                 document.getElementById('promoRelegModal').classList.remove('active');
                 revertPromoReleg();
             }}
-            
+
             function revertPromoReleg() {{
-                document.getElementById('promotedCount').value = prevPromoted;
-                document.getElementById('relegatedCount').value = prevRelegated;
+                promoRelegFields.forEach(function(f) {{ document.getElementById(f[0]).value = prevPromoReleg[f[0]]; }});
             }}
-            
+
             // Touch support for mobile drag-and-drop
             (function() {{
                 let touchPlayer = null;
@@ -5677,7 +5716,9 @@ def get_league_info(league_id, conn=None):
                    max_players,
                    season_wins,
                    discord_guild_id,
-                   COALESCE(division_count, 2)
+                   COALESCE(division_count, 2),
+                   div2_promoted_count,
+                   div2_relegated_count
             FROM leagues
             WHERE id = %s
         """, (league_id,))
@@ -5720,6 +5761,10 @@ def get_league_info(league_id, conn=None):
                 # NULL means two divisions — the only value that existed before
                 # 3-division mode — so old leagues need no backfill.
                 'division_count': int(row[32]) if row[32] is not None else 2,
+                # Division II's own pair (3-division mode). NULL = same as the
+                # league pair above.
+                'div2_promoted_count': row[33],
+                'div2_relegated_count': row[34],
                 'channel_name': None,
                 'workspace_name': None,
             }

@@ -11599,22 +11599,28 @@ def dashboard_division_counts(league_id):
     data = request.get_json()
     promoted = int(data.get('promoted_count', 1))
     relegated = int(data.get('relegated_count', 1))
-    
-    if promoted not in (1, 2, 3) or relegated not in (1, 2, 3):
+    # Division II's own pair, sent only by the 3-division panel. Absent means
+    # "leave as is", so the 2-division panel never touches them.
+    div2 = {k: int(data[k]) for k in ('div2_promoted_count', 'div2_relegated_count') if data.get(k) is not None}
+
+    if any(v not in (1, 2, 3) for v in [promoted, relegated, *div2.values()]):
         return jsonify({'success': False, 'error': 'Values must be 1, 2, or 3'}), 400
-    
+
     try:
         conn = get_db_connection()
         cursor = conn.cursor()
         cursor.execute("""
             UPDATE leagues SET promoted_count = %s, relegated_count = %s WHERE id = %s
         """, (promoted, relegated, league_id))
+        for col, val in div2.items():
+            cursor.execute(f"UPDATE leagues SET {col} = %s WHERE id = %s", (val, league_id))
         conn.commit()
         cursor.close()
         conn.close()
-        
-        logging.info(f"League {league_id}: division counts updated - promoted={promoted}, relegated={relegated}")
-        return jsonify({'success': True, 'promoted_count': promoted, 'relegated_count': relegated})
+
+        logging.info(f"League {league_id}: division counts updated - promoted={promoted}, relegated={relegated}"
+                     + (f", {div2}" if div2 else ""))
+        return jsonify({'success': True, 'promoted_count': promoted, 'relegated_count': relegated, **div2})
     except Exception as e:
         logging.error(f"Error updating division counts: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
@@ -12648,6 +12654,9 @@ def _run_one_time_migrations():
         # Add promoted_count and relegated_count columns for division mode (can differ to balance pacing)
         cursor.execute("ALTER TABLE leagues ADD COLUMN IF NOT EXISTS promoted_count INTEGER DEFAULT 1")
         cursor.execute("ALTER TABLE leagues ADD COLUMN IF NOT EXISTS relegated_count INTEGER DEFAULT 1")
+        # Division II's own pair in 3-division mode. NULL = same as the league pair.
+        cursor.execute("ALTER TABLE leagues ADD COLUMN IF NOT EXISTS div2_promoted_count INTEGER DEFAULT NULL")
+        cursor.execute("ALTER TABLE leagues ADD COLUMN IF NOT EXISTS div2_relegated_count INTEGER DEFAULT NULL")
 
         # Division movement log — tracks promotions/relegations with randomization info
         cursor.execute("""

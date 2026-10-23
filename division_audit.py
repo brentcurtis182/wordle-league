@@ -178,7 +178,7 @@ def pick(ranked, spots):
 # ---------------------------------------------------------------------------
 
 def audit_league(cur, league, week):
-    lid, name, div_count, p_count, r_count, min_scores, target, confirmed_at = league
+    lid, name, div_count, p_count, r_count, min_scores, target, confirmed_at, d2_p, d2_r = league
     this_week = week + 7
     run_start = datetime.combine(wordle_to_date(this_week), datetime.min.time())  # naive UTC
     run_end = run_start + timedelta(days=7)
@@ -270,9 +270,9 @@ def audit_league(cur, league, week):
 
     # -- 1. weekly winners for the week that just ended -------------------------
     wk_lines = []
-    relaid = confirmed_at and confirmed_at.date() > wordle_to_date(week + 6)
+    relaid = confirmed_at and pacific_date(confirmed_at) > wordle_to_date(week + 6)
     if relaid:
-        wk_lines.append(('info', f"Divisions were (re)confirmed on {confirmed_at:%b %d}, after this week ended, "
+        wk_lines.append(('info', f"Divisions were (re)confirmed on {pacific_date(confirmed_at):%b %d}, after this week ended, "
                                  "so last week's winners were decided under the old layout. Not checked."))
     for d in range(1, div_count + 1):
         if relaid:
@@ -356,13 +356,22 @@ def audit_league(cur, league, week):
             return season_stats(scores.get(b['id'], []), S, E, b['joined_week'], p['created_at'], min_scores)
 
         detail = []
-        for direction, count, to_div in (('promotion', p_count, d - 1), ('relegation', r_count, d + 1)):
+        # Spec, restated: the league pair covers every boundary, except that a
+        # 3-division league's Division II has its own pair (NULL = league pair).
+        mid = div_count >= 3 and d == 2
+        promo_n = (d2_p or p_count) if mid else p_count
+        releg_n = (d2_r or r_count) if mid else r_count
+        promoted_out = 0
+        for direction, count, to_div in (('promotion', promo_n, d - 1), ('relegation', releg_n, d + 1)):
             if not (1 <= to_div <= div_count):
                 continue
             pool = []
+            promoted_now = {m['name'] for m in run_moves if m['type'] == 'promotion' and m['from'] == d}
             for b in roster:
                 if b['name'] in got_champs:
                     continue
+                if direction == 'relegation' and b['name'] in promoted_now:
+                    continue  # already went up this run
                 if b['immune']:
                     detail.append(f"{b['name']}: immune, not eligible for {direction}")
                     continue
@@ -376,6 +385,18 @@ def audit_league(cur, league, week):
                 auto = sorted(got_champs)
             else:
                 spots, auto = count, []
+            floor_note = ''
+            if div_count >= 3:
+                # 3-division floor: moves never leave the division below
+                # SIZE_FLOOR. Size at that moment = the roster, plus anyone
+                # relegated in from the division above earlier in the same
+                # run, minus whoever this division already promoted out.
+                arrived = sum(1 for m in run_moves if m['type'] == 'relegation' and m['from'] == d - 1)
+                size_now = len(roster) + arrived - promoted_out
+                room = max(size_now - len(auto) - SIZE_FLOOR, 0)
+                if room < spots:
+                    floor_note = f" (held to {room} by the {SIZE_FLOOR}-player floor)"
+                    spots = room
             certain, tie, tie_spots = pick([(k, n) for k, n, *_ in pool], spots)
             actual = [m for m in run_moves if m['type'] == direction and m['from'] == d]
             actual_names = {m['name'] for m in actual}
@@ -394,7 +415,9 @@ def audit_league(cur, league, week):
             for m in actual:
                 if m['random'] and m['name'] not in tie:
                     issues.append(f"{m['name']}'s {direction} is marked random, but there was no genuine tie for that spot.")
-            exp_text = ', '.join(auto + certain) or 'nobody'
+            if direction == 'promotion':
+                promoted_out = len(actual_names)
+            exp_text = (', '.join(auto + certain) or 'nobody') + floor_note
             if tie:
                 exp_text += f" + {tie_spots} drawn from tied {', '.join(tie)}"
             arrow = f"{label(d)} → {label(to_div)}"
@@ -403,7 +426,7 @@ def audit_league(cur, league, week):
             move_lines.append(('ok' if ok else 'bad',
                                f"{arrow} {direction} ({count} spot{'s' if count != 1 else ''}): "
                                f"moved {', '.join(sorted(actual_names)) or 'nobody'}"
-                               + ('' if ok else f" — expected {exp_text}")))
+                               + (floor_note if ok else f" — expected {exp_text}")))
             for m in actual:
                 p = by_name.get(m['name'])
                 if p and p['division'] != to_div:
@@ -423,9 +446,9 @@ def audit_league(cur, league, week):
 
     # -- 3. immunity ------------------------------------------------------------
     imm_lines = []
-    # division_confirmed_at holds Pacific wall time (confirm_division_mode writes
-    # now(pacific) into a timestamp-without-zone column), so no UTC conversion.
-    confirm_week = calculate_wordle_number(get_week_start_date(confirmed_at.date())) if confirmed_at else None
+    # division_confirmed_at is naive UTC, like created_at: the Pacific-aware
+    # value confirm_division_mode writes is converted by the UTC session.
+    confirm_week = calculate_wordle_number(get_week_start_date(pacific_date(confirmed_at))) if confirmed_at else None
     for p in sorted(players.values(), key=lambda x: (x['division'] or 9, x['name'])):
         if not p['active']:
             if p['immune']:
@@ -444,8 +467,7 @@ def audit_league(cur, league, week):
         into = [m for m in movements if m['name'] == p['name'] and m['to'] == d]
         last_move = into[-1] if into else None
         created_day = calculate_wordle_number(pacific_date(p['created_at'])) if p['created_at'] else None
-        added_after_confirm = bool(p['created_at'] and confirmed_at and created_day is not None
-                                   and created_day >= confirm_week
+        added_after_confirm = bool(p['created_at'] and confirmed_at and p['created_at'] > confirmed_at
                                    and (not last_move or p['created_at'] > last_move['at']))
         if last_move and (not added_after_confirm):
             move_week = calculate_wordle_number(get_week_start_date(pacific_date(last_move['at'])))
@@ -497,9 +519,13 @@ def audit_league(cur, league, week):
     size_lines = []
     for d in range(1, div_count + 1):
         n = sum(1 for p in players.values() if p['active'] and p['division'] == d)
-        if n < SIZE_FLOOR:
+        small = n < SIZE_FLOOR
+        if small and div_count >= 3:
             issues.append(f"{label(d)} is down to {n} active player{'s' if n != 1 else ''}.")
-        size_lines.append(('ok' if n >= SIZE_FLOOR else 'bad', f"{label(d)}: {n} players"))
+        elif small:
+            # The floor is a 3-division rule; in two divisions it's just worth knowing.
+            notes.append(f"{label(d)} has {n} active player{'s' if n != 1 else ''}.")
+        size_lines.append(('bad' if small and div_count >= 3 else 'ok', f"{label(d)}: {n} players"))
     sections.append(('Division sizes', size_lines))
 
     return {'league_id': lid, 'league_name': name, 'divisions': div_count,
@@ -515,7 +541,7 @@ def run_audit(week=None, dry_run=False):
     cur.execute("""
         SELECT id, name, COALESCE(division_count, 2), COALESCE(promoted_count, 1),
                COALESCE(relegated_count, 1), COALESCE(min_weekly_scores, 5), season_wins,
-               division_confirmed_at
+               division_confirmed_at, div2_promoted_count, div2_relegated_count
         FROM leagues WHERE division_mode = TRUE AND division_confirmed_at IS NOT NULL
         ORDER BY id
     """)
@@ -523,7 +549,7 @@ def run_audit(week=None, dry_run=False):
     for r in cur.fetchall():
         min_scores = r[5] if 3 <= (r[5] or 0) <= 7 else 5
         target = r[6] if r[6] is not None and 2 <= r[6] <= 6 else 3
-        leagues.append((r[0], r[1], r[2], r[3], r[4], min_scores, target, r[7]))
+        leagues.append((r[0], r[1], r[2], r[3], r[4], min_scores, target, r[7], r[8], r[9]))
     reports = []
     for lg in leagues:
         try:

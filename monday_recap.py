@@ -424,6 +424,8 @@ def get_last_week_results(league_id):
         league_slug = league_info[1] if league_info else f"league{league_id}"
         promoted_count = league_info[2] if league_info else 1
         relegated_count = league_info[3] if league_info else 1
+        from league_data_adapter import get_division_movement_counts
+        movement_counts = get_division_movement_counts(league_id, cursor)
 
         # Get recent division movements (promotions/relegations from THIS week only)
         # Use last_sunday as cutoff so we don't re-announce last week's movements
@@ -486,6 +488,7 @@ def get_last_week_results(league_id):
             'min_scores': min_scores,
             'promoted_count': promoted_count,
             'relegated_count': relegated_count,
+            'movement_counts': movement_counts,
         }
         
     except Exception as e:
@@ -530,8 +533,7 @@ def send_monday_recap(league_id):
             div_seasons = results.get('division_current_seasons', {})
 
             # Pre-process movements and clinches by division
-            promoted_count = results.get('promoted_count', 1)
-            relegated_count = results.get('relegated_count', 1)
+            movement_counts = results.get('movement_counts') or {}
             movements = results.get('division_movements', [])
             clinch_names = set()
             for c in div_clinched:
@@ -549,6 +551,9 @@ def send_monday_recap(league_id):
                 # BOTH. With two divisions this reduces to the original I/II case.
                 promote_to = f"Division {ROMAN[div_num - 1]}" if div_num > 1 else None
                 relegate_to = f"Division {ROMAN[div_num + 1]}" if div_num < division_count else None
+                # Per division: Division II has its own pair in 3-division mode.
+                promoted_count = movement_counts.get(div_num, {}).get('promotion', results.get('promoted_count', 1))
+                relegated_count = movement_counts.get(div_num, {}).get('relegation', results.get('relegated_count', 1))
                 div_parts = []
                 dw = div_winners.get(div_num, [])
                 if not dw:

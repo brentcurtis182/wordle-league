@@ -555,8 +555,9 @@ def check_relegation_promotion_ties(league_id, season_infos, min_scores,
     conn = get_db_connection()
     cursor = conn.cursor()
     try:
-        cursor.execute("SELECT COALESCE(relegated_count, 1), COALESCE(promoted_count, 1) FROM leagues WHERE id = %s", (league_id,))
-        relegated_count, promoted_count = cursor.fetchone()
+        # Per-division: Division II has its own pair in 3-division mode.
+        from league_data_adapter import get_division_movement_counts
+        movement_counts = get_division_movement_counts(league_id, cursor)
 
         # --- relegation out of every division that has one below it ---
         for div in range(1, division_count):
@@ -565,6 +566,7 @@ def check_relegation_promotion_ties(league_id, season_infos, min_scores,
             div_start = info.get('season_start_week')
             div_wins = weekly_wins_by_div.get(div)
             below = ROMAN[div + 1]
+            relegated_count = movement_counts[div]['relegation']
 
             if not (div_start and has_stakes_by_div.get(div)):
                 continue
@@ -617,6 +619,7 @@ def check_relegation_promotion_ties(league_id, season_infos, min_scores,
             div_start = info.get('season_start_week')
             div_wins = weekly_wins_by_div.get(div)
             above = ROMAN[div - 1]
+            promoted_count = movement_counts[div]['promotion']
 
             clinchers = set()
             if div_wins:

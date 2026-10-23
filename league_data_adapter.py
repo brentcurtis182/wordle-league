@@ -338,6 +338,49 @@ def division_counting_floor(season_start, division_joined_week):
     return division_joined_week - ((division_joined_week - season_start) % 7)
 
 
+MIN_DIVISION_SIZE_AFTER_MOVES = 3  # 3-division mode: a season end never leaves fewer
+
+
+def division_movement_counts(division_count, promoted, relegated,
+                             div2_promoted=None, div2_relegated=None):
+    """How many players leave each division, and which way, when its season ends.
+
+    Returns {division: {'promotion': n, 'relegation': n}}, with a key only for
+    the moves that division actually makes (Division I never promotes, the
+    bottom division never relegates).
+
+    The league-wide pair (promoted_count / relegated_count) covers every
+    boundary, which for two divisions is all there is. With three, Division II
+    has its own pair (Brent, 2026-10-23): it is the one division that sends
+    players both ways at once. NULL there means "same as the league pair", so
+    a league that never touches them behaves exactly as before.
+    """
+    counts = {}
+    for d in range(1, division_count + 1):
+        c = {}
+        if d > 1:
+            c['promotion'] = promoted
+        if d < division_count:
+            c['relegation'] = relegated
+        if division_count >= 3 and d == 2:
+            c['promotion'] = div2_promoted or promoted
+            c['relegation'] = div2_relegated or relegated
+        counts[d] = c
+    return counts
+
+
+def get_division_movement_counts(league_id, cursor):
+    cursor.execute("""
+        SELECT COALESCE(division_count, 2), COALESCE(promoted_count, 1), COALESCE(relegated_count, 1),
+               div2_promoted_count, div2_relegated_count
+        FROM leagues WHERE id = %s
+    """, (league_id,))
+    row = cursor.fetchone()
+    if not row:
+        return division_movement_counts(2, 1, 1)
+    return division_movement_counts(*row)
+
+
 def clear_player_join_cache(player_id=None):
     """Clear the per-player join-week cache."""
     cache = get_player_join_week.__defaults__[-1]  # _cache={} is last default
@@ -713,13 +756,16 @@ def get_complete_league_data(league_id):
         div_cursor = conn.cursor()
         
         # Check if league is in division mode
-        div_cursor.execute("SELECT division_mode, division_confirmed_at, COALESCE(promoted_count, 1), COALESCE(relegated_count, 1), COALESCE(division_count, 2) FROM leagues WHERE id = %s", (league_id,))
+        div_cursor.execute("SELECT division_mode, division_confirmed_at, COALESCE(promoted_count, 1), COALESCE(relegated_count, 1), COALESCE(division_count, 2), div2_promoted_count, div2_relegated_count FROM leagues WHERE id = %s", (league_id,))
         div_result = div_cursor.fetchone()
         is_division_mode = div_result and div_result[0]
         division_confirmed_at = div_result[1] if div_result else None
         promoted_count = div_result[2] if div_result else 1
         relegated_count = div_result[3] if div_result else 1
         division_count = div_result[4] if div_result else 2
+        movement_counts = division_movement_counts(
+            division_count, promoted_count, relegated_count,
+            div_result[5] if div_result else None, div_result[6] if div_result else None)
         
         # Check if there are any division season winners in the database (even if division mode is OFF)
         # This ensures division season history is retained when toggling division mode off
@@ -840,6 +886,7 @@ def get_complete_league_data(league_id):
         'missed_weeks': missed_weeks,
         'promoted_count': promoted_count,
         'relegated_count': relegated_count,
+        'movement_counts': movement_counts,
         'division_count': division_count,
         'min_weekly_scores': min_scores,
         'header_emoji': header_emoji,

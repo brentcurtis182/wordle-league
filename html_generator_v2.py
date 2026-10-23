@@ -1012,8 +1012,10 @@ def generate_division_weekly_totals_html(league_data):
         html += '</tbody>\n</table>\n</div>\n'
         
         # Show promoted/relegated count below each division table
-        promoted_count = league_data.get('promoted_count', 1)
-        relegated_count = league_data.get('relegated_count', 1)
+        # Per division: in 3-division mode Division II has its own pair.
+        _mc = (league_data.get('movement_counts') or {}).get(div_num, {})
+        promoted_count = _mc.get('promotion', league_data.get('promoted_count', 1))
+        relegated_count = _mc.get('relegation', league_data.get('relegated_count', 1))
         # A middle division does both, so it gets both lines.
         if div_num > 1:
             html += f'<p style="margin: 6px 0 0; font-size: 0.8em; color: {div_color}; font-style: italic;">&#x2B06; Promoted Players: {promoted_count}</p>\n'
@@ -1535,14 +1537,45 @@ def generate_rules_html(league_data):
             ['Division ' + DIVISION_NUMERALS.get(i, str(i)) for i in range(1, _dcount)]
         ) + ' and Division ' + DIVISION_NUMERALS.get(_dcount, str(_dcount)) if _dcount > 1 else 'one division'
         _bottom = DIVISION_NUMERALS.get(_dcount, str(_dcount))
+        # Movement counts per division. In 3-division mode Division II has its
+        # own pair, so once they differ the single "promote X, relegate Y"
+        # sentence would be wrong and each division is listed instead.
+        _mc = league_data.get('movement_counts') or {}
+        _promos = {d: c['promotion'] for d, c in _mc.items() if 'promotion' in c}
+        _relegs = {d: c['relegation'] for d, c in _mc.items() if 'relegation' in c}
+        _P = '<strong style="color:#FFA64D;">{}</strong>'
+        _R = '<strong style="color:#00E8DA;">{}</strong>'
+        if len(set(_promos.values())) <= 1 and len(set(_relegs.values())) <= 1:
+            _pc = next(iter(_promos.values()), promoted_count)
+            _rc = next(iter(_relegs.values()), relegated_count)
+            _move_sentence = (f'At the end of each season, the top {_P.format(_pc)} player{"s" if _pc > 1 else ""} in a division '
+                              f'move up to the division above, and the bottom {_R.format(_rc)} player{"s" if _rc > 1 else ""} drop to the one below.')
+            _settings_line = (f'Your league is currently set to promote {_P.format(_pc)} and relegate {_R.format(_rc)} each season. '
+                              'This is configurable by the league manager (1&ndash;3).')
+        else:
+            _move_sentence = ('At the end of each season, the top players in a division move up to the division above, and the '
+                              'bottom players drop to the one below. How many depends on the division.')
+            _parts = []
+            for _d in range(1, _dcount + 1):
+                _bits = []
+                if _d in _promos:
+                    _bits.append(f'promote {_P.format(_promos[_d])}')
+                if _d in _relegs:
+                    _bits.append(f'relegate {_R.format(_relegs[_d])}')
+                _parts.append(f'Division {DIVISION_NUMERALS.get(_d, str(_d))}: ' + ' and '.join(_bits))
+            _settings_line = ('Your league is currently set to: ' + ' &middot; '.join(_parts) + '. '
+                              'Each division&rsquo;s season ends on its own schedule, so these moves happen at different times. '
+                              'Configurable by the league manager (1&ndash;3 each).')
+        if _dcount >= 3:
+            _settings_line += ' A season&rsquo;s moves never leave a division with fewer than 3 players.'
         html += f'''<div style="{card_style}">
 <h3 style="color:#00E8DA; margin:0 0 10px 0; font-size:1.1em;">⚔️ Division Mode</h3>
 <p style="margin:0 0 10px 0; color:#d7dadc; line-height:1.6;">This league runs in Division Mode with <strong style="color:#d7dadc;">{_dcount} divisions</strong>. The league manager assigns players to divisions and can rearrange them until the first weekly winner is recorded on Monday. After that, divisions are locked for the season.</p>
 
 <h4 style="color:#FFA64D; margin:14px 0 8px 0; font-size:0.95em;">Promotion &amp; Relegation</h4>
-<p style="margin:0 0 10px 0; color:#d7dadc; line-height:1.6;">At the end of each season, the top <strong style="color:#FFA64D;">{promoted_count}</strong> player{"s" if promoted_count > 1 else ""} in a division move up to the division above, and the bottom <strong style="color:#00E8DA;">{relegated_count}</strong> player{"s" if relegated_count > 1 else ""} drop to the one below. Moves are always one division at a time&mdash;nobody skips a tier.{" With three divisions, Division II is the only place you can go either way in the same season." if _dcount >= 3 else ""}</p>
+<p style="margin:0 0 10px 0; color:#d7dadc; line-height:1.6;">{_move_sentence} Moves are always one division at a time&mdash;nobody skips a tier.{" With three divisions, Division II is the only place you can go either way in the same season." if _dcount >= 3 else ""}</p>
 <p style="margin:0 0 10px 0; color:#d7dadc; line-height:1.6;">Two spots are decided automatically: a <strong style="color:#d7dadc;">division champion is always promoted</strong> (except in Division I, which has nowhere higher to go), and a <strong style="color:#d7dadc;">champion is always safe</strong> from relegation&mdash;no matter what. Every other spot is decided by the rankings below.</p>
-<p style="margin:0 0 10px 0; color:#818384; font-size:0.85em; line-height:1.5;">Your league is currently set to promote <strong style="color:#FFA64D;">{promoted_count}</strong> and relegate <strong style="color:#00E8DA;">{relegated_count}</strong> each season. This is configurable by the league manager (1&ndash;3).</p>
+<p style="margin:0 0 10px 0; color:#818384; font-size:0.85em; line-height:1.5;">{_settings_line}</p>
 
 <h4 style="color:#FFA64D; margin:14px 0 8px 0; font-size:0.95em;">How Players Are Ranked</h4>
 <p style="margin:0 0 8px 0; color:#d7dadc; line-height:1.6;">To decide who moves up or down, players are compared in this exact order:</p>

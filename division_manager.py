@@ -11,7 +11,7 @@ import logging
 import random
 from datetime import datetime
 import pytz
-from league_data_adapter import get_db_connection, calculate_wordle_number, get_week_start_date, get_league_min_scores, get_league_season_wins, get_player_join_week, division_counting_floor, division_join_grace_week, added_on_monday_or_tuesday
+from league_data_adapter import get_db_connection, calculate_wordle_number, get_week_start_date, get_league_min_scores, get_league_season_wins, get_player_join_week, division_counting_floor, division_join_grace_week, added_on_monday_or_tuesday, get_division_movement_counts, MIN_DIVISION_SIZE_AFTER_MOVES
 
 DIVISION_WINS_FOR_SEASON = 3  # Wins needed to win a division season (vs 4 for normal)
 STANDARD_WINS_FOR_SEASON = 4  # The same default for a league with no divisions
@@ -1034,13 +1034,25 @@ def check_division_season_transition(league_id, division):
         # adjacent only; nobody skips a division.
         if division > 1:
             promote_to = division - 1
-            # Get configurable promoted_count
-            cursor.execute("SELECT COALESCE(promoted_count, 1) FROM leagues WHERE id = %s", (league_id,))
-            promoted_count = cursor.fetchone()[0]
+            # How many go up from THIS division (Division II has its own number
+            # in 3-division mode).
+            promoted_count = get_division_movement_counts(league_id, cursor)[division]['promotion']
 
             # Season winners always get promoted
             promoted_names = [name for name, _ in winners]
             randomized_names = {}  # name -> {'tied_with': [...], 'tied_score': N}
+
+            # 3-division floor: extra promotions never leave this division below
+            # MIN_DIVISION_SIZE_AFTER_MOVES. Champions still always go up.
+            if get_division_count(league_id, cursor=cursor) >= 3:
+                cursor.execute("SELECT COUNT(*) FROM players WHERE league_id = %s AND division = %s AND active = TRUE",
+                               (league_id, division))
+                room = cursor.fetchone()[0] - len(promoted_names) - MIN_DIVISION_SIZE_AFTER_MOVES
+                if len(promoted_names) + max(room, 0) < promoted_count:
+                    logging.info(f"Div {ROMAN[division]} promotion in league {league_id} held to "
+                                 f"{len(promoted_names) + max(room, 0)} of {promoted_count} by the "
+                                 f"{MIN_DIVISION_SIZE_AFTER_MOVES}-player floor")
+                    promoted_count = len(promoted_names) + max(room, 0)
 
             if len(promoted_names) < promoted_count:
                 # Need more players promoted beyond the winner(s)
@@ -1346,10 +1358,25 @@ def check_division_relegation(league_id, division):
             logging.info(f"No eligible players for relegation from Div {ROMAN[division]} in league {league_id} (all immune or season winners)")
             return False
         
-        # Get configurable relegated_count
-        cursor.execute("SELECT COALESCE(relegated_count, 1) FROM leagues WHERE id = %s", (league_id,))
-        relegated_count = cursor.fetchone()[0]
-        
+        # How many go down from THIS division (Division II has its own number
+        # in 3-division mode).
+        relegated_count = get_division_movement_counts(league_id, cursor)[division]['relegation']
+
+        # 3-division floor: never leave this division below
+        # MIN_DIVISION_SIZE_AFTER_MOVES. Counted now, i.e. after any promotion
+        # out of it this run.
+        if get_division_count(league_id, cursor=cursor) >= 3:
+            cursor.execute("SELECT COUNT(*) FROM players WHERE league_id = %s AND division = %s AND active = TRUE",
+                           (league_id, division))
+            room = max(cursor.fetchone()[0] - MIN_DIVISION_SIZE_AFTER_MOVES, 0)
+            if room < relegated_count:
+                logging.info(f"Div {ROMAN[division]} relegation in league {league_id} held to {room} of "
+                             f"{relegated_count} by the {MIN_DIVISION_SIZE_AFTER_MOVES}-player floor")
+                relegated_count = room
+                if room == 0:
+                    conn.commit()
+                    return False
+
         # Sort: most missed weeks first, then worst (highest) season total, then fewest wins
         player_stats.sort(key=lambda x: relegation_sort_key(x[4], x[2], x[3]))
         
